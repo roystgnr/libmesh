@@ -36,7 +36,7 @@ public:
   CoupledSystem(EquationSystems& es,
                 const std::string& name_in,
                 const unsigned int number_in)
-    : FEMSystem(es, name_in, number_in), Peclet(1.) {qoi.resize(1);}
+    : FEMSystem(es, name_in, number_in), Peclet(1.), penalty_val(1e10) {qoi.resize(1);}
 
   // Function to get computed QoI values
 
@@ -83,6 +83,9 @@ protected:
   virtual bool element_constraint (bool request_jacobian,
                                    DiffContext& context);
 
+  virtual bool side_constraint (bool request_jacobian,
+                                DiffContext& context);
+
   // Postprocessed output
   virtual void postprocess ();
 
@@ -91,6 +94,8 @@ protected:
 
   // Indices for each variable;
   unsigned int p_var, u_var, v_var, C_var;
+
+  Real penalty_val;
 
   // The ParameterVector object that will contain pointers to
   // the system parameters

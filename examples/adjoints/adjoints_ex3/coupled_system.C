@@ -108,7 +108,11 @@ void CoupledSystem::init_data ()
   // Useful debugging options
   this->verify_analytic_jacobians = infile("verify_analytic_jacobians", 0.);
 
+#if 0
   // Set Dirichlet boundary conditions
+  if (this->penalty_val == 0.0)
+  {
+
   const boundary_id_type left_inlet_id = 0;
   std::set<boundary_id_type> left_inlet_bdy;
   left_inlet_bdy.insert(left_inlet_id);
@@ -158,6 +162,8 @@ void CoupledSystem::init_data ()
     (DirichletBoundary (right_inlet_bdy, uv, &inflow_right));
   this->get_dof_map().add_dirichlet_boundary
     (DirichletBoundary (right_inlet_bdy, C_only, &zero));
+  }
+#endif
 
   // Note that the remaining boundary conditions are the natural boundary conditions for the concentration
   // on the wall (grad(c) dot n = 0) and natural boundary conditions for the velocity and the concentration
@@ -320,6 +326,89 @@ bool CoupledSystem::element_time_derivative (bool request_jacobian,
 
   return request_jacobian;
 }
+
+
+bool CoupledSystem::side_constraint (bool request_jacobian,
+                                     DiffContext &context)
+{
+  FEMContext &c = cast_ref<FEMContext&>(context);
+
+  FEBase* side_fe = NULL;
+  c.get_side_fe( 0, side_fe );
+
+  // Element Jacobian * quadrature weights for interior integration
+  const std::vector<Real> &JxW = side_fe->get_JxW();
+
+  // Side basis functions
+  const std::vector<std::vector<Real> > &phi = side_fe->get_phi();
+  const std::vector<Point > &q_point = side_fe->get_xyz();
+
+  // The number of local degrees of freedom in each variable
+  const unsigned int n_u_dofs = c.get_dof_indices(1).size();
+
+  // The subvectors and submatrices we need to fill:
+  DenseSubMatrix<Number> &Kuu = c.get_elem_jacobian(u_var,u_var);
+  DenseSubMatrix<Number> &Kvv = c.get_elem_jacobian(v_var,v_var);
+  DenseSubMatrix<Number> &KCC = c.get_elem_jacobian(C_var,C_var);
+  DenseSubVector<Number> &Fu = c.get_elem_residual(u_var);
+  DenseSubVector<Number> &Fv = c.get_elem_residual(v_var);
+  DenseSubVector<Number> &FC = c.get_elem_residual(C_var);
+
+  unsigned int n_qpoints = c.get_side_qrule().n_points();
+
+  // If side is on outlet, nothing to do
+  if(c.has_side_boundary_id(2))
+    return request_jacobian;
+
+  Number u_bdy = 0. ;
+  Number C_bdy = 0. ;
+
+  // Loop over all the qps on this side
+  for (unsigned int qp=0; qp != n_qpoints; qp++)
+    {
+      // Get u at the qp
+      Number u = c.side_value(0,qp);
+      Number v = c.side_value(1,qp);
+      Number C = c.side_value(3,qp);
+
+      Real y = q_point[qp](1);
+
+      if (c.has_side_boundary_id(3)) // wall bdy
+        u_bdy = 0;
+
+      if (c.has_side_boundary_id(0)) // left inlet bdy
+        {
+          C_bdy = 1;
+          u_bdy = -(y-2)*(y-3);
+        }
+
+      if (c.has_side_boundary_id(1)) // right inlet bdy
+        {
+          C_bdy = 0;
+          u_bdy = (y-2)*(y-3);
+        }
+
+      // Add the contribution from each basis function
+      for (unsigned int i=0; i != n_u_dofs; i++)
+        {
+          Fu(i) += penalty_val * (u - u_bdy) * phi[i][qp] * JxW[qp];
+          Fv(i) += penalty_val * v * phi[i][qp] * JxW[qp];
+
+          if (!c.has_side_boundary_id(3)) // wall bdy
+            FC(i) += penalty_val * (C - C_bdy) * phi[i][qp] * JxW[qp];
+
+          for (unsigned int j=0; j != n_u_dofs; j++)
+            {
+              Kuu(i,j) += penalty_val * phi[j][qp] * phi[i][qp] * JxW[qp];
+              Kvv(i,j) += penalty_val * phi[j][qp] * phi[i][qp] * JxW[qp];
+
+              if (!c.has_side_boundary_id(3)) // wall bdy
+                KCC(i,j) += penalty_val * phi[j][qp] * phi[i][qp] * JxW[qp];
+            }
+        }
+    }
+}
+
 
 
 bool CoupledSystem::element_constraint (bool request_jacobian,

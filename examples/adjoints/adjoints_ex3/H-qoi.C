@@ -65,8 +65,12 @@ void CoupledSystemQoI::side_qoi_derivative (DiffContext &context,
               // Add the contribution from each basis function
               for (unsigned int i=0; i != n_u_dofs; i++)
                 {
-                  Qu(i) += JxW[qp] * -phi[i][qp] * C;
-                  QC(i) += JxW[qp] * phi[i][qp] * -u;
+//                  Qu(i) += JxW[qp] * -phi[i][qp] * C;
+//                  QC(i) += JxW[qp] * phi[i][qp] * -u;
+
+//                  QC(i) += JxW[qp] * phi[i][qp];
+
+                  Qu(i) += JxW[qp] * -phi[i][qp];
                 }
             } // end if
 
@@ -115,7 +119,11 @@ void CoupledSystemQoI::side_qoi(DiffContext &context, const QoISet & /* qois */)
               u = c.side_value(0,qp);
               C = c.side_value(3,qp);
 
-              dQoI_0 += JxW[qp] * -u * C;
+//              dQoI_0 += JxW[qp] * -u * C;
+
+//              dQoI_0 += JxW[qp] * C;
+
+              dQoI_0 += JxW[qp] * -u;
             } // end if
 
         } // end quadrature loop

@@ -86,7 +86,7 @@ nelem_target = 40000
 global_tolerance = 0
 
 # Are we doing uniform refinement steps
-refine_uniformly = false
+refine_uniformly = true
 
 # Type of indicator, refine_uniformly must be set to false for this to work
 indicator_type = 'adjoint_residual'
