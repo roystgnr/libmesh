@@ -93,7 +93,7 @@ protected:
   std::vector<Number> parameters;
 
   // Indices for each variable;
-  unsigned int p_var, u_var, v_var, C_var;
+  unsigned int p_var, u_var, v_var; //, C_var;
 
   Real penalty_val;
 

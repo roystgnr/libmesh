@@ -832,6 +832,7 @@ int main (int argc, char** argv)
           // Swap back
           primal_solution.swap(dual_solution);
 
+#if 0
           // We need the values of the parameters Pe from the
           // system for the adjoint error estimate
           Real Pe = (dynamic_cast<CoupledSystem&>(system)).get_Pe();
@@ -1068,6 +1069,7 @@ int main (int argc, char** argv)
             }
 
           write_error(equation_systems, error, 0, a_step, param, "_total");
+#endif
 
           // We have to refine either based on reaching an error
           // tolerance or a number of elements target, which should be
@@ -1080,6 +1082,7 @@ int main (int argc, char** argv)
             {
               mesh_refinement->uniformly_refine(1);
             }
+#if 0
           else if(param.global_tolerance >= 0. && param.nelem_target == 0.) // Refine based on reaching an error tolerance
             {
               mesh_refinement->flag_elements_by_error_tolerance (error);
@@ -1102,6 +1105,7 @@ int main (int argc, char** argv)
               // Carry out the adaptive mesh refinement/coarsening
               mesh_refinement->refine_and_coarsen_elements();
             }
+#endif
 
           equation_systems.reinit();
 

@@ -34,7 +34,7 @@ void CoupledSystemQoI::side_qoi_derivative (DiffContext &context,
   const unsigned int n_u_dofs = c.get_dof_indices(1).size();
 
   DenseSubVector<Number> &Qu = c.get_qoi_derivatives(0,0);
-  DenseSubVector<Number> &QC = c.get_qoi_derivatives(0,3);
+//  DenseSubVector<Number> &QC = c.get_qoi_derivatives(0,3);
 
   // Now we will build the element Jacobian and residual.
   // Constructing the residual requires the solution and its
@@ -45,7 +45,7 @@ void CoupledSystemQoI::side_qoi_derivative (DiffContext &context,
   unsigned int n_qpoints = c.get_side_qrule().n_points();
 
   Number u = 0. ;
-  Number C = 0. ;
+//  Number C = 0. ;
 
   // // If side is on outlet
   if(c.has_side_boundary_id(2))
@@ -60,7 +60,7 @@ void CoupledSystemQoI::side_qoi_derivative (DiffContext &context,
             {
               // Get u at the qp
               u = c.side_value(0,qp);
-              C = c.side_value(3,qp);
+//              C = c.side_value(3,qp);
 
               // Add the contribution from each basis function
               for (unsigned int i=0; i != n_u_dofs; i++)
@@ -103,7 +103,7 @@ void CoupledSystemQoI::side_qoi(DiffContext &context, const QoISet & /* qois */)
 
   Number dQoI_0 = 0. ;
   Number u = 0. ;
-  Number C = 0. ;
+//  Number C = 0. ;
 
   // If side is on the left outlet
   if(c.has_side_boundary_id(2))
@@ -117,7 +117,7 @@ void CoupledSystemQoI::side_qoi(DiffContext &context, const QoISet & /* qois */)
             {
               // Get u and C at the qp
               u = c.side_value(0,qp);
-              C = c.side_value(3,qp);
+//              C = c.side_value(3,qp);
 
 //              dQoI_0 += JxW[qp] * -u * C;
 

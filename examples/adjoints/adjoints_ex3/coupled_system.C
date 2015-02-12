@@ -96,14 +96,14 @@ void CoupledSystem::init_data ()
 
   // Add the Concentration variable "C". They will
   // be approximated using second-order approximation, the same as the velocity components
-  C_var = this->add_variable ("C", static_cast<Order>(pressure_p+1),
-                              fefamily);
+//  C_var = this->add_variable ("C", static_cast<Order>(pressure_p+1),
+//                              fefamily);
 
   // Tell the system to march velocity forward in time, but
   // leave p as a constraint only
   this->time_evolving(u_var);
   this->time_evolving(v_var);
-  this->time_evolving(C_var);
+//  this->time_evolving(C_var);
 
   // Useful debugging options
   this->verify_analytic_jacobians = infile("verify_analytic_jacobians", 0.);
@@ -242,10 +242,10 @@ bool CoupledSystem::element_time_derivative (bool request_jacobian,
   DenseSubMatrix<Number> &Kvp = c.get_elem_jacobian(v_var,p_var);
   DenseSubVector<Number> &Fv = c.get_elem_residual(v_var);
 
-  DenseSubMatrix<Number> &KCu = c.get_elem_jacobian(C_var,u_var);
-  DenseSubMatrix<Number> &KCv = c.get_elem_jacobian(C_var,v_var);
-  DenseSubMatrix<Number> &KCC = c.get_elem_jacobian(C_var,C_var);
-  DenseSubVector<Number> &FC = c.get_elem_residual(C_var);
+//  DenseSubMatrix<Number> &KCu = c.get_elem_jacobian(C_var,u_var);
+//  DenseSubMatrix<Number> &KCv = c.get_elem_jacobian(C_var,v_var);
+//  DenseSubMatrix<Number> &KCC = c.get_elem_jacobian(C_var,C_var);
+//  DenseSubVector<Number> &FC = c.get_elem_residual(C_var);
 
   // Now we will build the element Jacobian and residual.
   // Constructing the residual requires the solution and its
@@ -262,14 +262,14 @@ bool CoupledSystem::element_time_derivative (bool request_jacobian,
         u = c.interior_value(u_var, qp),
         v = c.interior_value(v_var, qp);
       Gradient grad_u = c.interior_gradient(u_var, qp),
-        grad_v = c.interior_gradient(v_var, qp),
-        grad_C = c.interior_gradient(C_var, qp);
+        grad_v = c.interior_gradient(v_var, qp);
+//        grad_C = c.interior_gradient(C_var, qp);
 
       // Definitions for convenience.  It is sometimes simpler to do a
       // dot product if you have the full vector at your disposal.
       NumberVectorValue U     (u,     v);
-      const Number C_x = grad_C(0);
-      const Number C_y = grad_C(1);
+//      const Number C_x = grad_C(0);
+//      const Number C_y = grad_C(1);
 
       // First, an i-loop over the velocity degrees of freedom.
       // We know that n_u_dofs == n_v_dofs so we can compute contributions
@@ -286,9 +286,9 @@ bool CoupledSystem::element_time_derivative (bool request_jacobian,
              (grad_v*dphi[i][qp]));            // diffusion term
 
           // Concentration Equation Residual
-          FC(i) += JxW[qp] *
-            ( (U*grad_C)*phi[i][qp] +                // convection term
-              (1./Peclet)*(grad_C*dphi[i][qp]) );     // diffusion term
+//          FC(i) += JxW[qp] *
+//            ( (U*grad_C)*phi[i][qp] +                // convection term
+//              (1./Peclet)*(grad_C*dphi[i][qp]) );     // diffusion term
 
           // Note that the Fp block is identically zero unless we are using
           // some kind of artificial compressibility scheme...
@@ -304,13 +304,13 @@ bool CoupledSystem::element_time_derivative (bool request_jacobian,
 
                   Kvv(i,j) += JxW[qp] * (-(dphi[i][qp]*dphi[j][qp])); /* diffusion term  */
 
-                  KCu(i,j) += JxW[qp]* ( (phi[j][qp]*C_x)*phi[i][qp] ); /* convection term */
+//                  KCu(i,j) += JxW[qp]* ( (phi[j][qp]*C_x)*phi[i][qp] ); /* convection term */
 
-                  KCv(i,j) += JxW[qp]*( (phi[j][qp]*C_y)*phi[i][qp] );  /* convection term */
+//                  KCv(i,j) += JxW[qp]*( (phi[j][qp]*C_y)*phi[i][qp] );  /* convection term */
 
-                  KCC(i,j) += JxW[qp]*
-                    ( (U*dphi[j][qp])*phi[i][qp] +      /* nonlinear term (convection) */
-                      (1./Peclet)*(dphi[j][qp]*dphi[i][qp]) ); /* diffusion term */
+//                  KCC(i,j) += JxW[qp]*
+//                    ( (U*dphi[j][qp])*phi[i][qp] +      /* nonlinear term (convection) */
+//                      (1./Peclet)*(dphi[j][qp]*dphi[i][qp]) ); /* diffusion term */
                 }
 
               // Matrix contributions for the up and vp couplings.
@@ -349,10 +349,10 @@ bool CoupledSystem::side_constraint (bool request_jacobian,
   // The subvectors and submatrices we need to fill:
   DenseSubMatrix<Number> &Kuu = c.get_elem_jacobian(u_var,u_var);
   DenseSubMatrix<Number> &Kvv = c.get_elem_jacobian(v_var,v_var);
-  DenseSubMatrix<Number> &KCC = c.get_elem_jacobian(C_var,C_var);
+//  DenseSubMatrix<Number> &KCC = c.get_elem_jacobian(C_var,C_var);
   DenseSubVector<Number> &Fu = c.get_elem_residual(u_var);
   DenseSubVector<Number> &Fv = c.get_elem_residual(v_var);
-  DenseSubVector<Number> &FC = c.get_elem_residual(C_var);
+//  DenseSubVector<Number> &FC = c.get_elem_residual(C_var);
 
   unsigned int n_qpoints = c.get_side_qrule().n_points();
 
@@ -361,7 +361,7 @@ bool CoupledSystem::side_constraint (bool request_jacobian,
     return request_jacobian;
 
   Number u_bdy = 0. ;
-  Number C_bdy = 0. ;
+//  Number C_bdy = 0. ;
 
   // Loop over all the qps on this side
   for (unsigned int qp=0; qp != n_qpoints; qp++)
@@ -369,7 +369,7 @@ bool CoupledSystem::side_constraint (bool request_jacobian,
       // Get u at the qp
       Number u = c.side_value(0,qp);
       Number v = c.side_value(1,qp);
-      Number C = c.side_value(3,qp);
+//      Number C = c.side_value(3,qp);
 
       Real y = q_point[qp](1);
 
@@ -378,13 +378,13 @@ bool CoupledSystem::side_constraint (bool request_jacobian,
 
       if (c.has_side_boundary_id(0)) // left inlet bdy
         {
-          C_bdy = 1;
+//          C_bdy = 1;
           u_bdy = -(y-2)*(y-3);
         }
 
       if (c.has_side_boundary_id(1)) // right inlet bdy
         {
-          C_bdy = 0;
+//          C_bdy = 0;
           u_bdy = (y-2)*(y-3);
         }
 
@@ -394,19 +394,21 @@ bool CoupledSystem::side_constraint (bool request_jacobian,
           Fu(i) += penalty_val * (u - u_bdy) * phi[i][qp] * JxW[qp];
           Fv(i) += penalty_val * v * phi[i][qp] * JxW[qp];
 
-          if (!c.has_side_boundary_id(3)) // wall bdy
-            FC(i) += penalty_val * (C - C_bdy) * phi[i][qp] * JxW[qp];
+//          if (!c.has_side_boundary_id(3)) // wall bdy
+//            FC(i) += penalty_val * (C - C_bdy) * phi[i][qp] * JxW[qp];
 
           for (unsigned int j=0; j != n_u_dofs; j++)
             {
               Kuu(i,j) += penalty_val * phi[j][qp] * phi[i][qp] * JxW[qp];
               Kvv(i,j) += penalty_val * phi[j][qp] * phi[i][qp] * JxW[qp];
 
-              if (!c.has_side_boundary_id(3)) // wall bdy
-                KCC(i,j) += penalty_val * phi[j][qp] * phi[i][qp] * JxW[qp];
+//              if (!c.has_side_boundary_id(3)) // wall bdy
+//                KCC(i,j) += penalty_val * phi[j][qp] * phi[i][qp] * JxW[qp];
             }
         }
     }
+
+  return request_jacobian;
 }
 
 
@@ -498,9 +500,9 @@ Number CoupledFEMFunctionsx::operator()(const FEMContext& c, const Point& p,
     {
     case 0:
       {
-        Gradient grad_C = c.point_gradient(3, p);
+//        Gradient grad_C = c.point_gradient(3, p);
 
-        weight = grad_C(0);
+//        weight = grad_C(0);
       }
       break;
 
@@ -530,9 +532,9 @@ Number CoupledFEMFunctionsy::operator()(const FEMContext& c, const Point& p,
     {
     case 1:
       {
-        Gradient grad_C = c.point_gradient(3, p);
+//        Gradient grad_C = c.point_gradient(3, p);
 
-        weight = grad_C(1);
+//        weight = grad_C(1);
       }
       break;
 
