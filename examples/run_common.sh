@@ -41,8 +41,10 @@ run_example() {
     # to something useful
     if (test "x${METHODS}" = "x"); then
 	if (test "x${METHOD}" = "x"); then
+	    echo METHODS=opt
 	    METHODS=opt
 	else
+	    echo METHODS="$METHOD"
 	    METHODS="$METHOD"
 	fi
     fi             
@@ -62,6 +64,8 @@ run_example() {
 	    echo "ERROR: cannot find ${executable}!"
 	    exit 1
 	fi
+
+        echo "Running $method"
 	
 	message_running $example_name $executable $options
 
