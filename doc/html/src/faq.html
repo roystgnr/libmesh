@@ -1,0 +1,24 @@
+<h1>Frequently Asked Questions (FAQ)</h1>
+
+<a name="help"></a><h2>Finding Help</h2>
+
+<a name="bugreports"></a><h2>Bug Reporting</h2>
+
+<a name="patches"></a><h2>Patches, Pull Requests</h2>
+
+<a name="installation"></a><h2>libMesh Installation</h2>
+
+<a name="parallelmesh"></a><h2>ParallelMesh vs SerialMesh</h2>
+
+
+<p>Unfortunately ParallelMesh may never be suitable for "general" use,
+because the most general SerialMesh-using codes sometimes assume at
+the application level that every process can see every element. If
+your problem includes contact, integro-differential terms, or any such
+coupling beyond the layer of ghost elements that ParallelMesh exposes,
+then you have to do some very careful manual communications to make
+that work on a distributed mesh.
+
+<p>Because it is easier to use, SerialMesh is made synonymous with Mesh by
+default.  For this reason ParallelMesh also receives less testing than
+SerialMesh in user codes.

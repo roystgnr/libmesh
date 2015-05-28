@@ -1,6 +1,7 @@
 BUILT_SOURCES = developers.html \
                 examples.html \
                 externalsoftware.html \
+                faq.html \
                 index.html \
                 installation.html \
                 publications.html \
@@ -11,7 +12,8 @@ CLEANFILES = $(BUILT_SOURCES)
 SOURCES = styles.css doxygen_stylesheet.css \
 	  src/developers.html src/doxygen_header.html src/simple_footer.html \
 	  src/examples.html src/index.html src/simple_header.html \
-	  src/externalsoftware.html src/installation.html src/support.html \
+	  src/externalsoftware.html src/faq.html \
+          src/installation.html src/support.html \
 	  src/doxygen_footer.html src/publications.html
 
 
@@ -28,6 +30,10 @@ examples.html: src/$@ src/simple_header.html src/simple_footer.html
 	$(AM_V_GEN)mv $@.html.tmp $@
 
 externalsoftware.html: src/$@ src/simple_header.html src/simple_footer.html
+	-cat $(srcdir)/src/simple_header.html $(srcdir)/src/$@ $(srcdir)/src/simple_footer.html > $@.html.tmp
+	$(AM_V_GEN)mv $@.html.tmp $@
+
+faq.html: src/$@ src/simple_header.html src/simple_footer.html
 	-cat $(srcdir)/src/simple_header.html $(srcdir)/src/$@ $(srcdir)/src/simple_footer.html > $@.html.tmp
 	$(AM_V_GEN)mv $@.html.tmp $@
 
