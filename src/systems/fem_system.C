@@ -727,9 +727,27 @@ public:
                  _femcontext.get_elem().neighbor_ptr(_femcontext.side) != nullptr))
               continue;
 
-            _femcontext.side_fe_reinit();
+            const bool on_boundary = 
+              (_femcontext.get_elem().neighbor(_femcontext.side) == NULL);
 
-            _qoi.side_qoi_derivative(_femcontext, _qoi_indices);
+            const bool need_side_qoi_deriv =
+              _qoi.assemble_qoi_sides &&
+              (_qoi.assemble_qoi_internal_sides || on_boundary);
+
+            const bool need_side_residual =
+              (_include_liftfunc || _apply_constraints) &&
+               elem_has_some_heterogenous_qoi_bc &&
+               (_sys.get_physics()->compute_internal_sides ||
+                on_boundary);
+
+            if (need_side_qoi_deriv || need_side_residual)
+              _femcontext.side_fe_reinit();
+
+            if (need_side_qoi_deriv)
+              _qoi.side_qoi_derivative(_femcontext, _qoi_indices);
+
+            if (need_side_residual)
+              _sys.time_solver->side_residual(true, _femcontext);
           }
 
         // We need some unmodified indices to use for constraining
