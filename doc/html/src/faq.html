@@ -10,15 +10,32 @@
 
 <a name="parallelmesh"></a><h2>ParallelMesh vs SerialMesh</h2>
 
+<p>In a SerialMesh, each MPI rank stores in memory a copy of each
+element and node in the mesh, regardless of the mesh partitioning.  In a
+ParallelMesh, each MPI rank stores only its own "local" elements as
+well as a layer of "ghost" elements surrounding them.  Further
+neighbor links merely point to a "RemoteElem" singleton.  The former
+data structure is much simpler to manage and sometimes requires less
+MPI communication; the latter is much more efficient in memory.
 
 <p>Unfortunately ParallelMesh may never be suitable for "general" use,
 because the most general SerialMesh-using codes sometimes assume at
 the application level that every process can see every element. If
 your problem includes contact, integro-differential terms, or any such
-coupling beyond the layer of ghost elements that ParallelMesh exposes,
-then you have to do some very careful manual communications to make
-that work on a distributed mesh.
+coupling beyond the single layer of ghost elements that ParallelMesh
+exposes, then you have to do some very careful manual communications
+to make that work on a distributed mesh.
+
+<p>For example, to parallelize an algorithm in which information
+propagates from neighbor to neighbor to neighbor, ParallelMesh users
+may need both an outer while loop with a communication step and a
+nested inner for loop over elements.  In the library, the mesh
+refinement smoothing code includes cases of this type of
+synchronization.
 
 <p>Because it is easier to use, SerialMesh is made synonymous with Mesh by
 default.  For this reason ParallelMesh also receives less testing than
-SerialMesh in user codes.
+SerialMesh in user codes.  To change a code based around Mesh to use
+ParallelMesh instead, libMesh can be configured with --enable-parmesh.
+In either case, SerialMesh or ParallelMesh can be instantiated
+explicitly.
