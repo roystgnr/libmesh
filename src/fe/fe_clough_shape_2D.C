@@ -30,24 +30,6 @@ namespace
 {
 using namespace libMesh;
 
-static dof_id_type old_elem_id = DofObject::invalid_id;
-// Coefficient naming: d(1)d(2n) is the coefficient of the
-// global shape function corresponding to value 1 in terms of the
-// local shape function corresponding to normal derivative 2
-static Real d1d2n, d1d3n, d2d3n, d2d1n, d3d1n, d3d2n;
-static Real d1xd1x, d1xd1y, d1xd2n, d1xd3n;
-static Real d1yd1x, d1yd1y, d1yd2n, d1yd3n;
-static Real d2xd2x, d2xd2y, d2xd3n, d2xd1n;
-static Real d2yd2x, d2yd2y, d2yd3n, d2yd1n;
-static Real d3xd3x, d3xd3y, d3xd1n, d3xd2n;
-static Real d3yd3x, d3yd3y, d3yd1n, d3yd2n;
-static Real d1nd1n, d2nd2n, d3nd3n;
-// Normal vector naming: N01x is the x component of the
-// unit vector at point 0 normal to (possibly curved) side 01
-static Real N01x, N01y, N10x, N10y;
-static Real N02x, N02y, N20x, N20y;
-static Real N21x, N21y, N12x, N12y;
-
 Real clough_raw_shape_second_deriv(const unsigned int basis_num,
                                    const unsigned int deriv_type,
                                    const Point & p);
@@ -59,8 +41,17 @@ Real clough_raw_shape(const unsigned int basis_num,
 unsigned char subtriangle_lookup(const Point & p);
 
 
+template <>
+FEClough<2>::FEClough(const FEType & fet) :
+  FE<2,CLOUGH> (fet),
+  old_elem_id (DofObject::invalid_id)
+{
+}
+
+
 // Compute the static coefficients for an element
-void clough_compute_coefs(const Elem * elem)
+template <>
+void FEClough<2>::clough_compute_coefs(const Elem * elem)
 {
   // Using static globals for old_elem_id, etc. will fail
   // horribly with more than one thread.
@@ -1819,7 +1810,8 @@ Real FE<2,CLOUGH>::shape(const Elem * elem,
 {
   libmesh_assert(elem);
 
-  clough_compute_coefs(elem);
+  FEClough<2> &me = libmesh_cast_ref<FEClough<2> &>(*this);
+  me.clough_compute_coefs(elem);
 
   const ElemType type = elem->type();
 
@@ -1849,58 +1841,58 @@ Real FE<2,CLOUGH>::shape(const Elem * elem,
                   // initial numbering conventions didn't match libMesh
                 case 0:
                   return clough_raw_shape(0, p)
-                    + d1d2n * clough_raw_shape(10, p)
-                    + d1d3n * clough_raw_shape(11, p);
+                    + me.d1d2n * clough_raw_shape(10, p)
+                    + me.d1d3n * clough_raw_shape(11, p);
                 case 3:
                   return clough_raw_shape(1, p)
-                    + d2d3n * clough_raw_shape(11, p)
-                    + d2d1n * clough_raw_shape(9, p);
+                    + me.d2d3n * clough_raw_shape(11, p)
+                    + me.d2d1n * clough_raw_shape(9, p);
                 case 6:
                   return clough_raw_shape(2, p)
-                    + d3d1n * clough_raw_shape(9, p)
-                    + d3d2n * clough_raw_shape(10, p);
+                    + me.d3d1n * clough_raw_shape(9, p)
+                    + me.d3d2n * clough_raw_shape(10, p);
                 case 1:
-                  return d1xd1x * clough_raw_shape(3, p)
-                    + d1xd1y * clough_raw_shape(4, p)
-                    + d1xd2n * clough_raw_shape(10, p)
-                    + d1xd3n * clough_raw_shape(11, p)
-                    + 0.5 * N01x * d3nd3n * clough_raw_shape(11, p)
-                    + 0.5 * N02x * d2nd2n * clough_raw_shape(10, p);
+                  return me.d1xd1x * clough_raw_shape(3, p)
+                    + me.d1xd1y * clough_raw_shape(4, p)
+                    + me.d1xd2n * clough_raw_shape(10, p)
+                    + me.d1xd3n * clough_raw_shape(11, p)
+                    + 0.5 * me.N01x * me.d3nd3n * clough_raw_shape(11, p)
+                    + 0.5 * me.N02x * me.d2nd2n * clough_raw_shape(10, p);
                 case 2:
-                  return d1yd1y * clough_raw_shape(4, p)
-                    + d1yd1x * clough_raw_shape(3, p)
-                    + d1yd2n * clough_raw_shape(10, p)
-                    + d1yd3n * clough_raw_shape(11, p)
-                    + 0.5 * N01y * d3nd3n * clough_raw_shape(11, p)
-                    + 0.5 * N02y * d2nd2n * clough_raw_shape(10, p);
+                  return me.d1yd1y * clough_raw_shape(4, p)
+                    + me.d1yd1x * clough_raw_shape(3, p)
+                    + me.d1yd2n * clough_raw_shape(10, p)
+                    + me.d1yd3n * clough_raw_shape(11, p)
+                    + 0.5 * me.N01y * me.d3nd3n * clough_raw_shape(11, p)
+                    + 0.5 * me.N02y * me.d2nd2n * clough_raw_shape(10, p);
                 case 4:
-                  return d2xd2x * clough_raw_shape(5, p)
-                    + d2xd2y * clough_raw_shape(6, p)
-                    + d2xd3n * clough_raw_shape(11, p)
-                    + d2xd1n * clough_raw_shape(9, p)
-                    + 0.5 * N10x * d3nd3n * clough_raw_shape(11, p)
-                    + 0.5 * N12x * d1nd1n * clough_raw_shape(9, p);
+                  return me.d2xd2x * clough_raw_shape(5, p)
+                    + me.d2xd2y * clough_raw_shape(6, p)
+                    + me.d2xd3n * clough_raw_shape(11, p)
+                    + me.d2xd1n * clough_raw_shape(9, p)
+                    + 0.5 * me.N10x * me.d3nd3n * clough_raw_shape(11, p)
+                    + 0.5 * me.N12x * me.d1nd1n * clough_raw_shape(9, p);
                 case 5:
-                  return d2yd2y * clough_raw_shape(6, p)
-                    + d2yd2x * clough_raw_shape(5, p)
-                    + d2yd3n * clough_raw_shape(11, p)
-                    + d2yd1n * clough_raw_shape(9, p)
-                    + 0.5 * N10y * d3nd3n * clough_raw_shape(11, p)
-                    + 0.5 * N12y * d1nd1n * clough_raw_shape(9, p);
+                  return me.d2yd2y * clough_raw_shape(6, p)
+                    + me.d2yd2x * clough_raw_shape(5, p)
+                    + me.d2yd3n * clough_raw_shape(11, p)
+                    + me.d2yd1n * clough_raw_shape(9, p)
+                    + 0.5 * me.N10y * me.d3nd3n * clough_raw_shape(11, p)
+                    + 0.5 * me.N12y * me.d1nd1n * clough_raw_shape(9, p);
                 case 7:
-                  return d3xd3x * clough_raw_shape(7, p)
-                    + d3xd3y * clough_raw_shape(8, p)
-                    + d3xd1n * clough_raw_shape(9, p)
-                    + d3xd2n * clough_raw_shape(10, p)
-                    + 0.5 * N20x * d2nd2n * clough_raw_shape(10, p)
-                    + 0.5 * N21x * d1nd1n * clough_raw_shape(9, p);
+                  return me.d3xd3x * clough_raw_shape(7, p)
+                    + me.d3xd3y * clough_raw_shape(8, p)
+                    + me.d3xd1n * clough_raw_shape(9, p)
+                    + me.d3xd2n * clough_raw_shape(10, p)
+                    + 0.5 * me.N20x * me.d2nd2n * clough_raw_shape(10, p)
+                    + 0.5 * me.N21x * me.d1nd1n * clough_raw_shape(9, p);
                 case 8:
-                  return d3yd3y * clough_raw_shape(8, p)
-                    + d3yd3x * clough_raw_shape(7, p)
-                    + d3yd1n * clough_raw_shape(9, p)
-                    + d3yd2n * clough_raw_shape(10, p)
-                    + 0.5 * N20y * d2nd2n * clough_raw_shape(10, p)
-                    + 0.5 * N21y * d1nd1n * clough_raw_shape(9, p);
+                  return me.d3yd3y * clough_raw_shape(8, p)
+                    + me.d3yd3x * clough_raw_shape(7, p)
+                    + me.d3yd1n * clough_raw_shape(9, p)
+                    + me.d3yd2n * clough_raw_shape(10, p)
+                    + 0.5 * me.N20y * me.d2nd2n * clough_raw_shape(10, p)
+                    + 0.5 * me.N21y * me.d1nd1n * clough_raw_shape(9, p);
                 default:
                   libmesh_error_msg("Invalid shape function index i = " << i);
                 }
@@ -1928,52 +1920,52 @@ Real FE<2,CLOUGH>::shape(const Elem * elem,
                   // initial numbering conventions didn't match libMesh
                 case 0:
                   return clough_raw_shape(0, p)
-                    + d1d2n * clough_raw_shape(10, p)
-                    + d1d3n * clough_raw_shape(11, p);
+                    + me.d1d2n * clough_raw_shape(10, p)
+                    + me.d1d3n * clough_raw_shape(11, p);
                 case 3:
                   return clough_raw_shape(1, p)
-                    + d2d3n * clough_raw_shape(11, p)
-                    + d2d1n * clough_raw_shape(9, p);
+                    + me.d2d3n * clough_raw_shape(11, p)
+                    + me.d2d1n * clough_raw_shape(9, p);
                 case 6:
                   return clough_raw_shape(2, p)
-                    + d3d1n * clough_raw_shape(9, p)
-                    + d3d2n * clough_raw_shape(10, p);
+                    + me.d3d1n * clough_raw_shape(9, p)
+                    + me.d3d2n * clough_raw_shape(10, p);
                 case 1:
-                  return d1xd1x * clough_raw_shape(3, p)
-                    + d1xd1y * clough_raw_shape(4, p)
-                    + d1xd2n * clough_raw_shape(10, p)
-                    + d1xd3n * clough_raw_shape(11, p);
+                  return me.d1xd1x * clough_raw_shape(3, p)
+                    + me.d1xd1y * clough_raw_shape(4, p)
+                    + me.d1xd2n * clough_raw_shape(10, p)
+                    + me.d1xd3n * clough_raw_shape(11, p);
                 case 2:
-                  return d1yd1y * clough_raw_shape(4, p)
-                    + d1yd1x * clough_raw_shape(3, p)
-                    + d1yd2n * clough_raw_shape(10, p)
-                    + d1yd3n * clough_raw_shape(11, p);
+                  return me.d1yd1y * clough_raw_shape(4, p)
+                    + me.d1yd1x * clough_raw_shape(3, p)
+                    + me.d1yd2n * clough_raw_shape(10, p)
+                    + me.d1yd3n * clough_raw_shape(11, p);
                 case 4:
-                  return d2xd2x * clough_raw_shape(5, p)
-                    + d2xd2y * clough_raw_shape(6, p)
-                    + d2xd3n * clough_raw_shape(11, p)
-                    + d2xd1n * clough_raw_shape(9, p);
+                  return me.d2xd2x * clough_raw_shape(5, p)
+                    + me.d2xd2y * clough_raw_shape(6, p)
+                    + me.d2xd3n * clough_raw_shape(11, p)
+                    + me.d2xd1n * clough_raw_shape(9, p);
                 case 5:
-                  return d2yd2y * clough_raw_shape(6, p)
-                    + d2yd2x * clough_raw_shape(5, p)
-                    + d2yd3n * clough_raw_shape(11, p)
-                    + d2yd1n * clough_raw_shape(9, p);
+                  return me.d2yd2y * clough_raw_shape(6, p)
+                    + me.d2yd2x * clough_raw_shape(5, p)
+                    + me.d2yd3n * clough_raw_shape(11, p)
+                    + me.d2yd1n * clough_raw_shape(9, p);
                 case 7:
-                  return d3xd3x * clough_raw_shape(7, p)
-                    + d3xd3y * clough_raw_shape(8, p)
-                    + d3xd1n * clough_raw_shape(9, p)
-                    + d3xd2n * clough_raw_shape(10, p);
+                  return me.d3xd3x * clough_raw_shape(7, p)
+                    + me.d3xd3y * clough_raw_shape(8, p)
+                    + me.d3xd1n * clough_raw_shape(9, p)
+                    + me.d3xd2n * clough_raw_shape(10, p);
                 case 8:
-                  return d3yd3y * clough_raw_shape(8, p)
-                    + d3yd3x * clough_raw_shape(7, p)
-                    + d3yd1n * clough_raw_shape(9, p)
-                    + d3yd2n * clough_raw_shape(10, p);
+                  return me.d3yd3y * clough_raw_shape(8, p)
+                    + me.d3yd3x * clough_raw_shape(7, p)
+                    + me.d3yd1n * clough_raw_shape(9, p)
+                    + me.d3yd2n * clough_raw_shape(10, p);
                 case 10:
-                  return d1nd1n * clough_raw_shape(9, p);
+                  return me.d1nd1n * clough_raw_shape(9, p);
                 case 11:
-                  return d2nd2n * clough_raw_shape(10, p);
+                  return me.d2nd2n * clough_raw_shape(10, p);
                 case 9:
-                  return d3nd3n * clough_raw_shape(11, p);
+                  return me.d3nd3n * clough_raw_shape(11, p);
 
                 default:
                   libmesh_error_msg("Invalid shape function index i = " << i);
@@ -2016,7 +2008,8 @@ Real FE<2,CLOUGH>::shape_deriv(const Elem * elem,
 {
   libmesh_assert(elem);
 
-  clough_compute_coefs(elem);
+  FEClough<2> &me = libmesh_cast_ref<FEClough<2> &>(*this);
+  me.clough_compute_coefs(elem);
 
   const ElemType type = elem->type();
 
@@ -2046,58 +2039,58 @@ Real FE<2,CLOUGH>::shape_deriv(const Elem * elem,
                   // initial numbering conventions didn't match libMesh
                 case 0:
                   return clough_raw_shape_deriv(0, j, p)
-                    + d1d2n * clough_raw_shape_deriv(10, j, p)
-                    + d1d3n * clough_raw_shape_deriv(11, j, p);
+                    + me.d1d2n * clough_raw_shape_deriv(10, j, p)
+                    + me.d1d3n * clough_raw_shape_deriv(11, j, p);
                 case 3:
                   return clough_raw_shape_deriv(1, j, p)
-                    + d2d3n * clough_raw_shape_deriv(11, j, p)
-                    + d2d1n * clough_raw_shape_deriv(9, j, p);
+                    + me.d2d3n * clough_raw_shape_deriv(11, j, p)
+                    + me.d2d1n * clough_raw_shape_deriv(9, j, p);
                 case 6:
                   return clough_raw_shape_deriv(2, j, p)
-                    + d3d1n * clough_raw_shape_deriv(9, j, p)
-                    + d3d2n * clough_raw_shape_deriv(10, j, p);
+                    + me.d3d1n * clough_raw_shape_deriv(9, j, p)
+                    + me.d3d2n * clough_raw_shape_deriv(10, j, p);
                 case 1:
-                  return d1xd1x * clough_raw_shape_deriv(3, j, p)
-                    + d1xd1y * clough_raw_shape_deriv(4, j, p)
-                    + d1xd2n * clough_raw_shape_deriv(10, j, p)
-                    + d1xd3n * clough_raw_shape_deriv(11, j, p)
-                    + 0.5 * N01x * d3nd3n * clough_raw_shape_deriv(11, j, p)
-                    + 0.5 * N02x * d2nd2n * clough_raw_shape_deriv(10, j, p);
+                  return me.d1xd1x * clough_raw_shape_deriv(3, j, p)
+                    + me.d1xd1y * clough_raw_shape_deriv(4, j, p)
+                    + me.d1xd2n * clough_raw_shape_deriv(10, j, p)
+                    + me.d1xd3n * clough_raw_shape_deriv(11, j, p)
+                    + 0.5 * me.N01x * me.d3nd3n * clough_raw_shape_deriv(11, j, p)
+                    + 0.5 * me.N02x * me.d2nd2n * clough_raw_shape_deriv(10, j, p);
                 case 2:
-                  return d1yd1y * clough_raw_shape_deriv(4, j, p)
-                    + d1yd1x * clough_raw_shape_deriv(3, j, p)
-                    + d1yd2n * clough_raw_shape_deriv(10, j, p)
-                    + d1yd3n * clough_raw_shape_deriv(11, j, p)
-                    + 0.5 * N01y * d3nd3n * clough_raw_shape_deriv(11, j, p)
-                    + 0.5 * N02y * d2nd2n * clough_raw_shape_deriv(10, j, p);
+                  return me.d1yd1y * clough_raw_shape_deriv(4, j, p)
+                    + me.d1yd1x * clough_raw_shape_deriv(3, j, p)
+                    + me.d1yd2n * clough_raw_shape_deriv(10, j, p)
+                    + me.d1yd3n * clough_raw_shape_deriv(11, j, p)
+                    + 0.5 * me.N01y * me.d3nd3n * clough_raw_shape_deriv(11, j, p)
+                    + 0.5 * me.N02y * me.d2nd2n * clough_raw_shape_deriv(10, j, p);
                 case 4:
-                  return d2xd2x * clough_raw_shape_deriv(5, j, p)
-                    + d2xd2y * clough_raw_shape_deriv(6, j, p)
-                    + d2xd3n * clough_raw_shape_deriv(11, j, p)
-                    + d2xd1n * clough_raw_shape_deriv(9, j, p)
-                    + 0.5 * N10x * d3nd3n * clough_raw_shape_deriv(11, j, p)
-                    + 0.5 * N12x * d1nd1n * clough_raw_shape_deriv(9, j, p);
+                  return me.d2xd2x * clough_raw_shape_deriv(5, j, p)
+                    + me.d2xd2y * clough_raw_shape_deriv(6, j, p)
+                    + me.d2xd3n * clough_raw_shape_deriv(11, j, p)
+                    + me.d2xd1n * clough_raw_shape_deriv(9, j, p)
+                    + 0.5 * me.N10x * me.d3nd3n * clough_raw_shape_deriv(11, j, p)
+                    + 0.5 * me.N12x * me.d1nd1n * clough_raw_shape_deriv(9, j, p);
                 case 5:
-                  return d2yd2y * clough_raw_shape_deriv(6, j, p)
-                    + d2yd2x * clough_raw_shape_deriv(5, j, p)
-                    + d2yd3n * clough_raw_shape_deriv(11, j, p)
-                    + d2yd1n * clough_raw_shape_deriv(9, j, p)
-                    + 0.5 * N10y * d3nd3n * clough_raw_shape_deriv(11, j, p)
-                    + 0.5 * N12y * d1nd1n * clough_raw_shape_deriv(9, j, p);
+                  return me.d2yd2y * clough_raw_shape_deriv(6, j, p)
+                    + me.d2yd2x * clough_raw_shape_deriv(5, j, p)
+                    + me.d2yd3n * clough_raw_shape_deriv(11, j, p)
+                    + me.d2yd1n * clough_raw_shape_deriv(9, j, p)
+                    + 0.5 * me.N10y * me.d3nd3n * clough_raw_shape_deriv(11, j, p)
+                    + 0.5 * me.N12y * me.d1nd1n * clough_raw_shape_deriv(9, j, p);
                 case 7:
-                  return d3xd3x * clough_raw_shape_deriv(7, j, p)
-                    + d3xd3y * clough_raw_shape_deriv(8, j, p)
-                    + d3xd1n * clough_raw_shape_deriv(9, j, p)
-                    + d3xd2n * clough_raw_shape_deriv(10, j, p)
-                    + 0.5 * N20x * d2nd2n * clough_raw_shape_deriv(10, j, p)
-                    + 0.5 * N21x * d1nd1n * clough_raw_shape_deriv(9, j, p);
+                  return me.d3xd3x * clough_raw_shape_deriv(7, j, p)
+                    + me.d3xd3y * clough_raw_shape_deriv(8, j, p)
+                    + me.d3xd1n * clough_raw_shape_deriv(9, j, p)
+                    + me.d3xd2n * clough_raw_shape_deriv(10, j, p)
+                    + 0.5 * me.N20x * me.d2nd2n * clough_raw_shape_deriv(10, j, p)
+                    + 0.5 * me.N21x * me.d1nd1n * clough_raw_shape_deriv(9, j, p);
                 case 8:
-                  return d3yd3y * clough_raw_shape_deriv(8, j, p)
-                    + d3yd3x * clough_raw_shape_deriv(7, j, p)
-                    + d3yd1n * clough_raw_shape_deriv(9, j, p)
-                    + d3yd2n * clough_raw_shape_deriv(10, j, p)
-                    + 0.5 * N20y * d2nd2n * clough_raw_shape_deriv(10, j, p)
-                    + 0.5 * N21y * d1nd1n * clough_raw_shape_deriv(9, j, p);
+                  return me.d3yd3y * clough_raw_shape_deriv(8, j, p)
+                    + me.d3yd3x * clough_raw_shape_deriv(7, j, p)
+                    + me.d3yd1n * clough_raw_shape_deriv(9, j, p)
+                    + me.d3yd2n * clough_raw_shape_deriv(10, j, p)
+                    + 0.5 * me.N20y * me.d2nd2n * clough_raw_shape_deriv(10, j, p)
+                    + 0.5 * me.N21y * me.d1nd1n * clough_raw_shape_deriv(9, j, p);
                 default:
                   libmesh_error_msg("Invalid shape function index i = " << i);
                 }
@@ -2125,52 +2118,52 @@ Real FE<2,CLOUGH>::shape_deriv(const Elem * elem,
                   // initial numbering conventions didn't match libMesh
                 case 0:
                   return clough_raw_shape_deriv(0, j, p)
-                    + d1d2n * clough_raw_shape_deriv(10, j, p)
-                    + d1d3n * clough_raw_shape_deriv(11, j, p);
+                    + me.d1d2n * clough_raw_shape_deriv(10, j, p)
+                    + me.d1d3n * clough_raw_shape_deriv(11, j, p);
                 case 3:
                   return clough_raw_shape_deriv(1, j, p)
-                    + d2d3n * clough_raw_shape_deriv(11, j, p)
-                    + d2d1n * clough_raw_shape_deriv(9, j, p);
+                    + me.d2d3n * clough_raw_shape_deriv(11, j, p)
+                    + me.d2d1n * clough_raw_shape_deriv(9, j, p);
                 case 6:
                   return clough_raw_shape_deriv(2, j, p)
-                    + d3d1n * clough_raw_shape_deriv(9, j, p)
-                    + d3d2n * clough_raw_shape_deriv(10, j, p);
+                    + me.d3d1n * clough_raw_shape_deriv(9, j, p)
+                    + me.d3d2n * clough_raw_shape_deriv(10, j, p);
                 case 1:
-                  return d1xd1x * clough_raw_shape_deriv(3, j, p)
-                    + d1xd1y * clough_raw_shape_deriv(4, j, p)
-                    + d1xd2n * clough_raw_shape_deriv(10, j, p)
-                    + d1xd3n * clough_raw_shape_deriv(11, j, p);
+                  return me.d1xd1x * clough_raw_shape_deriv(3, j, p)
+                    + me.d1xd1y * clough_raw_shape_deriv(4, j, p)
+                    + me.d1xd2n * clough_raw_shape_deriv(10, j, p)
+                    + me.d1xd3n * clough_raw_shape_deriv(11, j, p);
                 case 2:
-                  return d1yd1y * clough_raw_shape_deriv(4, j, p)
-                    + d1yd1x * clough_raw_shape_deriv(3, j, p)
-                    + d1yd2n * clough_raw_shape_deriv(10, j, p)
-                    + d1yd3n * clough_raw_shape_deriv(11, j, p);
+                  return me.d1yd1y * clough_raw_shape_deriv(4, j, p)
+                    + me.d1yd1x * clough_raw_shape_deriv(3, j, p)
+                    + me.d1yd2n * clough_raw_shape_deriv(10, j, p)
+                    + me.d1yd3n * clough_raw_shape_deriv(11, j, p);
                 case 4:
-                  return d2xd2x * clough_raw_shape_deriv(5, j, p)
-                    + d2xd2y * clough_raw_shape_deriv(6, j, p)
-                    + d2xd3n * clough_raw_shape_deriv(11, j, p)
-                    + d2xd1n * clough_raw_shape_deriv(9, j, p);
+                  return me.d2xd2x * clough_raw_shape_deriv(5, j, p)
+                    + me.d2xd2y * clough_raw_shape_deriv(6, j, p)
+                    + me.d2xd3n * clough_raw_shape_deriv(11, j, p)
+                    + me.d2xd1n * clough_raw_shape_deriv(9, j, p);
                 case 5:
-                  return d2yd2y * clough_raw_shape_deriv(6, j, p)
-                    + d2yd2x * clough_raw_shape_deriv(5, j, p)
-                    + d2yd3n * clough_raw_shape_deriv(11, j, p)
-                    + d2yd1n * clough_raw_shape_deriv(9, j, p);
+                  return me.d2yd2y * clough_raw_shape_deriv(6, j, p)
+                    + me.d2yd2x * clough_raw_shape_deriv(5, j, p)
+                    + me.d2yd3n * clough_raw_shape_deriv(11, j, p)
+                    + me.d2yd1n * clough_raw_shape_deriv(9, j, p);
                 case 7:
-                  return d3xd3x * clough_raw_shape_deriv(7, j, p)
-                    + d3xd3y * clough_raw_shape_deriv(8, j, p)
-                    + d3xd1n * clough_raw_shape_deriv(9, j, p)
-                    + d3xd2n * clough_raw_shape_deriv(10, j, p);
+                  return me.d3xd3x * clough_raw_shape_deriv(7, j, p)
+                    + me.d3xd3y * clough_raw_shape_deriv(8, j, p)
+                    + me.d3xd1n * clough_raw_shape_deriv(9, j, p)
+                    + me.d3xd2n * clough_raw_shape_deriv(10, j, p);
                 case 8:
-                  return d3yd3y * clough_raw_shape_deriv(8, j, p)
-                    + d3yd3x * clough_raw_shape_deriv(7, j, p)
-                    + d3yd1n * clough_raw_shape_deriv(9, j, p)
-                    + d3yd2n * clough_raw_shape_deriv(10, j, p);
+                  return me.d3yd3y * clough_raw_shape_deriv(8, j, p)
+                    + me.d3yd3x * clough_raw_shape_deriv(7, j, p)
+                    + me.d3yd1n * clough_raw_shape_deriv(9, j, p)
+                    + me.d3yd2n * clough_raw_shape_deriv(10, j, p);
                 case 10:
-                  return d1nd1n * clough_raw_shape_deriv(9, j, p);
+                  return me.d1nd1n * clough_raw_shape_deriv(9, j, p);
                 case 11:
-                  return d2nd2n * clough_raw_shape_deriv(10, j, p);
+                  return me.d2nd2n * clough_raw_shape_deriv(10, j, p);
                 case 9:
-                  return d3nd3n * clough_raw_shape_deriv(11, j, p);
+                  return me.d3nd3n * clough_raw_shape_deriv(11, j, p);
 
                 default:
                   libmesh_error_msg("Invalid shape function index i = " << i);
@@ -2200,7 +2193,8 @@ Real FE<2,CLOUGH>::shape_second_deriv(const Elem * elem,
 {
   libmesh_assert(elem);
 
-  clough_compute_coefs(elem);
+  FEClough<2> &me = libmesh_cast_ref<FEClough<2> &>(*this);
+  me.clough_compute_coefs(elem);
 
   const ElemType type = elem->type();
 
@@ -2226,58 +2220,58 @@ Real FE<2,CLOUGH>::shape_second_deriv(const Elem * elem,
                   // initial numbering conventions didn't match libMesh
                 case 0:
                   return clough_raw_shape_second_deriv(0, j, p)
-                    + d1d2n * clough_raw_shape_second_deriv(10, j, p)
-                    + d1d3n * clough_raw_shape_second_deriv(11, j, p);
+                    + me.d1d2n * clough_raw_shape_second_deriv(10, j, p)
+                    + me.d1d3n * clough_raw_shape_second_deriv(11, j, p);
                 case 3:
                   return clough_raw_shape_second_deriv(1, j, p)
-                    + d2d3n * clough_raw_shape_second_deriv(11, j, p)
-                    + d2d1n * clough_raw_shape_second_deriv(9, j, p);
+                    + me.d2d3n * clough_raw_shape_second_deriv(11, j, p)
+                    + me.d2d1n * clough_raw_shape_second_deriv(9, j, p);
                 case 6:
                   return clough_raw_shape_second_deriv(2, j, p)
-                    + d3d1n * clough_raw_shape_second_deriv(9, j, p)
-                    + d3d2n * clough_raw_shape_second_deriv(10, j, p);
+                    + me.d3d1n * clough_raw_shape_second_deriv(9, j, p)
+                    + me.d3d2n * clough_raw_shape_second_deriv(10, j, p);
                 case 1:
-                  return d1xd1x * clough_raw_shape_second_deriv(3, j, p)
-                    + d1xd1y * clough_raw_shape_second_deriv(4, j, p)
-                    + d1xd2n * clough_raw_shape_second_deriv(10, j, p)
-                    + d1xd3n * clough_raw_shape_second_deriv(11, j, p)
-                    + 0.5 * N01x * d3nd3n * clough_raw_shape_second_deriv(11, j, p)
-                    + 0.5 * N02x * d2nd2n * clough_raw_shape_second_deriv(10, j, p);
+                  return me.d1xd1x * clough_raw_shape_second_deriv(3, j, p)
+                    + me.d1xd1y * clough_raw_shape_second_deriv(4, j, p)
+                    + me.d1xd2n * clough_raw_shape_second_deriv(10, j, p)
+                    + me.d1xd3n * clough_raw_shape_second_deriv(11, j, p)
+                    + 0.5 * me.N01x * me.d3nd3n * clough_raw_shape_second_deriv(11, j, p)
+                    + 0.5 * me.N02x * me.d2nd2n * clough_raw_shape_second_deriv(10, j, p);
                 case 2:
-                  return d1yd1y * clough_raw_shape_second_deriv(4, j, p)
-                    + d1yd1x * clough_raw_shape_second_deriv(3, j, p)
-                    + d1yd2n * clough_raw_shape_second_deriv(10, j, p)
-                    + d1yd3n * clough_raw_shape_second_deriv(11, j, p)
-                    + 0.5 * N01y * d3nd3n * clough_raw_shape_second_deriv(11, j, p)
-                    + 0.5 * N02y * d2nd2n * clough_raw_shape_second_deriv(10, j, p);
+                  return me.d1yd1y * clough_raw_shape_second_deriv(4, j, p)
+                    + me.d1yd1x * clough_raw_shape_second_deriv(3, j, p)
+                    + me.d1yd2n * clough_raw_shape_second_deriv(10, j, p)
+                    + me.d1yd3n * clough_raw_shape_second_deriv(11, j, p)
+                    + 0.5 * me.N01y * me.d3nd3n * clough_raw_shape_second_deriv(11, j, p)
+                    + 0.5 * me.N02y * me.d2nd2n * clough_raw_shape_second_deriv(10, j, p);
                 case 4:
-                  return d2xd2x * clough_raw_shape_second_deriv(5, j, p)
-                    + d2xd2y * clough_raw_shape_second_deriv(6, j, p)
-                    + d2xd3n * clough_raw_shape_second_deriv(11, j, p)
-                    + d2xd1n * clough_raw_shape_second_deriv(9, j, p)
-                    + 0.5 * N10x * d3nd3n * clough_raw_shape_second_deriv(11, j, p)
-                    + 0.5 * N12x * d1nd1n * clough_raw_shape_second_deriv(9, j, p);
+                  return me.d2xd2x * clough_raw_shape_second_deriv(5, j, p)
+                    + me.d2xd2y * clough_raw_shape_second_deriv(6, j, p)
+                    + me.d2xd3n * clough_raw_shape_second_deriv(11, j, p)
+                    + me.d2xd1n * clough_raw_shape_second_deriv(9, j, p)
+                    + 0.5 * me.N10x * me.d3nd3n * clough_raw_shape_second_deriv(11, j, p)
+                    + 0.5 * me.N12x * me.d1nd1n * clough_raw_shape_second_deriv(9, j, p);
                 case 5:
-                  return d2yd2y * clough_raw_shape_second_deriv(6, j, p)
-                    + d2yd2x * clough_raw_shape_second_deriv(5, j, p)
-                    + d2yd3n * clough_raw_shape_second_deriv(11, j, p)
-                    + d2yd1n * clough_raw_shape_second_deriv(9, j, p)
-                    + 0.5 * N10y * d3nd3n * clough_raw_shape_second_deriv(11, j, p)
-                    + 0.5 * N12y * d1nd1n * clough_raw_shape_second_deriv(9, j, p);
+                  return me.d2yd2y * clough_raw_shape_second_deriv(6, j, p)
+                    + me.d2yd2x * clough_raw_shape_second_deriv(5, j, p)
+                    + me.d2yd3n * clough_raw_shape_second_deriv(11, j, p)
+                    + me.d2yd1n * clough_raw_shape_second_deriv(9, j, p)
+                    + 0.5 * me.N10y * me.d3nd3n * clough_raw_shape_second_deriv(11, j, p)
+                    + 0.5 * me.N12y * me.d1nd1n * clough_raw_shape_second_deriv(9, j, p);
                 case 7:
-                  return d3xd3x * clough_raw_shape_second_deriv(7, j, p)
-                    + d3xd3y * clough_raw_shape_second_deriv(8, j, p)
-                    + d3xd1n * clough_raw_shape_second_deriv(9, j, p)
-                    + d3xd2n * clough_raw_shape_second_deriv(10, j, p)
-                    + 0.5 * N20x * d2nd2n * clough_raw_shape_second_deriv(10, j, p)
-                    + 0.5 * N21x * d1nd1n * clough_raw_shape_second_deriv(9, j, p);
+                  return me.d3xd3x * clough_raw_shape_second_deriv(7, j, p)
+                    + me.d3xd3y * clough_raw_shape_second_deriv(8, j, p)
+                    + me.d3xd1n * clough_raw_shape_second_deriv(9, j, p)
+                    + me.d3xd2n * clough_raw_shape_second_deriv(10, j, p)
+                    + 0.5 * me.N20x * me.d2nd2n * clough_raw_shape_second_deriv(10, j, p)
+                    + 0.5 * me.N21x * me.d1nd1n * clough_raw_shape_second_deriv(9, j, p);
                 case 8:
-                  return d3yd3y * clough_raw_shape_second_deriv(8, j, p)
-                    + d3yd3x * clough_raw_shape_second_deriv(7, j, p)
-                    + d3yd1n * clough_raw_shape_second_deriv(9, j, p)
-                    + d3yd2n * clough_raw_shape_second_deriv(10, j, p)
-                    + 0.5 * N20y * d2nd2n * clough_raw_shape_second_deriv(10, j, p)
-                    + 0.5 * N21y * d1nd1n * clough_raw_shape_second_deriv(9, j, p);
+                  return me.d3yd3y * clough_raw_shape_second_deriv(8, j, p)
+                    + me.d3yd3x * clough_raw_shape_second_deriv(7, j, p)
+                    + me.d3yd1n * clough_raw_shape_second_deriv(9, j, p)
+                    + me.d3yd2n * clough_raw_shape_second_deriv(10, j, p)
+                    + 0.5 * me.N20y * me.d2nd2n * clough_raw_shape_second_deriv(10, j, p)
+                    + 0.5 * me.N21y * me.d1nd1n * clough_raw_shape_second_deriv(9, j, p);
                 default:
                   libmesh_error_msg("Invalid shape function index i = " << i);
                 }
@@ -2305,52 +2299,52 @@ Real FE<2,CLOUGH>::shape_second_deriv(const Elem * elem,
                   // initial numbering conventions didn't match libMesh
                 case 0:
                   return clough_raw_shape_second_deriv(0, j, p)
-                    + d1d2n * clough_raw_shape_second_deriv(10, j, p)
-                    + d1d3n * clough_raw_shape_second_deriv(11, j, p);
+                    + me.d1d2n * clough_raw_shape_second_deriv(10, j, p)
+                    + me.d1d3n * clough_raw_shape_second_deriv(11, j, p);
                 case 3:
                   return clough_raw_shape_second_deriv(1, j, p)
-                    + d2d3n * clough_raw_shape_second_deriv(11, j, p)
-                    + d2d1n * clough_raw_shape_second_deriv(9, j, p);
+                    + me.d2d3n * clough_raw_shape_second_deriv(11, j, p)
+                    + me.d2d1n * clough_raw_shape_second_deriv(9, j, p);
                 case 6:
                   return clough_raw_shape_second_deriv(2, j, p)
-                    + d3d1n * clough_raw_shape_second_deriv(9, j, p)
-                    + d3d2n * clough_raw_shape_second_deriv(10, j, p);
+                    + me.d3d1n * clough_raw_shape_second_deriv(9, j, p)
+                    + me.d3d2n * clough_raw_shape_second_deriv(10, j, p);
                 case 1:
-                  return d1xd1x * clough_raw_shape_second_deriv(3, j, p)
-                    + d1xd1y * clough_raw_shape_second_deriv(4, j, p)
-                    + d1xd2n * clough_raw_shape_second_deriv(10, j, p)
-                    + d1xd3n * clough_raw_shape_second_deriv(11, j, p);
+                  return me.d1xd1x * clough_raw_shape_second_deriv(3, j, p)
+                    + me.d1xd1y * clough_raw_shape_second_deriv(4, j, p)
+                    + me.d1xd2n * clough_raw_shape_second_deriv(10, j, p)
+                    + me.d1xd3n * clough_raw_shape_second_deriv(11, j, p);
                 case 2:
-                  return d1yd1y * clough_raw_shape_second_deriv(4, j, p)
-                    + d1yd1x * clough_raw_shape_second_deriv(3, j, p)
-                    + d1yd2n * clough_raw_shape_second_deriv(10, j, p)
-                    + d1yd3n * clough_raw_shape_second_deriv(11, j, p);
+                  return me.d1yd1y * clough_raw_shape_second_deriv(4, j, p)
+                    + me.d1yd1x * clough_raw_shape_second_deriv(3, j, p)
+                    + me.d1yd2n * clough_raw_shape_second_deriv(10, j, p)
+                    + me.d1yd3n * clough_raw_shape_second_deriv(11, j, p);
                 case 4:
-                  return d2xd2x * clough_raw_shape_second_deriv(5, j, p)
-                    + d2xd2y * clough_raw_shape_second_deriv(6, j, p)
-                    + d2xd3n * clough_raw_shape_second_deriv(11, j, p)
-                    + d2xd1n * clough_raw_shape_second_deriv(9, j, p);
+                  return me.d2xd2x * clough_raw_shape_second_deriv(5, j, p)
+                    + me.d2xd2y * clough_raw_shape_second_deriv(6, j, p)
+                    + me.d2xd3n * clough_raw_shape_second_deriv(11, j, p)
+                    + me.d2xd1n * clough_raw_shape_second_deriv(9, j, p);
                 case 5:
-                  return d2yd2y * clough_raw_shape_second_deriv(6, j, p)
-                    + d2yd2x * clough_raw_shape_second_deriv(5, j, p)
-                    + d2yd3n * clough_raw_shape_second_deriv(11, j, p)
-                    + d2yd1n * clough_raw_shape_second_deriv(9, j, p);
+                  return me.d2yd2y * clough_raw_shape_second_deriv(6, j, p)
+                    + me.d2yd2x * clough_raw_shape_second_deriv(5, j, p)
+                    + me.d2yd3n * clough_raw_shape_second_deriv(11, j, p)
+                    + me.d2yd1n * clough_raw_shape_second_deriv(9, j, p);
                 case 7:
-                  return d3xd3x * clough_raw_shape_second_deriv(7, j, p)
-                    + d3xd3y * clough_raw_shape_second_deriv(8, j, p)
-                    + d3xd1n * clough_raw_shape_second_deriv(9, j, p)
-                    + d3xd2n * clough_raw_shape_second_deriv(10, j, p);
+                  return me.d3xd3x * clough_raw_shape_second_deriv(7, j, p)
+                    + me.d3xd3y * clough_raw_shape_second_deriv(8, j, p)
+                    + me.d3xd1n * clough_raw_shape_second_deriv(9, j, p)
+                    + me.d3xd2n * clough_raw_shape_second_deriv(10, j, p);
                 case 8:
-                  return d3yd3y * clough_raw_shape_second_deriv(8, j, p)
-                    + d3yd3x * clough_raw_shape_second_deriv(7, j, p)
-                    + d3yd1n * clough_raw_shape_second_deriv(9, j, p)
-                    + d3yd2n * clough_raw_shape_second_deriv(10, j, p);
+                  return me.d3yd3y * clough_raw_shape_second_deriv(8, j, p)
+                    + me.d3yd3x * clough_raw_shape_second_deriv(7, j, p)
+                    + me.d3yd1n * clough_raw_shape_second_deriv(9, j, p)
+                    + me.d3yd2n * clough_raw_shape_second_deriv(10, j, p);
                 case 10:
-                  return d1nd1n * clough_raw_shape_second_deriv(9, j, p);
+                  return me.d1nd1n * clough_raw_shape_second_deriv(9, j, p);
                 case 11:
-                  return d2nd2n * clough_raw_shape_second_deriv(10, j, p);
+                  return me.d2nd2n * clough_raw_shape_second_deriv(10, j, p);
                 case 9:
-                  return d3nd3n * clough_raw_shape_second_deriv(11, j, p);
+                  return me.d3nd3n * clough_raw_shape_second_deriv(11, j, p);
 
                 default:
                   libmesh_error_msg("Invalid shape function index i = " << i);

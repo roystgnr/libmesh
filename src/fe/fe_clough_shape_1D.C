@@ -30,12 +30,6 @@ namespace
 {
 using namespace libMesh;
 
-static dof_id_type old_elem_id = DofObject::invalid_id;
-// Coefficient naming: d(1)d(2n) is the coefficient of the
-// global shape function corresponding to value 1 in terms of the
-// local shape function corresponding to normal derivative 2
-static Real d1xd1x, d2xd2x;
-
 Real clough_raw_shape_second_deriv(const unsigned int basis_num,
                                    const unsigned int deriv_type,
                                    const Point & p);
@@ -46,8 +40,17 @@ Real clough_raw_shape(const unsigned int basis_num,
                       const Point & p);
 
 
+template <>
+FEClough<1>::FEClough(const FEType & fet) :
+  FE<1,CLOUGH> (fet),
+  old_elem_id (DofObject::invalid_id)
+{
+}
+
+
 // Compute the static coefficients for an element
-void clough_compute_coefs(const Elem * elem)
+template <>
+void FEClough<1>::clough_compute_coefs(const Elem * elem)
 {
   // Using static globals for old_elem_id, etc. will fail
   // horribly with more than one thread.
@@ -229,7 +232,8 @@ Real FE<1,CLOUGH>::shape(const Elem * elem,
 {
   libmesh_assert(elem);
 
-  clough_compute_coefs(elem);
+  FEClough<1> &me = libmesh_cast_ref<FEClough<1> &>(*this);
+  me.clough_compute_coefs(elem);
 
   const ElemType type = elem->type();
 
@@ -255,9 +259,9 @@ Real FE<1,CLOUGH>::shape(const Elem * elem,
                 case 1:
                   return clough_raw_shape(1, p);
                 case 2:
-                  return d1xd1x * clough_raw_shape(2, p);
+                  return me.d1xd1x * clough_raw_shape(2, p);
                 case 3:
-                  return d2xd2x * clough_raw_shape(3, p);
+                  return me.d2xd2x * clough_raw_shape(3, p);
                 default:
                   libmesh_error_msg("Invalid shape function index i = " << i);
                 }
@@ -299,7 +303,8 @@ Real FE<1,CLOUGH>::shape_deriv(const Elem * elem,
 {
   libmesh_assert(elem);
 
-  clough_compute_coefs(elem);
+  FEClough<1> &me = libmesh_cast_ref<FEClough<1> &>(*this);
+  me.clough_compute_coefs(elem);
 
   const ElemType type = elem->type();
 
@@ -323,9 +328,9 @@ Real FE<1,CLOUGH>::shape_deriv(const Elem * elem,
                 case 1:
                   return clough_raw_shape_deriv(1, j, p);
                 case 2:
-                  return d1xd1x * clough_raw_shape_deriv(2, j, p);
+                  return me.d1xd1x * clough_raw_shape_deriv(2, j, p);
                 case 3:
-                  return d2xd2x * clough_raw_shape_deriv(3, j, p);
+                  return me.d2xd2x * clough_raw_shape_deriv(3, j, p);
                 default:
                   libmesh_error_msg("Invalid shape function index i = " << i);
                 }
@@ -354,7 +359,8 @@ Real FE<1,CLOUGH>::shape_second_deriv(const Elem * elem,
 {
   libmesh_assert(elem);
 
-  clough_compute_coefs(elem);
+  FEClough<1> &me = libmesh_cast_ref<FEClough<1> &>(*this);
+  me.clough_compute_coefs(elem);
 
   const ElemType type = elem->type();
 
@@ -378,9 +384,9 @@ Real FE<1,CLOUGH>::shape_second_deriv(const Elem * elem,
                 case 1:
                   return clough_raw_shape_second_deriv(1, j, p);
                 case 2:
-                  return d1xd1x * clough_raw_shape_second_deriv(2, j, p);
+                  return me.d1xd1x * clough_raw_shape_second_deriv(2, j, p);
                 case 3:
-                  return d2xd2x * clough_raw_shape_second_deriv(3, j, p);
+                  return me.d2xd2x * clough_raw_shape_second_deriv(3, j, p);
                 default:
                   libmesh_error_msg("Invalid shape function index i = " << i);
                 }

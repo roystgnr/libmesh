@@ -495,10 +495,29 @@ public:
    * Constructor. Creates a hierarchic finite element
    * to be used in dimension \p Dim.
    */
-  explicit
-  FEClough(const FEType & fet) :
-    FE<Dim,CLOUGH> (fet)
-  {}
+  explicit FEClough(const FEType & fet);
+
+  void clough_compute_coefs(const Elem * elem);
+
+  dof_id_type old_elem_id;
+
+  // Coefficient naming: d(1)d(2n) is the coefficient of the
+  // global shape function corresponding to value 1 in terms of the
+  // local shape function corresponding to normal derivative 2
+  Real d1d2n, d1d3n, d2d3n, d2d1n, d3d1n, d3d2n;
+  Real d1xd1x, d1xd1y, d1xd2n, d1xd3n;
+  Real d1yd1x, d1yd1y, d1yd2n, d1yd3n;
+  Real d2xd2x, d2xd2y, d2xd3n, d2xd1n;
+  Real d2yd2x, d2yd2y, d2yd3n, d2yd1n;
+  Real d3xd3x, d3xd3y, d3xd1n, d3xd2n;
+  Real d3yd3x, d3yd3y, d3yd1n, d3yd2n;
+  Real d1nd1n, d2nd2n, d3nd3n;
+
+  // Normal vector naming: N01x is the x component of the
+  // unit vector at point 0 normal to (possibly curved) side 01
+  Real N01x, N01y, N10x, N10y;
+  Real N02x, N02y, N20x, N20y;
+  Real N21x, N21y, N12x, N12y;
 };
 
 

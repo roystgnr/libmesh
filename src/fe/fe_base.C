@@ -194,7 +194,7 @@ FEGenericBase<Real>::build (const unsigned int dim,
         switch (fet.family)
           {
           case CLOUGH:
-            return UniquePtr<FEBase>(new FE<0,CLOUGH>(fet));
+            return UniquePtr<FEBase>(new FEClough<0>(fet));
 
           case HERMITE:
             return UniquePtr<FEBase>(new FE<0,HERMITE>(fet));
@@ -238,7 +238,7 @@ FEGenericBase<Real>::build (const unsigned int dim,
         switch (fet.family)
           {
           case CLOUGH:
-            return UniquePtr<FEBase>(new FE<1,CLOUGH>(fet));
+            return UniquePtr<FEBase>(new FEClough<1>(fet));
 
           case HERMITE:
             return UniquePtr<FEBase>(new FE<1,HERMITE>(fet));
@@ -284,7 +284,7 @@ FEGenericBase<Real>::build (const unsigned int dim,
         switch (fet.family)
           {
           case CLOUGH:
-            return UniquePtr<FEBase>(new FE<2,CLOUGH>(fet));
+            return UniquePtr<FEBase>(new FEClough<2>(fet));
 
           case HERMITE:
             return UniquePtr<FEBase>(new FE<2,HERMITE>(fet));
