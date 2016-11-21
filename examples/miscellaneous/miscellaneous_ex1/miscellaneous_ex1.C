@@ -45,6 +45,7 @@
 #include "libmesh/mesh_generation.h"
 #include "libmesh/linear_implicit_system.h"
 #include "libmesh/equation_systems.h"
+#include "libmesh/mesh_refinement.h"
 
 // Define the Finite and Infinite Element object.
 #include "libmesh/fe.h"
@@ -208,6 +209,15 @@ int main (int argc, char ** argv)
   equation_systems.print_info();
 
   // Solve the system "Wave".
+  equation_systems.get_system("Wave").solve();
+
+  // Do a uniform refinement
+  MeshRefinement mesh_refinement(mesh);
+  mesh_refinement.uniformly_refine(1);
+  equation_systems.reinit();
+
+  // Print and solve the refined sysem
+  equation_systems.print_info();
   equation_systems.get_system("Wave").solve();
 
   // Write the whole EquationSystems object to file.
