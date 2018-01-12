@@ -155,21 +155,24 @@ AC_DEFUN([CONFIGURE_TRILINOS_10],
 
                   AS_IF([test "x$enabledtk" != "xno"],
                         [
-                          AC_DEFINE(TRILINOS_HAVE_DTK, 1, [Flag indicating whether the library shall be compiled to use the Trilinos DTK interfaces])
+                          AC_DEFINE(TRILINOS_HAVE_DTK, 1,
+                                    [Flag indicating whether the library shall be compiled to use the Trilinos DTK interfaces])
                           AC_MSG_RESULT(<<< Configuring library with DTK support >>>)
                         ])
 
 
                   dnl ------------------------------------------------------
-                  dnl Ifpack - We are only going to look in one place for this,
-                  dnl as I don't have access to lots of older versions of
+                  dnl Ifpack - We are only looking in three places for this,
+                  dnl as we don't have access to lots of other versions of
                   dnl Trilinos to know where else it might be...
                   dnl ------------------------------------------------------
                   AC_CHECK_HEADER([$withtrilinosdir/include/Ifpack_config.h],
                                   [enableifpack=yes],
                                   [AC_CHECK_HEADER([$withtrilinosdir/packages/ifpack/src/Ifpack_config.h],
                                                    [enableifpack=yes],
-                                                   [enableifpack=no])])
+                                                   [AC_CHECK_HEADER([$withtrilinosdir/Ifpack_config.h],
+                                                                    [enableifpack=yes],
+                                                                    [enableifpack=no])])])
 
                   AS_IF([test "x$enableifpack" != "xno"],
                         [
@@ -178,15 +181,17 @@ AC_DEFUN([CONFIGURE_TRILINOS_10],
                         ])
 
                   dnl ------------------------------------------------------
-                  dnl EpetraExt - We are only going to look in one place for this,
-                  dnl as I don't have access to lots of older versions of
+                  dnl EpetraExt - We are only looking in three places for this,
+                  dnl as we don't have access to lots of other versions of
                   dnl Trilinos to know where else it might be...
                   dnl ------------------------------------------------------
                   AC_CHECK_HEADER([$withtrilinosdir/include/EpetraExt_config.h],
                                   [enableepetraext=yes],
                                   [AC_CHECK_HEADER([$withtrilinosdir/packages/epetraext/src/EpetraExt_config.h],
                                                    [enableepetraext=yes],
-                                                   [enableepetraext=no])])
+                                                   [AC_CHECK_HEADER([$withtrilinosdir/EpetraExt_config.h],
+                                                                    [enableepetraext=yes],
+                                                                    [enableepetraext=no])])])
 
                   AS_IF([test "x$enableepetraext" != "xno"],
                         [
@@ -204,7 +209,9 @@ AC_DEFUN([CONFIGURE_TRILINOS_10],
                                   [enableepetra=yes],
                                   [AC_CHECK_HEADER([$withtrilinosdir/packages/epetra/src/Epetra_config.h],
                                                    [enableepetra=yes],
-                                                   [enableepetra=no])])
+                                                   [AC_CHECK_HEADER([$withtrilinosdir/Epetra_config.h],
+                                                                    [enableepetra=yes],
+                                                                    [enableepetra=no])])])
 
                   AS_IF([test "x$enableepetra" != "xno"],
                         [
