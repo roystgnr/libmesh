@@ -181,6 +181,25 @@ AC_DEFUN([CONFIGURE_TRILINOS_10],
                         ])
 
                   dnl ------------------------------------------------------
+                  dnl Teuchos - We are only looking in three places for this,
+                  dnl as we don't have access to lots of other versions of
+                  dnl Trilinos to know where else it might be...
+                  dnl ------------------------------------------------------
+                  AC_CHECK_HEADER([$withtrilinosdir/include/Teuchos_ParameterList.hpp],
+                                  [enableteuchos=yes],
+                                  [AC_CHECK_HEADER([$withtrilinosdir/packages/teuchos/src/Teuchos_ParameterList.hpp],
+                                                   [enableteuchos=yes],
+                                                   [AC_CHECK_HEADER([$withtrilinosdir/Teuchos_ParameterList.hpp],
+                                                                    [enableteuchos=yes],
+                                                                    [enableteuchos=no])])])
+
+                  AS_IF([test "x$enableteuchos" != "xno"],
+                        [
+                          AC_DEFINE(TRILINOS_HAVE_TEUCHOS, 1, [Flag indicating whether the library shall be compiled to use the Trilinos Teuchos interfaces])
+                          AC_MSG_RESULT([<<< Configuring library with Trilinos Teuchos support >>>])
+                        ])
+
+                  dnl ------------------------------------------------------
                   dnl EpetraExt - We are only looking in three places for this,
                   dnl as we don't have access to lots of other versions of
                   dnl Trilinos to know where else it might be...
@@ -383,16 +402,12 @@ AC_DEFUN([CONFIGURE_TRILINOS_9],
 
 
 
-  dnl Ifpack - rather than try and guess how this would have worked in
-  dnl Trilinos 9, we're just going to assume we don't have it.  If
+  dnl Ifpack, Teuchos, EpetraEXT - rather than guess about config for
+  dnl Trilinos 9, we're just going to assume we don't have them.  If
   dnl anyone ever wants to go back and write a configure test with
   dnl an older Trilinos, that would be great!
   enableifpack=no
-
-  dnl EpetraEXT - rather than try and guess how this would have worked in
-  dnl Trilinos 9, we're just going to assume we don't have it.  If
-  dnl anyone ever wants to go back and write a configure test with
-  dnl an older Trilinos, that would be great!
+  enableteuchos=no
   enableepetraext=no
   enableepetra=no
 
