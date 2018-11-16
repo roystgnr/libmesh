@@ -94,7 +94,6 @@ AS_IF([test "x$enablelegacyusingnamespace" = "xyes"],
 AS_IF([test "x$enabledefaultcommworld" = "xyes"],
       [AS_ECHO(["  providing libMesh::CommWorld..... : $enabledefaultcommworld ***LEGACY FEATURE***"])])
 
-
 dnl Print out which optional libraries have been configured.
 AS_IF([test "x$enableoptional" = "xyes"],
       [
@@ -158,6 +157,7 @@ AS_IF([test "x$enableoptional" = "xyes"],
                 AS_ECHO(["     Ifpack........................ : $enableifpack"])
                 AS_ECHO(["     Epetra........................ : $enableepetra"])
                 AS_ECHO(["     EpetraExt..................... : $enableepetraext"])
+                AS_ECHO(["     Teuchos....................... : $enableteuchos"])
               ])
         AS_ECHO(["  vtk.............................. : $enablevtk"])
         AS_IF([test "x$enablevtk" = "xyes"],
