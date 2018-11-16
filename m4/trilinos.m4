@@ -19,9 +19,12 @@ AC_DEFUN([CONFIGURE_TRILINOS_10],
   AS_IF([test "x$withtrilinosdir" != "xno"],
         [
           AS_IF([test -r $withtrilinosdir/include/Makefile.export.Trilinos],
-                [TRILINOS_MAKEFILE_EXPORT=$withtrilinosdir/include/Makefile.export.Trilinos],
+                [TRILINOS_MAKEFILE_DIR=$withtrilinosdir/include
+                 TRILINOS_MAKEFILE_EXPORT=$TRILINOS_MAKEFILE_DIR/Makefile.export.Trilinos],
                 [test -r $withtrilinosdir/Makefile.export.Trilinos],
                 [TRILINOS_MAKEFILE_EXPORT=$withtrilinosdir/Makefile.export.Trilinos],
+                [TRILINOS_MAKEFILE_DIR=$withtrilinosdir
+                 TRILINOS_MAKEFILE_EXPORT=$TRILINOS_MAKEFILE_DIR/Makefile.export.Trilinos],
                 [enabletrilinos10=no])
 
           AS_IF([test "x$enabletrilinos10" != "xno"],
@@ -249,12 +252,65 @@ AC_DEFUN([CONFIGURE_TRILINOS_10],
   dnl them from the exported makefiles
   AS_IF([test "x$enabletrilinos10" != "xno"],
         [
-          printf '%s\n' "include $TRILINOS_MAKEFILE_EXPORT" > Makefile_config_trilinos
+          rm -f Makefile_config_trilinos
+          if test "$enableaztecoo" != no ; then
+            printf '%s\n' "include $TRILINOS_MAKEFILE_DIR/Makefile.export.AztecOO" >> Makefile_config_trilinos
+          fi
+          if test "$enableepetra" != no ; then
+            printf '%s\n' "include $TRILINOS_MAKEFILE_DIR/Makefile.export.Epetra" >> Makefile_config_trilinos
+          fi
+          if test "$enableepetraext" != no ; then
+            printf '%s\n' "include $TRILINOS_MAKEFILE_DIR/Makefile.export.EpetraExt" >> Makefile_config_trilinos
+          fi
+          if test "$enableifpack" != no ; then
+            printf '%s\n' "include $TRILINOS_MAKEFILE_DIR/Makefile.export.Ifpack" >> Makefile_config_trilinos
+          fi
+          if test "$enablenox" != no ; then
+            printf '%s\n' "include $TRILINOS_MAKEFILE_DIR/Makefile.export.NOX" >> Makefile_config_trilinos
+          fi
+          if test "$enableteuchos" != no ; then
+            printf '%s\n' "include $TRILINOS_MAKEFILE_DIR/Makefile.export.Teuchos" >> Makefile_config_trilinos
+          fi
           printf '%s\n' "echo_libs:" >> Makefile_config_trilinos
-          printf '\t%s\n' "@echo \$(Trilinos_LIBRARIES) \$(Trilinos_LIBRARY_DIRS) \$(Trilinos_TPL_LIBRARIES) \$(Trilinos_TPL_LIBRARY_DIRS)" >> Makefile_config_trilinos
-          printf '%s\n' "echo_include:" >> Makefile_config_trilinos
-          printf '\t%s\n' "@echo \$(Trilinos_INCLUDE_DIRS) \$(Trilinos_TPL_INCLUDE_DIRS)" >> Makefile_config_trilinos
-
+          printf '\t%s ' "echo" >> Makefile_config_trilinos
+          if test "$enableaztecoo" != no ; then
+            printf '%s ' "\$(AztecOO_LIBRARIES) \$(AztecOO_LIBRARY_DIRS)" >> Makefile_config_trilinos
+          fi
+          if test "$enableepetra" != no ; then
+            printf '%s ' "\$(Epetra_LIBRARIES) \$(Epetra_LIBRARY_DIRS)" >> Makefile_config_trilinos
+          fi
+          if test "$enableepetraext" != no ; then
+            printf '%s ' "\$(EpetraExt_LIBRARIES) \$(EpetraExt_LIBRARY_DIRS)" >> Makefile_config_trilinos
+          fi
+          if test "$enableifpack" != no ; then
+            printf '%s ' "\$(Ifpack_LIBRARIES) \$(Ifpack_LIBRARY_DIRS)" >> Makefile_config_trilinos
+          fi
+          if test "$enablenox" != no ; then
+            printf '%s ' "\$(NOX_LIBRARIES) \$(NOX_LIBRARY_DIRS)" >> Makefile_config_trilinos
+          fi
+          if test "$enableteuchos" != no ; then
+            printf '%s ' "\$(Epetra_LIBRARIES) \$(Epetra_LIBRARY_DIRS)" >> Makefile_config_trilinos
+          fi
+          printf '\n%s\n\t' "echo_include:" >> Makefile_config_trilinos
+          printf '\t%s ' "echo" >> Makefile_config_trilinos
+          if test "$enableaztecoo" != no ; then
+            printf '%s ' "\$(AztecOO_INCLUDE_DIRS)" >> Makefile_config_trilinos
+          fi
+          if test "$enableepetra" != no ; then
+            printf '%s ' "\$(Epetra_INCLUDE_DIRS)" >> Makefile_config_trilinos
+          fi
+          if test "$enableepetraext" != no ; then
+            printf '%s ' "\$(EpetraExt_INCLUDE_DIRS)" >> Makefile_config_trilinos
+          fi
+          if test "$enableifpack" != no ; then
+            printf '%s ' "\$(Ifpack_INCLUDE_DIRS)" >> Makefile_config_trilinos
+          fi
+          if test "$enablenox" != no ; then
+            printf '%s ' "\$(NOX_INCLUDE_DIRS)" >> Makefile_config_trilinos
+          fi
+          if test "$enableteuchos" != no ; then
+            printf '%s ' "\$(Epetra_INCLUDE_DIRS)" >> Makefile_config_trilinos
+          fi
           TRILINOS_INCLUDES=`make -sf Makefile_config_trilinos echo_include`
           TRILINOS_LIBS=`make -sf Makefile_config_trilinos echo_libs`
           rm -f Makefile_config_trilinos
