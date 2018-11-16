@@ -273,7 +273,7 @@ AC_DEFUN([CONFIGURE_TRILINOS_10],
             printf '%s\n' "include $TRILINOS_MAKEFILE_DIR/Makefile.export.Teuchos" >> Makefile_config_trilinos
           fi
           printf '%s\n' "echo_libs:" >> Makefile_config_trilinos
-          printf '\t%s ' "echo" >> Makefile_config_trilinos
+          printf '\t%s ' "@echo" >> Makefile_config_trilinos
           if test "$enableaztecoo" != no ; then
             printf '%s ' "\$(AztecOO_LIBRARIES) \$(AztecOO_LIBRARY_DIRS)" >> Makefile_config_trilinos
           fi
@@ -292,8 +292,8 @@ AC_DEFUN([CONFIGURE_TRILINOS_10],
           if test "$enableteuchos" != no ; then
             printf '%s ' "\$(Teuchos_LIBRARIES) \$(Teuchos_LIBRARY_DIRS)" >> Makefile_config_trilinos
           fi
-          printf '\n%s\n\t' "echo_include:" >> Makefile_config_trilinos
-          printf '\t%s ' "echo" >> Makefile_config_trilinos
+          printf '\n%s\n' "echo_include:" >> Makefile_config_trilinos
+          printf '\t%s ' "@echo" >> Makefile_config_trilinos
           if test "$enableaztecoo" != no ; then
             printf '%s ' "\$(AztecOO_INCLUDE_DIRS)" >> Makefile_config_trilinos
           fi
