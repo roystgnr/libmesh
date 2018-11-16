@@ -22,7 +22,6 @@ AC_DEFUN([CONFIGURE_TRILINOS_10],
                 [TRILINOS_MAKEFILE_DIR=$withtrilinosdir/include
                  TRILINOS_MAKEFILE_EXPORT=$TRILINOS_MAKEFILE_DIR/Makefile.export.Trilinos],
                 [test -r $withtrilinosdir/Makefile.export.Trilinos],
-                [TRILINOS_MAKEFILE_EXPORT=$withtrilinosdir/Makefile.export.Trilinos],
                 [TRILINOS_MAKEFILE_DIR=$withtrilinosdir
                  TRILINOS_MAKEFILE_EXPORT=$TRILINOS_MAKEFILE_DIR/Makefile.export.Trilinos],
                 [enabletrilinos10=no])
@@ -291,7 +290,7 @@ AC_DEFUN([CONFIGURE_TRILINOS_10],
             printf '%s ' "\$(NOX_LIBRARIES) \$(NOX_LIBRARY_DIRS)" >> Makefile_config_trilinos
           fi
           if test "$enableteuchos" != no ; then
-            printf '%s ' "\$(Epetra_LIBRARIES) \$(Epetra_LIBRARY_DIRS)" >> Makefile_config_trilinos
+            printf '%s ' "\$(Teuchos_LIBRARIES) \$(Teuchos_LIBRARY_DIRS)" >> Makefile_config_trilinos
           fi
           printf '\n%s\n\t' "echo_include:" >> Makefile_config_trilinos
           printf '\t%s ' "echo" >> Makefile_config_trilinos
@@ -311,7 +310,7 @@ AC_DEFUN([CONFIGURE_TRILINOS_10],
             printf '%s ' "\$(NOX_INCLUDE_DIRS)" >> Makefile_config_trilinos
           fi
           if test "$enableteuchos" != no ; then
-            printf '%s ' "\$(Epetra_INCLUDE_DIRS)" >> Makefile_config_trilinos
+            printf '%s ' "\$(Teuchos_INCLUDE_DIRS)" >> Makefile_config_trilinos
           fi
           TRILINOS_INCLUDES=`make -sf Makefile_config_trilinos echo_include`
           TRILINOS_LIBS=`make -sf Makefile_config_trilinos echo_libs`
