@@ -1068,6 +1068,14 @@ DofObject::get_extra_integer (const unsigned int index) const
 
 
 
+// If we're using a type T that's a class with no trivial
+// copy-assignment, -Wclass-memaccess will scream about doing it with
+// memcpy, even if (as with boost::multiprecision::float128) this is a
+// false positive.
+#include "libmesh/ignore_warnings.h"
+
+
+
 template <typename T>
 inline
 void
@@ -1106,6 +1114,10 @@ DofObject::get_extra_datum (const unsigned int index) const
   std::memcpy(&returnval, &_idx_buf[start_idx_i+index], sizeof(T));
   return returnval;
 }
+
+
+
+#include "libmesh/restore_warnings.h"
 
 
 
