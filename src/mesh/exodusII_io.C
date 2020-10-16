@@ -272,7 +272,7 @@ void ExodusII_IO::read (const std::string & fname)
 
           // Assign extra integer IDs
           for (auto & id : extra_ids)
-            elem->set_extra_integer(id, std::round(elem_ids[id][elem->id()]));
+            elem->set_extra_integer(id, dof_id_type(std::round(elem_ids[id][elem->id()])));
 
           // Set all the nodes for this element
           for (int k=0; k<exio_helper->num_nodes_per_elem; k++)
