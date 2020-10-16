@@ -96,6 +96,7 @@
 #pragma GCC diagnostic ignored "-Wcast-function-type"
 #if (__GNUC__ > 8)
 #pragma GCC diagnostic ignored "-Wdeprecated-copy"
+#pragma GCC diagnostic ignored "-Wclass-memaccess"
 #endif // GCC > 8
 #endif // GCC > 7
 #endif // GCC > 6
