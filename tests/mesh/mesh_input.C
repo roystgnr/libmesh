@@ -7,6 +7,7 @@
 #include <libmesh/mesh_generation.h>
 #include <libmesh/numeric_vector.h>
 #include <libmesh/replicated_mesh.h>
+#include <libmesh/enum_norm_type.h>
 
 #include <libmesh/dyna_io.h>
 #include <libmesh/exodusII_io.h>
@@ -579,7 +580,7 @@ public:
 #endif // LIBMESH_HAVE_SOLVER
   }
 
-  void testProjectionRegression(MeshBase & mesh, DynaIO & dyna)
+  void testProjectionRegression(MeshBase & mesh, DynaIO & dyna, std::array<Real, 4> expected_norms)
   {
     int order = 0;
     for (const auto elem : mesh.element_ptr_range())
@@ -597,9 +598,26 @@ public:
     sys.reinit_constraints();
 
     sys.project_solution(six_x_plus_sixty_y, nullptr, es.parameters);
+
+    // Calculate some norms, skipping the spline points, and compare
+    // to regression standard values
+    std::set<unsigned int> skip_dimensions {0};
+    const Real L2_norm =
+      sys.calculate_norm(*sys.solution, 0, L2, &skip_dimensions);
+    LIBMESH_ASSERT_FP_EQUAL(L2_norm, expected_norms[0], TOLERANCE);
+    const Real Linf_norm =
+      sys.calculate_norm(*sys.solution, 0, L_INF, &skip_dimensions);
+    LIBMESH_ASSERT_FP_EQUAL(Linf_norm, expected_norms[1], TOLERANCE);
+    const Real H1_norm =
+      sys.calculate_norm(*sys.solution, 0, H1_SEMINORM, &skip_dimensions);
+    LIBMESH_ASSERT_FP_EQUAL(H1_norm, expected_norms[2], TOLERANCE);
+    const Real W1inf_norm =
+      sys.calculate_norm(*sys.solution, 0, W1_INF_SEMINORM, &skip_dimensions);
+    // W1_inf seems more sensitive to FP error...
+    LIBMESH_ASSERT_FP_EQUAL(W1inf_norm, expected_norms[3], 10*TOLERANCE);
   }
 
-  void testDynaFileMappings (const std::string & filename)
+  void testDynaFileMappings (const std::string & filename, std::array<Real, 4> expected_norms)
   {
     Mesh mesh(*TestCommWorld);
 
@@ -617,29 +635,40 @@ public:
     CPPUNIT_ASSERT_EQUAL(mesh.default_mapping_type(),
                          RATIONAL_BERNSTEIN_MAP);
 
+    std::cout << filename << ":";
+    std::cout << std::endl;
+
     testMasterCenters(mesh);
 
-    testProjectionRegression(mesh, dyna);
+    testProjectionRegression(mesh, dyna, expected_norms);
   }
 
   void testDynaFileMappingsFEMEx5 ()
   {
-    testDynaFileMappings("meshes/PressurizedCyl_Patch6_256Elem.bxt.gz");
+    testDynaFileMappings("meshes/PressurizedCyl_Patch6_256Elem.bxt.gz",
+                         {26.4525747452284, 60.12965254941516,
+                         42.75106591139618, 60.29925372672816});
   }
 
   void testDynaFileMappingsBlockWithHole ()
   {
-    testDynaFileMappings("meshes/BlockWithHole_Patch9.bxt.gz");
+    testDynaFileMappings("meshes/BlockWithHole_Patch9.bxt.gz",
+                         {207.1957849962532, 122.0409840172516,
+                         152.863103021096, 60.29925372674409});
   }
 
   void testDynaFileMappingsPlateWithHole ()
   {
-    testDynaFileMappings("meshes/PlateWithHole_Patch8.bxt.gz");
+    testDynaFileMappings("meshes/PlateWithHole_Patch8.bxt.gz",
+                         {146.5095446041208, 122.0409840172504,
+                         108.090536739437, 60.2992537267254});
   }
 
   void testDynaFileMappingsCyl3d ()
   {
-    testDynaFileMappings("meshes/PressurizedCyl3d_Patch1_8Elem.bxt.gz");
+    testDynaFileMappings("meshes/PressurizedCyl3d_Patch1_8Elem.bxt.gz",
+                         {26.45252397041406, 58.92980160651195,
+                         42.7510633123495, 60.29925372672641});
   }
 };
 
