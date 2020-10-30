@@ -1172,6 +1172,24 @@ void System::project_vector (NumericVector<Number> & new_vector,
 
   new_vector.close();
 
+  // Look for a spline basis, in which case we need to backtrack
+  // to calculate the spline DoF values.
+  bool only_rational_bases = true;
+  for (auto var : vars)
+    if (this->get_dof_map().variable_type(var).family != RATIONAL_BERNSTEIN)
+      {
+        only_rational_bases = false;
+        break;
+      }
+
+  if (only_rational_bases)
+    for (auto & elem : active_local_range)
+      if (elem->type() == NODEELEM)
+        {
+          this->solve_for_unconstrained_dofs(new_vector, is_adjoint);
+          break;
+        }
+
 #ifdef LIBMESH_ENABLE_CONSTRAINTS
   if (is_adjoint == -1)
     this->get_dof_map().enforce_constraints_exactly(*this, &new_vector);
