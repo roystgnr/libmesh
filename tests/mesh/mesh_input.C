@@ -32,6 +32,18 @@ Number six_x_plus_sixty_y (const Point& p,
 }
 
 
+Number sin_x_plus_cos_y (const Point& p,
+                         const Parameters&,
+                         const std::string&,
+                         const std::string&)
+{
+  const Real & x = p(0);
+  const Real & y = p(1);
+
+  return sin(x) + cos(y);
+}
+
+
 class MeshInputTest : public CppUnit::TestCase {
 public:
   CPPUNIT_TEST_SUITE( MeshInputTest );
@@ -594,24 +606,30 @@ public:
 
     es.init();
     dyna.add_spline_constraints(sys.get_dof_map(), sys.number(), n_var);
-    sys.reinit_constraints();
+    // FIXME - this *wipes out* spline constraints
+    // sys.reinit_constraints();
 
-    sys.project_solution(six_x_plus_sixty_y, nullptr, es.parameters);
+    sys.project_solution(sin_x_plus_cos_y, nullptr, es.parameters);
 
     // Calculate some norms, skipping the spline points, and compare
     // to regression standard values
     std::set<unsigned int> skip_dimensions {0};
     const Real L2_norm =
       sys.calculate_norm(*sys.solution, 0, L2, &skip_dimensions);
+//    std::cout.precision(16);
+//    std::cout << "L2_norm = " << L2_norm << std::endl;
     LIBMESH_ASSERT_FP_EQUAL(L2_norm, expected_norms[0], TOLERANCE);
     const Real Linf_norm =
       sys.calculate_norm(*sys.solution, 0, L_INF, &skip_dimensions);
+//    std::cout << "Linf_norm = " << Linf_norm << std::endl;
     LIBMESH_ASSERT_FP_EQUAL(Linf_norm, expected_norms[1], TOLERANCE);
     const Real H1_norm =
       sys.calculate_norm(*sys.solution, 0, H1_SEMINORM, &skip_dimensions);
+//    std::cout << "H1_norm = " << H1_norm << std::endl;
     LIBMESH_ASSERT_FP_EQUAL(H1_norm, expected_norms[2], TOLERANCE);
     const Real W1inf_norm =
       sys.calculate_norm(*sys.solution, 0, W1_INF_SEMINORM, &skip_dimensions);
+//    std::cout << "W1inf_norm = " << W1inf_norm << std::endl;
     // W1_inf seems more sensitive to FP error...
     LIBMESH_ASSERT_FP_EQUAL(W1inf_norm, expected_norms[3], 10*TOLERANCE);
   }
@@ -634,8 +652,8 @@ public:
     CPPUNIT_ASSERT_EQUAL(mesh.default_mapping_type(),
                          RATIONAL_BERNSTEIN_MAP);
 
-    std::cout << filename << ":";
-    std::cout << std::endl;
+    // Useful when trying out different projection functions
+    std::cout << filename << ":" << std::endl;
 
     testMasterCenters(mesh);
 
@@ -645,29 +663,33 @@ public:
   void testDynaFileMappingsFEMEx5 ()
   {
     testDynaFileMappings("meshes/PressurizedCyl_Patch6_256Elem.bxt.gz",
-                         {26.4525747452284, 60.12965254941516,
-                         42.75106591139618, 60.29925372672816});
+    // Regression values for sin_x_plus_cos_y
+                         {0.9639857809698268, 1.839870171669186,
+                          0.7089812562241862, 1.306121188539059});
   }
 
   void testDynaFileMappingsBlockWithHole ()
   {
     testDynaFileMappings("meshes/BlockWithHole_Patch9.bxt.gz",
-                         {207.1957849962532, 122.0409840172516,
-                         152.863103021096, 60.29925372674409});
+    // Regression values for sin_x_plus_cos_y
+                         {3.226125496262302, 1.97405596521291,
+                          2.533759662135491, 1.413785069495184});
   }
 
   void testDynaFileMappingsPlateWithHole ()
   {
     testDynaFileMappings("meshes/PlateWithHole_Patch8.bxt.gz",
-                         {146.5095446041208, 122.0409840172504,
-                         108.090536739437, 60.2992537267254});
+    // Regression values for sin_x_plus_cos_y
+                         {2.2812154374012, 1.974049990211937,
+                          1.791640772215248, 1.413679237529376});
   }
 
   void testDynaFileMappingsCyl3d ()
   {
     testDynaFileMappings("meshes/PressurizedCyl3d_Patch1_8Elem.bxt.gz",
-                         {26.45252397041406, 58.92980160651195,
-                         42.7510633123495, 60.29925372672641});
+    // Regression values for sin_x_plus_cos_y
+                         {0.9636130896326653, 1.823294442918401,
+                          0.7080084233124895, 1.314114853940283});
   }
 };
 
