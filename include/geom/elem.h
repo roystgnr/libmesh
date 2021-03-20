@@ -866,6 +866,24 @@ public:
   std::unique_ptr<const Elem> build_edge_ptr (const unsigned int i) const;
 
   /**
+   * Resets the loose element \p edge, which may currently point to a
+   * different edge than \p i or even a different element than \p
+   * this, to point to edge \p i on \p this.  If \p edge is currently
+   * an element of the wrong type, it will be freed and a new element
+   * allocated; otherwise no memory allocation will occur.
+   *
+   * This should not be called with proxy SideEdge elements.  This will
+   * cause \p side to be a full-ordered element, even if it is handed
+   * a lower-ordered element that must be replaced.
+   *
+   * The const version of this function is non-virtual; it simply
+   * calls the virtual non-const version and const_casts the return
+   * type.
+   */
+  virtual void build_edge_ptr (std::unique_ptr<Elem> & edge, const unsigned int i) = 0;
+  void build_edge_ptr (std::unique_ptr<const Elem> & edge, const unsigned int i) const;
+
+  /**
    * \returns The default approximation order for this element type.
    * This is the order that will be used to compute the map to the
    * reference element.
@@ -1752,6 +1770,15 @@ protected:
                        const unsigned int i,
                        ElemType sidetype);
 
+  /**
+   * An implementation for simple (all edges equal) elements
+   */
+  template <typename Subclass>
+  void simple_build_edge_ptr(std::unique_ptr<Elem> & edge,
+                             const unsigned int i,
+                             ElemType edgetype);
+
+
 #ifdef LIBMESH_ENABLE_AMR
 
   /**
@@ -2403,6 +2430,33 @@ Elem::build_edge_ptr (const unsigned int i) const
   Elem * me = const_cast<Elem *>(this);
   const Elem * e = const_cast<const Elem *>(me->build_edge_ptr(i).release());
   return std::unique_ptr<const Elem>(e);
+}
+
+
+
+template <typename Subclass>
+inline
+void
+Elem::simple_build_edge_ptr (std::unique_ptr<Elem> & edge,
+                             const unsigned int i,
+                             ElemType edgetype)
+{
+  libmesh_assert_less (i, this->n_edges());
+
+  if (!edge.get() || edge->type() != edgetype)
+    {
+      Subclass & real_me = cast_ref<Subclass&>(*this);
+      edge = real_me.Subclass::build_edge_ptr(i);
+    }
+  else
+    {
+      edge->subdomain_id() = this->subdomain_id();
+#ifdef LIBMESH_ENABLE_AMR
+      edge->set_p_level(this->p_level());
+#endif
+      for (auto n : edge->node_index_range())
+        edge->set_node(n) = this->node_ptr(Subclass::edge_nodes_map[i][n]);
+    }
 }
 
 
