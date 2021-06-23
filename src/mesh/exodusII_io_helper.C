@@ -314,6 +314,10 @@ void ExodusII_IO_Helper::init_element_equivalence_map()
   element_equivalence_map["TRUSS3"] = EDGE3;
   element_equivalence_map["BEAM3"]  = EDGE3;
   element_equivalence_map["BAR3"]   = EDGE3;
+  // This whole design is going to need to be refactored whenever we
+  // support higher-order IGA, with one element type having variable
+  // polynomiaal degree...
+  element_equivalence_map["BEX_CURVE"] = EDGE3;
 
   // QUAD4 equivalences
   element_equivalence_map["QUAD"]   = QUAD4;
@@ -332,6 +336,8 @@ void ExodusII_IO_Helper::init_element_equivalence_map()
   // QUAD9 equivalences
   element_equivalence_map["QUAD9"]  = QUAD9;
   // element_equivalence_map["SHELL9"] = QUAD9;
+  // This only supports p==2 IGA:
+  element_equivalence_map["BEX_QUAD"]  = QUAD9;
 
   // TRI3 equivalences
   element_equivalence_map["TRI"]       = TRI3;
@@ -345,6 +351,8 @@ void ExodusII_IO_Helper::init_element_equivalence_map()
   // TRI6 equivalences
   element_equivalence_map["TRI6"]      = TRI6;
   // element_equivalence_map["TRISHELL6"] = TRI6;
+  // This only supports p==2 IGA:
+  element_equivalence_map["BEX_TRIANGLE"] = TRI6;
 
   // HEX8 equivalences
   element_equivalence_map["HEX"]  = HEX8;
@@ -355,6 +363,8 @@ void ExodusII_IO_Helper::init_element_equivalence_map()
 
   // HEX27 equivalences
   element_equivalence_map["HEX27"] = HEX27;
+  // This only supports p==2 IGA:
+  element_equivalence_map["BEX_HEX"] = HEX27;
 
   // TET4 equivalences
   element_equivalence_map["TETRA"]  = TET4;
@@ -362,6 +372,8 @@ void ExodusII_IO_Helper::init_element_equivalence_map()
 
   // TET10 equivalences
   element_equivalence_map["TETRA10"] = TET10;
+  // This only supports p==2 IGA:
+  element_equivalence_map["BEX_TETRA"] = TET10;
 
   // PRISM6 equivalences
   element_equivalence_map["WEDGE"] = PRISM6;
@@ -371,6 +383,8 @@ void ExodusII_IO_Helper::init_element_equivalence_map()
 
   // PRISM18 equivalences
   element_equivalence_map["WEDGE18"] = PRISM18;
+  // This only supports p==2 IGA:
+  element_equivalence_map["BEX_WEDGE"] = PRISM18;
 
   // PYRAMID5 equivalences
   element_equivalence_map["PYRAMID"]  = PYRAMID5;
