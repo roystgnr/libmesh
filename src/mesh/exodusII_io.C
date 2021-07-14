@@ -47,6 +47,9 @@
 namespace libMesh
 {
 
+// FIXME
+const subdomain_id_type spline_nodeelem_subdomain = 1337;
+
 // ------------------------------------------------------------
 // ExodusII_IO class members
 ExodusII_IO::ExodusII_IO (MeshBase & mesh,
@@ -193,6 +196,23 @@ void ExodusII_IO::read (const std::string & fname)
                            << " which is different from the (zero-based) Exodus ID "
                            << exodus_id-1
                            << "!");
+
+      // If we have a set of spline weights, these nodes are going to
+      // be used as control points for Bezier elements, and we need
+      // to attach a NodeElem to each to make sure it doesn't get
+      // flagged as an unused node.
+      if (exio_helper->w.size())
+        {
+          std::unique_ptr<Elem> elem = Elem::build(NODEELEM);
+
+          // Give the NodeElem ids at the end, so we can match any
+          // existing ids in the file for other elements
+          elem->set_id() = exio_helper->num_elem + i;
+
+          elem->set_node(0) = added_node;
+          elem->subdomain_id() = spline_nodeelem_subdomain;
+          mesh.add_elem(std::move(elem));
+        }
     }
 
   // This assert is no longer valid if the nodes are not numbered
@@ -202,8 +222,9 @@ void ExodusII_IO::read (const std::string & fname)
   // Get information about all the element and edge blocks
   exio_helper->read_block_info();
 
-  // Reserve space for the elements
-  mesh.reserve_elem(exio_helper->num_elem);
+  // Reserve space for the elements.  Account for any NodeElem that
+  // have already been attached to spline control nodes.
+  mesh.reserve_elem(exio_helper->w.size() + exio_helper->num_elem);
 
   // Read the element number map from the Exodus file.  This is
   // required if we want to preserve the numbering of elements as it
