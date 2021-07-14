@@ -645,6 +645,9 @@ public:
   // z locations of node points
   std::vector<Real> z;
 
+  // Spline weights associated with node points, in IGA meshes
+  std::vector<Real> w;
+
   // Type of element in a given block
   std::vector<char> elem_type;
 

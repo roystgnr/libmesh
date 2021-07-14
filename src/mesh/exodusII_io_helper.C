@@ -686,6 +686,33 @@ void ExodusII_IO_Helper::read_nodes()
       EX_CHECK_ERR(ex_err, "Error retrieving nodal data.");
       message("Nodal data retrieved successfully.");
     }
+
+  // If a nodal attribute bex_weight exists, we get spline weights
+  // from it
+  int n_nodal_attr = 0;
+  ex_err = exII::ex_get_attr_param(ex_id, exII::EX_NODAL, 0, & n_nodal_attr);
+  EX_CHECK_ERR(ex_err, "Error getting number of nodal attributes.");
+
+  if (n_nodal_attr > 0)
+    {
+      std::vector<std::vector<char>> attr_name_data
+        (n_nodal_attr, std::vector<char>(MAX_STR_LENGTH + 1));
+      std::vector<char *> attr_names(n_nodal_attr);
+      for (auto i : index_range(attr_names))
+        attr_names[i] = attr_name_data[i].data();
+
+      ex_err = exII::ex_get_attr_names(ex_id, exII::EX_NODAL, 0, attr_names.data());
+      EX_CHECK_ERR(ex_err, "Error getting nodal attribute names.");
+
+      for (auto i : index_range(attr_names))
+        if (std::string("bex_weight") == attr_names[i])
+          {
+            w.resize(num_nodes);
+            ex_err =
+              exII::ex_get_one_attr (ex_id, exII::EX_NODAL, 0, i+1,
+                                     MappedInputVector(w, _single_precision).data());
+          }
+    }
 }
 
 
