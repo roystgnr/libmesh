@@ -1600,10 +1600,12 @@ void MeshRefinement::_smooth_flags(bool refining, bool coarsening)
 #endif
 
   // Repeat until flag changes match on every processor
+int outer_iteration = 0;
   do
     {
       // Repeat until coarsening & refinement flags jive
       bool satisfied = false;
+int inner_iteration = 0;
       do
         {
           // If we're refining or coarsening, hit the corresponding
@@ -1618,22 +1620,48 @@ void MeshRefinement::_smooth_flags(bool refining, bool coarsening)
 
           bool smoothing_satisfied =
             !this->eliminate_unrefined_patches();// &&
+std::cout << "From eliminate_unrefined_patches:" << smoothing_satisfied << std::endl;
 
           if (_edge_level_mismatch_limit)
-            smoothing_satisfied = smoothing_satisfied &&
-              !this->limit_level_mismatch_at_edge (_edge_level_mismatch_limit);
+            {
+              const bool edge_level_mismatch_satisfied =
+                !this->limit_level_mismatch_at_edge (_edge_level_mismatch_limit);
+std::cout << "From limit_level_mismatch_at_edge:" << edge_level_mismatch_satisfied << std::endl;
+              smoothing_satisfied = smoothing_satisfied &&
+                edge_level_mismatch_satisfied;
+            }
 
           if (_node_level_mismatch_limit)
-            smoothing_satisfied = smoothing_satisfied &&
-              !this->limit_level_mismatch_at_node (_node_level_mismatch_limit);
+            {
+              const bool node_level_mismatch_satisfied =
+                !this->limit_level_mismatch_at_node (_node_level_mismatch_limit);
+std::cout << "From limit_level_mismatch_at_node:" << node_level_mismatch_satisfied << std::endl;
+              smoothing_satisfied = smoothing_satisfied &&
+                node_level_mismatch_satisfied;
+            }
 
           if (_overrefined_boundary_limit>=0)
-            smoothing_satisfied = smoothing_satisfied &&
-              !this->limit_overrefined_boundary(_overrefined_boundary_limit);
+            {
+              const bool limit_overrefined_boundary_satisfied =
+                !this->limit_overrefined_boundary(_overrefined_boundary_limit);
+              smoothing_satisfied = smoothing_satisfied &&
+                limit_overrefined_boundary_satisfied;
+std::cout << "From limit_overrefined_boundary_satisfied:" << limit_overrefined_boundary_satisfied << std::endl;
+            }
 
           if (_underrefined_boundary_limit>=0)
-            smoothing_satisfied = smoothing_satisfied &&
-              !this->limit_underrefined_boundary(_underrefined_boundary_limit);
+            {
+              const bool limit_underrefined_boundary_satisfied =
+                !this->limit_underrefined_boundary(_underrefined_boundary_limit);
+              smoothing_satisfied = smoothing_satisfied &&
+                limit_underrefined_boundary_satisfied;
+std::cout << "From limit_underrefined_boundary_satisfied:" << limit_underrefined_boundary_satisfied << std::endl;
+            }
+std::cout << "outer_iteration = " << outer_iteration << std::endl;
+std::cout << "inner_iteration = " << inner_iteration++ << std::endl;
+std::cout << "coarsening_satisfied = " << coarsening_satisfied << std::endl;
+std::cout << "refinement_satisfied = " << refinement_satisfied << std::endl;
+std::cout << "smoothing_satisfied = " << smoothing_satisfied << std::endl;
 
           satisfied = (coarsening_satisfied &&
                        refinement_satisfied &&
@@ -1642,6 +1670,7 @@ void MeshRefinement::_smooth_flags(bool refining, bool coarsening)
           libmesh_assert(this->comm().verify(satisfied));
         }
       while (!satisfied);
+      outer_iteration++;
     }
   while (!_mesh.is_serial() && !this->make_flags_parallel_consistent());
 }
