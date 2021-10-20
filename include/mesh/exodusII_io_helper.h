@@ -205,9 +205,9 @@ public:
   void read_elem_in_block(int block);
 
   /**
-   * Read in edge blocks, storing information in the BoundaryInfo object.
+   * Read in edge block, storing information in \p connect
    */
-  void read_edge_blocks(MeshBase & mesh);
+  void read_edge_block(int edge_block_id);
 
   /**
    * Reads the optional \p node_num_map from the \p ExodusII mesh
@@ -577,6 +577,9 @@ public:
 
   // Number of nodes in each element
   int num_nodes_per_elem;
+
+  // Number of nodes in each edge
+  int num_nodes_per_edge;
 
   // Number of attributes for a given block
   int num_attr;

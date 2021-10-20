@@ -640,6 +640,9 @@ void ExodusII_IO_Helper::read_and_store_header_info()
 
 void ExodusII_IO_Helper::read_qa_records()
 {
+  if ((_run_only_on_proc0) && (this->processor_id() != 0))
+    return;
+
   // The QA records are four MAX_STR_LENGTH-byte character strings.
   int num_qa_rec =
     inquire(*this, exII::EX_INQ_QA, "Error retrieving number of QA records");
@@ -704,6 +707,9 @@ void ExodusII_IO_Helper::print_header()
 
 void ExodusII_IO_Helper::read_nodes()
 {
+  if ((_run_only_on_proc0) && (this->processor_id() != 0))
+    return;
+
   x.resize(num_nodes);
   y.resize(num_nodes);
   z.resize(num_nodes);
@@ -725,6 +731,9 @@ void ExodusII_IO_Helper::read_nodes()
 
 void ExodusII_IO_Helper::read_node_num_map ()
 {
+  if ((_run_only_on_proc0) && (this->processor_id() != 0))
+    return;
+
   node_num_map.resize(num_nodes);
 
   // Note: we cannot use the exII::ex_get_num_map() here because it
@@ -757,6 +766,9 @@ void ExodusII_IO_Helper::print_nodes(std::ostream & out_stream)
 
 void ExodusII_IO_Helper::read_block_info()
 {
+  if ((_run_only_on_proc0) && (this->processor_id() != 0))
+    return;
+
   if (num_elem_blk)
     {
       // Read all element block IDs.
@@ -915,148 +927,58 @@ void ExodusII_IO_Helper::read_elem_in_block(int block)
 
 
 
-void ExodusII_IO_Helper::read_edge_blocks(MeshBase & mesh)
+void ExodusII_IO_Helper::read_edge_block(int edge_block_id)
 {
-  // Check for quick return if there are no edge blocks.
-  if (num_edge_blk == 0)
+  if ((_run_only_on_proc0) && (this->processor_id() != 0))
     return;
 
-  // Build data structure that we can quickly search for edges
-  // and then add required BoundaryInfo information. This is a
-  // map from edge->key() to a list of (elem_id, edge_id) pairs
-  // for the Edge in question. Since edge->key() is edge orientation
-  // invariant, this map does not distinguish different orientations
-  // of the same Edge.
-  typedef std::pair<dof_id_type, unsigned int> ElemEdgePair;
-  std::unordered_map<dof_id_type, std::vector<ElemEdgePair>> edge_map;
-  std::unique_ptr<Elem> edge_ptr;
-  for (const auto & elem : mesh.element_ptr_range())
-    for (auto e : elem->edge_index_range())
-      {
-        elem->build_edge_ptr(edge_ptr, e);
-        dof_id_type edge_key = edge_ptr->key();
+  // exII::ex_get_block() output parameters.  Unlike the other
+  // "extended" APIs, exII::ex_get_block() does not use a
+  // parameter struct.
+  int num_edge_this_blk = 0;
+  int num_edges_per_edge = 0;
+  int num_faces_per_edge = 0;
+  int num_attr_per_edge = 0;
+  ex_err = exII::ex_get_block(ex_id,
+                              exII::EX_EDGE_BLOCK,
+                              edge_block_id,
+                              elem_type.data(),
+                              &num_edge_this_blk,
+                              &num_nodes_per_edge,
+                              &num_edges_per_edge, // 0 or -1 for edge blocks
+                              &num_faces_per_edge, // 0 or -1 for edge blocks
+                              &num_attr_per_edge);
 
-        // Creates vector if not already there
-        auto & vec = edge_map[edge_key];
-        vec.emplace_back(elem->id(), e);
-      }
+  EX_CHECK_ERR(ex_err, "Error getting edge block info.");
+  message("Info retrieved successfully for block: ", edge_block_id);
 
-  // Get reference to the mesh's BoundaryInfo object, as we will be
-  // adding edges to this below.
-  BoundaryInfo & bi = mesh.get_boundary_info();
+  // Read in the connectivity of the edges of this block,
+  // watching out for the case where we actually have no
+  // elements in this block (possible with parallel files)
+  connect.resize(num_nodes_per_edge * num_edge_this_blk);
 
-  for (const auto & edge_block_id : edge_block_ids)
+  if (!connect.empty())
     {
-      // exII::ex_get_block() output parameters.  Unlike the other
-      // "extended" APIs, exII::ex_get_block() does not use a
-      // parameter struct.
-      int num_edge_this_blk = 0;
-      int num_nodes_per_edge = 0;
-      int num_edges_per_edge = 0;
-      int num_faces_per_edge = 0;
-      int num_attr_per_edge = 0;
-      ex_err = exII::ex_get_block(ex_id,
-                                  exII::EX_EDGE_BLOCK,
-                                  edge_block_id,
-                                  elem_type.data(),
-                                  &num_edge_this_blk,
-                                  &num_nodes_per_edge,
-                                  &num_edges_per_edge, // 0 or -1 for edge blocks
-                                  &num_faces_per_edge, // 0 or -1 for edge blocks
-                                  &num_attr_per_edge);
+      ex_err = exII::ex_get_conn(ex_id,
+                                 exII::EX_EDGE_BLOCK,
+                                 edge_block_id,
+                                 connect.data(), // node_conn
+                                 nullptr,        // elem_edge_conn (unused)
+                                 nullptr);       // elem_face_conn (unused)
 
-      EX_CHECK_ERR(ex_err, "Error getting edge block info.");
-      message("Info retrieved successfully for block: ", edge_block_id);
+      EX_CHECK_ERR(ex_err, "Error reading block connectivity.");
+      message("Connectivity retrieved successfully for block: ", edge_block_id);
 
-      // Read in the connectivity of the edges of this block,
-      // watching out for the case where we actually have no
-      // elements in this block (possible with parallel files)
-      connect.resize(num_nodes_per_edge * num_edge_this_blk);
-
-      if (!connect.empty())
-        {
-          ex_err = exII::ex_get_conn(ex_id,
-                                     exII::EX_EDGE_BLOCK,
-                                     edge_block_id,
-                                     connect.data(), // node_conn
-                                     nullptr,        // elem_edge_conn (unused)
-                                     nullptr);       // elem_face_conn (unused)
-
-          EX_CHECK_ERR(ex_err, "Error reading block connectivity.");
-          message("Connectivity retrieved successfully for block: ", edge_block_id);
-
-          // All edge types have an identity mapping from the corresponding
-          // Exodus type, so we don't need to bother with mapping ids, but
-          // we do need to know what kind of elements to build.
-          const auto & conv = get_conversion(std::string(elem_type.data()));
-
-          // Loop over indices in connectivity array, build edge elements,
-          // look them up in the edge_map.
-          for (unsigned int i=0, sz=connect.size(); i<sz; i+=num_nodes_per_edge)
-            {
-              auto edge = Elem::build(conv.libmesh_elem_type());
-              for (int n=0; n<num_nodes_per_edge; ++n)
-                {
-                  int exodus_node_id = connect[i+n];
-                  int exodus_node_id_zero_based = exodus_node_id - 1;
-                  int libmesh_node_id = node_num_map[exodus_node_id_zero_based] - 1;
-
-                  edge->set_node(n) = mesh.node_ptr(libmesh_node_id);
-                }
-
-              // Compute key for the edge Elem we just built.
-              dof_id_type edge_key = edge->key();
-
-              // If this key is not found in the edge_map, which is
-              // supposed to include every edge in the Mesh, then we
-              // need to throw an error.
-              auto & elem_edge_pair_vec =
-                libmesh_map_find(edge_map, edge_key);
-
-              for (const auto & elem_edge_pair : elem_edge_pair_vec)
-                {
-                  // We only want to match edges which have the same
-                  // orientation (node ordering) to the one in the
-                  // Exodus file, otherwise we ignore this elem_edge_pair.
-                  //
-                  // Note: this also handles the situation where two
-                  // edges have the same key (hash collision) as then
-                  // this check avoids a false positive.
-
-                  // Build edge indicated by elem_edge_pair
-                  mesh.elem_ptr(elem_edge_pair.first)->
-                    build_edge_ptr(edge_ptr, elem_edge_pair.second);
-
-                  // Determine whether this candidate edge is a "real" match,
-                  // i.e. also has the same orientation.
-                  bool is_match = true;
-                  for (int n=0; n<num_nodes_per_edge; ++n)
-                    if (edge_ptr->node_id(n) != edge->node_id(n))
-                      {
-                        is_match = false;
-                        break;
-                      }
-
-                  if (is_match)
-                    {
-                      // Add this (elem, edge, id) combo to the BoundaryInfo object.
-                      bi.add_edge(elem_edge_pair.first,
-                                  elem_edge_pair.second,
-                                  edge_block_id);
-                    }
-                } // end loop over elem_edge_pairs
-            } // end loop over connectivity array
-
-          // Set edgeset name in the BoundaryInfo object.
-          bi.edgeset_name(edge_block_id) = id_to_edge_block_names[edge_block_id];
-        } // end if !connect.empty()
-    } // end for edge_block_id : edge_block_ids
+    } // end if !connect.empty()
 }
 
 
 
 void ExodusII_IO_Helper::read_elem_num_map ()
 {
+  if ((_run_only_on_proc0) && (this->processor_id() != 0))
+    return;
+
   elem_num_map.resize(num_elem);
 
   // Note: we cannot use the exII::ex_get_num_map() here because it
@@ -1083,6 +1005,9 @@ void ExodusII_IO_Helper::read_elem_num_map ()
 
 void ExodusII_IO_Helper::read_sideset_info()
 {
+  if ((_run_only_on_proc0) && (this->processor_id() != 0))
+    return;
+
   ss_ids.resize(num_side_sets);
   if (num_side_sets > 0)
     {
@@ -1098,10 +1023,6 @@ void ExodusII_IO_Helper::read_sideset_info()
 
       // Inquire about the length of the concatenated side sets element list
       num_elem_all_sidesets = inquire(*this, exII::EX_INQ_SS_ELEM_LEN, "Error retrieving length of the concatenated side sets element list!");
-
-      elem_list.resize (num_elem_all_sidesets);
-      side_list.resize (num_elem_all_sidesets);
-      id_list.resize   (num_elem_all_sidesets);
     }
 
   char name_buffer[MAX_STR_LENGTH+1];
@@ -1118,6 +1039,9 @@ void ExodusII_IO_Helper::read_sideset_info()
 
 void ExodusII_IO_Helper::read_nodeset_info()
 {
+  if ((_run_only_on_proc0) && (this->processor_id() != 0))
+    return;
+
   nodeset_ids.resize(num_node_sets);
   if (num_node_sets > 0)
     {
@@ -1147,11 +1071,18 @@ void ExodusII_IO_Helper::read_nodeset_info()
 
 void ExodusII_IO_Helper::read_sideset(int id, int offset)
 {
+  if ((_run_only_on_proc0) && (this->processor_id() != 0))
+    return;
+
   libmesh_assert_less (id, ss_ids.size());
   libmesh_assert_less (id, num_sides_per_set.size());
   libmesh_assert_less (id, num_df_per_set.size());
-  libmesh_assert_less_equal (offset, elem_list.size());
-  libmesh_assert_less_equal (offset, side_list.size());
+  libmesh_assert_less_equal (offset, num_elem_all_sidesets);
+
+  // This will usually be redundant but better safe than sorry
+  elem_list.resize(num_elem_all_sidesets);
+  side_list.resize(num_elem_all_sidesets);
+  id_list.resize(num_elem_all_sidesets);
 
   ex_err = exII::ex_get_set_param(ex_id,
                                   exII::EX_SIDE_SET,
@@ -1192,6 +1123,9 @@ void ExodusII_IO_Helper::read_sideset(int id, int offset)
 
 void ExodusII_IO_Helper::read_all_nodesets()
 {
+  if ((_run_only_on_proc0) && (this->processor_id() != 0))
+    return;
+
   // Figure out how many nodesets there are in the file so we can
   // properly resize storage as necessary.
   num_node_sets =
@@ -1280,6 +1214,9 @@ void ExodusII_IO_Helper::close()
 
 void ExodusII_IO_Helper::read_time_steps()
 {
+  if ((_run_only_on_proc0) && (this->processor_id() != 0))
+    return;
+
   // Make sure we have an up-to-date count of the number of time steps in the file.
   this->read_num_time_steps();
 
@@ -1297,6 +1234,9 @@ void ExodusII_IO_Helper::read_time_steps()
 
 void ExodusII_IO_Helper::read_num_time_steps()
 {
+  if ((_run_only_on_proc0) && (this->processor_id() != 0))
+    return;
+
   num_time_steps =
     inquire(*this, exII::EX_INQ_TIME, "Error retrieving number of time steps");
 }
@@ -1305,6 +1245,9 @@ void ExodusII_IO_Helper::read_num_time_steps()
 
 void ExodusII_IO_Helper::read_nodal_var_values(std::string nodal_var_name, int time_step)
 {
+  if ((_run_only_on_proc0) && (this->processor_id() != 0))
+    return;
+
   // Read the nodal variable names from file, so we can see if we have the one we're looking for
   this->read_var_names(NODAL);
 
@@ -1362,6 +1305,9 @@ void ExodusII_IO_Helper::read_nodal_var_values(std::string nodal_var_name, int t
 
 void ExodusII_IO_Helper::read_var_names(ExodusVarType type)
 {
+  if ((_run_only_on_proc0) && (this->processor_id() != 0))
+    return;
+
   switch (type)
     {
     case NODAL:

@@ -172,6 +172,9 @@ void ExodusII_IO::read (const std::string & fname)
 
   // Read nodes from the exodus file
   exio_helper->read_nodes();
+  mesh.comm().broadcast(exio_helper->x);
+  mesh.comm().broadcast(exio_helper->y);
+  mesh.comm().broadcast(exio_helper->z);
 
   // Reserve space for the nodes.
   mesh.reserve_nodes(exio_helper->num_nodes);
@@ -181,6 +184,7 @@ void ExodusII_IO::read (const std::string & fname)
   // exists in the Exodus file.  If the Exodus file does not contain
   // a node_num_map, the identity map is returned by this call.
   exio_helper->read_node_num_map();
+  mesh.comm().broadcast(exio_helper->node_num_map);
 
   // Loop over the nodes, create Nodes with local processor_id 0.
   for (int i=0; i<exio_helper->num_nodes; i++)
@@ -207,6 +211,10 @@ void ExodusII_IO::read (const std::string & fname)
 
   // Get information about all the element and edge blocks
   exio_helper->read_block_info();
+  mesh.comm().broadcast(exio_helper->block_ids);
+  mesh.comm().broadcast(exio_helper->id_to_block_names);
+  mesh.comm().broadcast(exio_helper->edge_block_ids);
+  mesh.comm().broadcast(exio_helper->id_to_edge_block_names);
 
   // Reserve space for the elements
   mesh.reserve_elem(exio_helper->num_elem);
@@ -216,6 +224,7 @@ void ExodusII_IO::read (const std::string & fname)
   // exists in the Exodus file.  If the Exodus file does not contain
   // an elem_num_map, the identity map is returned by this call.
   exio_helper->read_elem_num_map();
+  mesh.comm().broadcast(exio_helper->elem_num_map);
 
   // Read variables for extra integer IDs
   std::vector<std::map<dof_id_type, Real>> elem_ids(extra_ids.size());
@@ -233,6 +242,10 @@ void ExodusII_IO::read (const std::string & fname)
     {
       // Read the information for block i
       exio_helper->read_elem_in_block (i);
+      mesh.comm().broadcast(exio_helper->num_nodes_per_elem);
+      mesh.comm().broadcast(exio_helper->num_elem_this_blk);
+      mesh.comm().broadcast(exio_helper->num_attr);
+      mesh.comm().broadcast(exio_helper->connect);
       int subdomain_id = exio_helper->get_block_id(i);
 
       // populate the map of names
@@ -355,7 +368,108 @@ void ExodusII_IO::read (const std::string & fname)
 
   // Read in edge blocks, storing information in the BoundaryInfo object.
   // Edge blocks are treated as BCs.
-  exio_helper->read_edge_blocks(mesh);
+  if (exio_helper->num_edge_blk)
+    {
+      // Build data structure that we can quickly search for edges and
+      // then add required BoundaryInfo information. This is a map
+      // from edge->key() to a list of (elem_id, edge_id) pairs for
+      // the Edge in question. Since edge->key() is edge orientation
+      // invariant, this map does not distinguish different
+      // orientations of the same Edge.
+      typedef std::pair<dof_id_type, unsigned int> ElemEdgePair;
+      std::unordered_map<dof_id_type, std::vector<ElemEdgePair>> edge_map;
+      std::unique_ptr<Elem> edge_ptr;
+      for (const auto & elem : mesh.element_ptr_range())
+        for (auto e : elem->edge_index_range())
+          {
+            elem->build_edge_ptr(edge_ptr, e);
+            dof_id_type edge_key = edge_ptr->key();
+
+            // Creates vector if not already there
+            auto & vec = edge_map[edge_key];
+            vec.emplace_back(elem->id(), e);
+          }
+
+      // Get reference to the mesh's BoundaryInfo object, as we will be
+      // adding edges to this below.
+      BoundaryInfo & bi = mesh.get_boundary_info();
+
+      for (const auto & edge_block_id : exio_helper->edge_block_ids)
+        {
+          exio_helper->read_edge_block(edge_block_id);
+          mesh.comm().broadcast(exio_helper->num_nodes_per_edge);
+          mesh.comm().broadcast(exio_helper->connect);
+          mesh.comm().broadcast(exio_helper->elem_type);
+
+          // All edge types have an identity mapping from the corresponding
+          // Exodus type, so we don't need to bother with mapping ids, but
+          // we do need to know what kind of elements to build.
+          const auto & conv =
+            exio_helper->get_conversion(std::string(exio_helper->elem_type.data()));
+
+          // Loop over indices in connectivity array, build edge elements,
+          // look them up in the edge_map.
+          for (unsigned int i=0, sz=exio_helper->connect.size(); i<sz;
+               i+=exio_helper->num_nodes_per_edge)
+            {
+              auto edge = Elem::build(conv.libmesh_elem_type());
+              for (int n=0; n<exio_helper->num_nodes_per_edge; ++n)
+                {
+                  int exodus_node_id = exio_helper->connect[i+n];
+                  int exodus_node_id_zero_based = exodus_node_id - 1;
+                  int libmesh_node_id = exio_helper->node_num_map[exodus_node_id_zero_based] - 1;
+
+                  edge->set_node(n) = mesh.node_ptr(libmesh_node_id);
+                }
+
+              // Compute key for the edge Elem we just built.
+              dof_id_type edge_key = edge->key();
+
+              // If this key is not found in the edge_map, which is
+              // supposed to include every edge in the Mesh, then we
+              // need to throw an error.
+              auto & elem_edge_pair_vec =
+                libmesh_map_find(edge_map, edge_key);
+
+              for (const auto & elem_edge_pair : elem_edge_pair_vec)
+                {
+                  // We only want to match edges which have the same
+                  // orientation (node ordering) to the one in the
+                  // Exodus file, otherwise we ignore this elem_edge_pair.
+                  //
+                  // Note: this also handles the situation where two
+                  // edges have the same key (hash collision) as then
+                  // this check avoids a false positive.
+
+                  // Build edge indicated by elem_edge_pair
+                  mesh.elem_ptr(elem_edge_pair.first)->
+                    build_edge_ptr(edge_ptr, elem_edge_pair.second);
+
+                  // Determine whether this candidate edge is a "real" match,
+                  // i.e. also has the same orientation.
+                  bool is_match = true;
+                  for (int n=0; n<exio_helper->num_nodes_per_edge; ++n)
+                    if (edge_ptr->node_id(n) != edge->node_id(n))
+                      {
+                        is_match = false;
+                        break;
+                      }
+
+                  if (is_match)
+                    {
+                      // Add this (elem, edge, id) combo to the BoundaryInfo object.
+                      bi.add_edge(elem_edge_pair.first,
+                                  elem_edge_pair.second,
+                                  edge_block_id);
+                    }
+                } // end loop over elem_edge_pairs
+            } // end loop over connectivity array
+
+          // Set edgeset name in the BoundaryInfo object.
+          bi.edgeset_name(edge_block_id) = exio_helper->id_to_edge_block_names[edge_block_id];
+
+        }
+    }
 
   // Set the mesh dimension to the largest encountered for an element
   for (unsigned char i=0; i!=4; ++i)
@@ -366,12 +480,20 @@ void ExodusII_IO::read (const std::string & fname)
   {
     // Get basic information about all sidesets
     exio_helper->read_sideset_info();
+    mesh.comm().broadcast(exio_helper->ss_ids);
+    mesh.comm().broadcast(exio_helper->num_sides_per_set);
+    mesh.comm().broadcast(exio_helper->num_df_per_set);
+    mesh.comm().broadcast(exio_helper->num_elem_all_sidesets);
+    mesh.comm().broadcast(exio_helper->id_to_ss_names);
+
     int offset=0;
     for (int i=0; i<exio_helper->num_side_sets; i++)
       {
         // Compute new offset
         offset += (i > 0 ? exio_helper->num_sides_per_set[i-1] : 0);
         exio_helper->read_sideset (i, offset);
+        mesh.comm().broadcast(exio_helper->num_sides_per_set[i]);
+        mesh.comm().broadcast(exio_helper->num_df_per_set[i]);
 
         std::string sideset_name = exio_helper->get_side_set_name(i);
         if (!sideset_name.empty())
@@ -379,6 +501,10 @@ void ExodusII_IO::read (const std::string & fname)
             (cast_int<boundary_id_type>(exio_helper->get_side_set_id(i)))
             = sideset_name;
       }
+
+    mesh.comm().broadcast(exio_helper->elem_list);
+    mesh.comm().broadcast(exio_helper->side_list);
+    mesh.comm().broadcast(exio_helper->id_list);
 
     for (auto e : index_range(exio_helper->elem_list))
       {
@@ -440,15 +566,15 @@ void ExodusII_IO::read (const std::string & fname)
 
   // Read nodeset info
   {
-    // This fills in the following fields of the helper for later use:
-    // nodeset_ids
-    // num_nodes_per_set
-    // num_node_df_per_set
-    // node_sets_node_index
-    // node_sets_dist_index
-    // node_sets_node_list
-    // node_sets_dist_fact
     exio_helper->read_all_nodesets();
+    mesh.comm().broadcast(exio_helper->num_node_sets);
+    mesh.comm().broadcast(exio_helper->nodeset_ids);
+    mesh.comm().broadcast(exio_helper->num_nodes_per_set);
+    mesh.comm().broadcast(exio_helper->num_node_df_per_set);
+    mesh.comm().broadcast(exio_helper->node_sets_node_index);
+    mesh.comm().broadcast(exio_helper->node_sets_dist_index);
+    mesh.comm().broadcast(exio_helper->node_sets_node_list);
+    mesh.comm().broadcast(exio_helper->node_sets_dist_fact);
 
     for (int nodeset=0; nodeset<exio_helper->num_node_sets; nodeset++)
       {
@@ -586,6 +712,8 @@ const std::vector<Real> & ExodusII_IO::get_time_steps()
      "ERROR, ExodusII file must be opened for reading before calling ExodusII_IO::get_time_steps()!");
 
   exio_helper->read_time_steps();
+  mesh.comm().broadcast(exio_helper->num_time_steps);
+  mesh.comm().broadcast(exio_helper->time_steps);
   return exio_helper->time_steps;
 }
 
@@ -597,6 +725,7 @@ int ExodusII_IO::get_num_time_steps()
                        "ERROR, ExodusII file must be opened for reading or writing before calling ExodusII_IO::get_num_time_steps()!");
 
   exio_helper->read_num_time_steps();
+  mesh.comm().broadcast(exio_helper->num_time_steps);
   return exio_helper->num_time_steps;
 }
 
@@ -619,6 +748,7 @@ void ExodusII_IO::copy_nodal_solution(System & system,
                            "ERROR, ExodusII file must be opened for reading before copying a nodal solution!");
 
       exio_helper->read_nodal_var_values(exodus_var_name, timestep);
+      mesh.comm().broadcast(nodal_var_values);
     }
 
   auto & node_var_value_map = exio_helper->nodal_var_values;
