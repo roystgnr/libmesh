@@ -603,6 +603,9 @@ ExodusII_IO_Helper::read_header() const
 
 void ExodusII_IO_Helper::read_and_store_header_info()
 {
+  if ((_run_only_on_proc0) && (this->processor_id() != 0))
+    return;
+
   // Read header params from file, storing them in this class's
   // ExodusHeaderInfo struct.  This automatically updates the local
   // num_dim, num_elem, etc. referenes.

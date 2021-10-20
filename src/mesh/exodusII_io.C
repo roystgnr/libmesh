@@ -158,6 +158,11 @@ void ExodusII_IO::read (const std::string & fname)
 
   // Get header information from exodus file
   exio_helper->read_and_store_header_info();
+  exio_helper->header_info.broadcast(mesh.comm());
+  mesh.comm().broadcast(exio_helper->num_nodal_vars);
+  mesh.comm().broadcast(exio_helper->num_elem_vars);
+  mesh.comm().broadcast(exio_helper->num_global_vars);
+  mesh.comm().broadcast(exio_helper->num_sideset_vars);
 
   // Read the QA records
   exio_helper->read_qa_records();
