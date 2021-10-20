@@ -551,15 +551,21 @@ void ExodusII_IO_Helper::open(const char * filename, bool read_only)
   // floating point data already stored in the file is returned"
   int io_ws = 0;
 
-  ex_id = exII::ex_open(filename,
-                        read_only ? EX_READ : EX_WRITE,
-                        &comp_ws,
-                        &io_ws,
-                        &ex_version);
+  // Always call open on processor 0.
+  // If we're running on multiple processors, i.e. as one of several Nemesis files,
+  // we call close on all processors...
+  if ((this->processor_id() == 0) || (!_run_only_on_proc0))
+    {
+      ex_id = exII::ex_open(filename,
+                            read_only ? EX_READ : EX_WRITE,
+                            &comp_ws,
+                            &io_ws,
+                            &ex_version);
 
-  std::string err_msg = std::string("Error opening ExodusII mesh file: ") + std::string(filename);
-  EX_CHECK_ERR(ex_id, err_msg);
-  if (verbose) libMesh::out << "File opened successfully." << std::endl;
+      std::string err_msg = std::string("Error opening ExodusII mesh file: ") + std::string(filename);
+      EX_CHECK_ERR(ex_id, err_msg);
+      if (verbose) libMesh::out << "File opened successfully." << std::endl;
+    }
 
   if (read_only)
     opened_for_reading = true;
