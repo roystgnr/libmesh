@@ -317,9 +317,16 @@ int main(int argc, char ** argv)
     {
       const std::vector<unsigned int>
         all_vars(1, system.variable_number("u"));
+      std::set<boundary_id_type> all_bdys;
+      for (unsigned int i=0; i != dim; ++i)
+        {
+          all_bdys.insert(2*i);
+          all_bdys.insert(2*i+1);
+        }
+
       WrappedFunction<Number> exact_val(system, exact_solution);
       WrappedFunction<Gradient> exact_grad(system, *exact_derivative);
-      DirichletBoundary exact_bc({0,1,2,3,4,5}, all_vars, exact_val,
+      DirichletBoundary exact_bc(all_bdys, all_vars, exact_val,
                                  exact_grad);
       system.get_dof_map().add_dirichlet_boundary(exact_bc);
     }
