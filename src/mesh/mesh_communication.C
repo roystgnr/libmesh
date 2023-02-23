@@ -1977,35 +1977,67 @@ MeshCommunication::delete_remote_elements (DistributedMesh & mesh,
   connected_node_set_type connected_nodes;
   reconnect_nodes(elements_to_keep, connected_nodes);
 
-  // Delete all the elements we have no reason to save,
-  // starting with the most refined so that the mesh
-  // is valid at all intermediate steps
-  unsigned int n_levels = MeshTools::n_levels(mesh);
+  // Delete all the elements and nodes we have no reason to save.
+  //
+  // We'll want to start with the most refined elements, then proceed
+  // to the nodes after the elements are all gone, so that the mesh is
+  // valid at all intermediate steps.
+  //
+  // We only want to sweep through the mesh once, not once per
+  // refinement level, so we'll sort elements after the sweep.  We'll
+  // save the vectors of things we're about to delete, so we can
+  // notify higher level code via attached ghosting functors.
 
-  for (int l = n_levels - 1; l >= 0; --l)
-    for (auto & elem : as_range(mesh.level_elements_begin(l),
-                                mesh.level_elements_end(l)))
-      {
-        libmesh_assert (elem);
-        // Make sure we don't leave any invalid pointers
-        const bool keep_me = elements_to_keep.count(elem);
+  std::vector<Elem *> elems_to_delete;
+  for (auto & elem : as_range(mesh.elements_begin(),
+                              mesh.elements_end()))
+    {
+      libmesh_assert (elem);
 
-        if (!keep_me)
-          elem->make_links_to_me_remote();
+      if (!elements_to_keep.count(elem))
+        elems_to_delete.push_back(elem);
+    }
 
-        // delete_elem doesn't currently invalidate element
-        // iterators... that had better not change
-        if (!keep_me)
-          mesh.delete_elem(elem);
-      }
+  // We probably now have these elements in nearly the *opposite*
+  // order we want, because we tended to hit parents before children.
+  // Let's flip the order first (O(N)) and then sort by reverse
+  // level() (O(N log N * N_levels) worst case, O(N * N_levels) if our
+  // flip went well)
 
-  // Delete all the nodes we have no reason to save
+  std::reverse(elems_to_delete.begin(), elems_to_delete.end());
+
+  // This is a partial order on a vector that should be sorted or
+  // nearly so already; hopefully fast?
+  std::sort(elems_to_delete.begin(), elems_to_delete.end(),
+            [](Elem * a, Elem * b){ return (a->level() > b->level()); });
+
+  // Next find all the nodes we have no reason to save
+  std::vector<Node *> nodes_to_delete;
   for (auto & node : mesh.node_ptr_range())
     {
       libmesh_assert(node);
       if (!connected_nodes.count(node))
-        mesh.delete_node(node);
+        nodes_to_delete.push_back(node);
     }
+
+  // Our ghosting functors should be allowed to delete any
+  // now-redundant cached data they use too.
+  for (auto & gf : as_range(mesh.ghosting_functors_begin(), mesh.ghosting_functors_end()))
+    {
+      gf->deleting_remote_elements(elems_to_delete);
+      gf->deleting_remote_nodes(nodes_to_delete);
+    }
+
+  for (auto elem : elems_to_delete)
+    {
+      // Make sure we don't leave any invalid pointers
+      elem->make_links_to_me_remote();
+      mesh.delete_elem(elem);
+    }
+
+  // Delete all the nodes we have no reason to save
+  for (auto node : nodes_to_delete)
+    mesh.delete_node(node);
 
   // If we had a point locator, it's invalid now that some of the
   // elements it pointed to have been deleted.
@@ -2030,12 +2062,6 @@ MeshCommunication::delete_remote_elements (DistributedMesh & mesh,
       else
         ++it;
     }
-
-  // We now have all remote elements and nodes deleted; our ghosting
-  // functors should be ready to delete any now-redundant cached data
-  // they use too.
-  for (auto & gf : as_range(mesh.ghosting_functors_begin(), mesh.ghosting_functors_end()))
-    gf->delete_remote_elements();
 
 #ifdef DEBUG
   MeshTools::libmesh_assert_valid_refinement_tree(mesh);

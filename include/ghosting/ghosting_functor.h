@@ -261,7 +261,7 @@ public:
    * relevant Mesh has changed, but before remote elements on a
    * distributed mesh are deleted.
    */
-  virtual void mesh_reinit () {};
+  virtual void mesh_reinit () {}
 
   /**
    * For algebraic ghosting or coupling functors we also call
@@ -269,7 +269,7 @@ public:
    * new mesh but before the functors have been queried for send_list
    * or sparsity pattern calculations.
    */
-  virtual void dofmap_reinit () {};
+  virtual void dofmap_reinit () {}
 
   /**
    * GhostingFunctor subclasses with relatively long-lasting caches
@@ -281,14 +281,26 @@ public:
    * elements have not yet been deleted by the processors which
    * previously held them..
    */
-  virtual void redistribute () {};
+  virtual void redistribute () {}
 
   /**
    * GhostingFunctor subclasses with relatively long-lasting caches
    * may want to delete the no-longer-relevant parts of those caches
-   * after a redistribution is complete.
+   * after a redistribution is complete.  We used to report this in
+   * `delete_remote_elements`; we now report it in two callbacks that
+   * provide more information about *which* elements and nodes are
+   * about to be deleted.
    */
-  virtual void delete_remote_elements () {};
+  virtual void delete_remote_elements () {}
+
+  virtual void deleting_remote_elements (const std::vector<Elem *> &
+                                         /* elems_to_delete */) {
+    this->delete_remote_elements(); // For backwards compatibility
+  }
+
+  virtual void deleting_remote_nodes (const std::vector<Node *> &
+                                      /* nodes_to_delete */) {}
+
 
 protected:
   const MeshBase * _mesh;
