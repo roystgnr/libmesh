@@ -3055,13 +3055,21 @@ void DofMap::enforce_constraints_on_jacobian (const NonlinearImplicitSystem & sy
   if (!this->n_constrained_dofs())
     return;
 
+  LOG_SCOPE("enforce_constraints_on_jacobian()","DofMap");
+
+  std::cerr << "Enforcing on Jacobian!" << std::endl;
+
   if (!jac)
     jac = system.matrix;
 
   libmesh_assert_equal_to (this, &(system.get_dof_map()));
 
+  dof_id_type done = 0;
   for (const auto & [constrained_dof, constraint_row] : _dof_constraints)
     {
+      ++done;
+      std::cerr << done << std::endl;
+
       if (!this->local_index(constrained_dof))
         continue;
 
@@ -3069,6 +3077,8 @@ void DofMap::enforce_constraints_on_jacobian (const NonlinearImplicitSystem & sy
         jac->set(constrained_dof, j.first, -j.second);
       jac->set(constrained_dof, constrained_dof, 1);
     }
+
+  std::cerr << "Done enforcing on Jacobian!" << std::endl;
 }
 
 
