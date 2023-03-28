@@ -206,8 +206,8 @@ extern "C"
           *rc.sys.current_local_solution.get(), &R, &jac, rc.sys);
 
       jac.close();
-      rc.sys.get_dof_map().enforce_constraints_on_jacobian(rc.sys, &jac);
-      jac.close();
+//      rc.sys.get_dof_map().enforce_constraints_on_jacobian(rc.sys, &jac);
+//      jac.close();
     }
 
     else
@@ -224,9 +224,9 @@ extern "C"
 
     R.close();
 
-    rc.sys.get_dof_map().enforce_constraints_on_residual(rc.sys, &R, rc.sys.current_local_solution.get());
-
-    R.close();
+//    rc.sys.get_dof_map().enforce_constraints_on_residual(rc.sys, &R, rc.sys.current_local_solution.get());
+//
+//    R.close();
 
     return rc.ierr;
   }
@@ -272,9 +272,9 @@ extern "C"
 
     R.close();
 
-    rc.sys.get_dof_map().enforce_constraints_on_residual(rc.sys, &R, rc.sys.current_local_solution.get());
-
-    R.close();
+//    rc.sys.get_dof_map().enforce_constraints_on_residual(rc.sys, &R, rc.sys.current_local_solution.get());
+//
+//    R.close();
 
     return rc.ierr;
   }
@@ -322,9 +322,9 @@ extern "C"
 
     R.close();
 
-    rc.sys.get_dof_map().enforce_constraints_on_residual(rc.sys, &R, rc.sys.current_local_solution.get());
-
-    R.close();
+//    rc.sys.get_dof_map().enforce_constraints_on_residual(rc.sys, &R, rc.sys.current_local_solution.get());
+//
+//    R.close();
 
     return rc.ierr;
   }
@@ -509,8 +509,8 @@ extern "C"
     else
       libmesh_error_msg("Error! Unable to compute residual and/or Jacobian!");
 
-    PC.close();
-    sys.get_dof_map().enforce_constraints_on_jacobian(sys, &PC);
+//    PC.close();
+//    sys.get_dof_map().enforce_constraints_on_jacobian(sys, &PC);
 
     PC.close();
     Jac.close();
