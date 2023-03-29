@@ -1233,7 +1233,18 @@ public:
                                                 bool asymmetric_constraint_rows = true,
                                                 int qoi_index = -1) const;
 
-
+  /**
+   * Adds a residual term to an element rhs, corresponding to any
+   * existing discrepancy between constrained DoFs and their
+   * constraining DoFs.  If this is called *after* any element vector
+   * (or matrix and vector) constraint function with the \p
+   * asymmetric_constraint_rows option used, the additional residual
+   * term will also be consistent with the constraint rows as
+   * interpreted as Jacobian terms.
+   */
+  void residual_constrain_element_vector (DenseVector<Number> & rhs,
+                                          std::vector<dof_id_type> & elem_dofs,
+                                          NumericVector<Number> & solution) const;
 
   /**
    * Constrains a dyadic element matrix B = v w'.  This method

@@ -2622,6 +2622,41 @@ void DofMap::heterogenously_constrain_element_matrix_and_vector (DenseMatrix<Num
 }
 
 
+void DofMap::residual_constrain_element_vector (DenseVector<Number> & rhs,
+                                                std::vector<dof_id_type> & elem_dofs,
+                                                NumericVector<Number> & solution_local) const
+{
+  libmesh_assert (solution_local.type() == SERIAL ||
+                  solution_local.type() == GHOSTED);
+
+  libmesh_assert_equal_to(rhs.size(), elem_dofs.size());
+
+  std::cerr << "Solution norm = " << solution_local.l2_norm() << std::endl;
+
+  for (dof_id_type i : index_range(elem_dofs))
+  {
+    const dof_id_type dof_id = elem_dofs[i];
+    DofConstraints::const_iterator
+      pos = _dof_constraints.find(dof_id);
+
+    if (pos != _dof_constraints.end())
+      {
+        Number rhs_val = 0;
+        const DofConstraintRow & constraint_row = pos->second;
+        for (const auto & [constraining_dof, coef] : constraint_row)
+        {
+          std::cerr << "(" << coef << " * " << solution_local(constraining_dof) << ")" << std::endl;
+          rhs_val -= coef * solution_local(constraining_dof);
+        }
+        std::cerr << "(" << solution_local(dof_id) << ")" << std::endl;
+        rhs_val += solution_local(dof_id);
+        std::cerr << "rhs(" << dof_id << ") += " << rhs_val << std::endl;
+        rhs(i) += rhs_val;
+      }
+  }
+}
+
+
 
 void DofMap::heterogenously_constrain_element_vector (const DenseMatrix<Number> & matrix,
                                                       DenseVector<Number> & rhs,
