@@ -92,7 +92,7 @@ libmesh_petsc_snes_residual_helper (SNES snes, Vec x, void * ctx)
   // current_local_solution.  This is the solution vector that is
   // actually used in the computation of the residual below, and is
   // not locked by debug-enabled PETSc the way that "x" is.
-  sys.get_dof_map().enforce_constraints_exactly(sys, sys.current_local_solution.get());
+//  sys.get_dof_map().enforce_constraints_exactly(sys, sys.current_local_solution.get());
 
   return ResidualContext(solver, sys, ierr);
 }
@@ -491,7 +491,7 @@ extern "C"
     // current_local_solution.  This is the solution vector that is
     // actually used in the computation of the residual below, and is
     // not locked by debug-enabled PETSc the way that "x" is.
-    sys.get_dof_map().enforce_constraints_exactly(sys, sys.current_local_solution.get());
+//    sys.get_dof_map().enforce_constraints_exactly(sys, sys.current_local_solution.get());
 
     if (solver->_zero_out_jacobian)
       PC.zero();
