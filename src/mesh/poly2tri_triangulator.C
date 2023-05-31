@@ -26,6 +26,7 @@
 #include "libmesh/boundary_info.h"
 #include "libmesh/elem.h"
 #include "libmesh/enum_elem_type.h"
+#include "libmesh/exodusII_io.h"
 #include "libmesh/function_base.h"
 #include "libmesh/hashing.h"
 #include "libmesh/mesh_serializer.h"
@@ -42,6 +43,8 @@
 // Anonymous namespace - poly2tri doesn't define operator<(Point,Point)
 namespace
 {
+using namespace libMesh;
+
 struct P2TPointCompare
 {
   bool operator()(const p2t::Point & a, const p2t::Point & b) const
@@ -61,11 +64,26 @@ p2t::Point to_p2t(const libMesh::Point & p)
   return {p(0), p(1)};
 }
 
-bool in_circumcircle(const libMesh::Elem & elem,
-                     const libMesh::Point & p)
+Real distance_from_circumcircle(const Elem & elem,
+                                const Point & p)
 {
-  using namespace libMesh;
+  libmesh_assert_equal_to(elem.n_vertices(), 3);
 
+  const Point circumcenter = elem.quasicircumcenter();
+  const Real radius = (elem.point(0) - circumcenter).norm();
+  const Real p_dist = (p - circumcenter).norm();
+
+  return p_dist - radius;
+}
+
+
+bool in_circumcircle(const Elem & elem,
+                     const Point & p,
+                     const Real tol = 0)
+{
+  return (distance_from_circumcircle(elem, p) < tol);
+
+  /*
   libmesh_assert_equal_to(elem.n_vertices(), 3);
 
   const Point pv0 = elem.point(0) - p;
@@ -75,15 +93,182 @@ bool in_circumcircle(const libMesh::Elem & elem,
   return ((pv0.norm_sq() * (pv1(0)*pv2(1)-pv2(0)*pv1(1))) -
           (pv1.norm_sq() * (pv0(0)*pv2(1)-pv2(0)*pv0(1))) +
           (pv2.norm_sq() * (pv0(0)*pv1(1)-pv1(0)*pv0(1)))) > 0;
+  */
 }
 
-unsigned int segment_intersection(const libMesh::Elem & elem,
-                                  libMesh::Point & source,
-                                  const libMesh::Point & target,
+#if 1 // useful for debugging
+void libmesh_assert_locally_delaunay(const Elem & elem)
+{
+  libmesh_ignore(elem);
+
+#ifndef NDEBUG
+  for (auto s : make_range(elem.n_sides()))
+    {
+      const Elem * neigh = elem.neighbor_ptr(s);
+      if (!neigh)
+        continue;
+      for (const Node & n : neigh->node_ref_range())
+        {
+          if (&n == elem.node_ptr(0) ||
+              &n == elem.node_ptr(1) ||
+              &n == elem.node_ptr(2))
+            continue;
+
+          // -TOLERANCE, because we're fine with something a little
+          // inside the circumcircle
+          //
+          // FIXME: need to handle boundaries here...
+          libmesh_assert (!in_circumcircle(elem, n, -TOLERANCE));
+        }
+    }
+#endif
+}
+
+void libmesh_assert_delaunay(MeshBase & mesh,
+                             std::unordered_map<Elem *, std::unique_ptr<Elem>> & new_elems)
+{
+  LOG_SCOPE("libmesh_assert_delaunay", "Poly2TriTriangulator");
+
+  libmesh_ignore(mesh, new_elems);
+  if (0)
+    libmesh_assert_locally_delaunay(**mesh.elements_begin());
+#ifndef NDEBUG
+  try {
+    for (auto & elem : mesh.element_ptr_range())
+      libmesh_assert_locally_delaunay(*elem);
+
+    for (auto & [raw_elem, unique_elem] : new_elems)
+      libmesh_assert_locally_delaunay(*raw_elem);
+  }
+  catch (...)
+  {
+    for (auto & [raw_elem, unique_elem] : new_elems)
+      mesh.add_elem(std::move(unique_elem));
+    mesh.prepare_for_use();
+    ExodusII_IO exii(mesh);
+    exii.write("non_delaunay_mesh.e");
+    libmesh_error();
+  }
+#endif
+}
+#endif
+
+
+// Restore a triangulation's Delaunay property, starting with a set of
+// all triangles that might initially not be locally Delaunay with
+// their neighbors.
+void restore_delaunay(std::unordered_set<Elem *> & check_delaunay_on,
+                      BoundaryInfo & boundary_info)
+{
+  LOG_SCOPE("restore_delaunay()", "Poly2TriTriangulator");
+
+  std::unordered_set<Elem *> newly_flipped;
+  while (!check_delaunay_on.empty())
+    {
+      Elem & elem = **check_delaunay_on.begin();
+      check_delaunay_on.erase(&elem);
+      for (auto s : make_range(elem.n_sides()))
+        {
+          Elem * neigh = elem.neighbor_ptr(s);
+          if (!neigh)
+            continue;
+
+          // What neighbor node does elem not share?
+          unsigned short nn = 0;
+          for (; nn < neigh->n_vertices(); ++nn)
+            {
+              const Node * neigh_node = neigh->node_ptr(nn);
+              if (neigh_node == elem.node_ptr(0) ||
+                  neigh_node == elem.node_ptr(1) ||
+                  neigh_node == elem.node_ptr(2))
+                continue;
+
+              // Do we need to do a diagonal swap here?  Avoid
+              // undoing a borderline swap.
+              if (in_circumcircle(elem, *neigh_node, -TOLERANCE*TOLERANCE))
+                break;
+            }
+
+          if (nn == neigh->n_vertices())
+            continue;
+
+          // If we made it all the way here it's time to diagonal swap
+          const unsigned short n = (s+2)%3;
+                  
+          const std::array<Node *,4> nodes {elem.node_ptr(n),
+            elem.node_ptr((n+1)%3), neigh->node_ptr(nn),
+            elem.node_ptr((n+2)%3)};
+
+          // If we have to swap then either we or any of our neighbors
+          // might no longer be Delaunay
+          for (auto ds : make_range(3))
+            { 
+              if (elem.neighbor_ptr(ds))
+                check_delaunay_on.insert(elem.neighbor_ptr(ds));
+              if (neigh->neighbor_ptr(ds))
+                check_delaunay_on.insert(neigh->neighbor_ptr(ds));
+            }
+
+          // An interior boundary between two newly triangulated
+          // triangles shouldn't have any bcids
+          libmesh_assert(!boundary_info.n_boundary_ids(neigh, (nn+1)%3));
+          libmesh_assert(!boundary_info.n_boundary_ids(&elem, (n+1)%3));
+
+          // The two changing boundary sides might have bcids
+          std::vector<boundary_id_type> bcids;
+          boundary_info.boundary_ids(&elem, (n+2)%3, bcids);
+          if (!bcids.empty())
+            {
+              boundary_info.remove_side(&elem, (n+2)%3);
+              boundary_info.add_side(neigh, (nn+1)%3, bcids);
+            }
+
+          boundary_info.boundary_ids(neigh, (nn+2)%3, bcids);
+          if (!bcids.empty())
+            {
+              boundary_info.remove_side(neigh, (nn+2)%3);
+              boundary_info.add_side(&elem, (n+1)%3, bcids);
+            }
+
+          elem.set_node((n+2)%3) = nodes[2];
+          neigh->set_node((nn+2)%3) = nodes[0];
+
+          // No need for a temporary array to swap these around, if we
+          // do it in the right order.
+          //
+          // Watch me neigh->neigh
+          Elem * neighneigh = neigh->neighbor_ptr((nn+2)%3);
+          if (neighneigh)
+            {
+              unsigned int snn = neighneigh->which_neighbor_am_i(neigh);
+              neighneigh->set_neighbor(snn, &elem);
+            }
+
+          Elem * elemoldneigh = elem.neighbor_ptr((n+2)%3);
+          if (elemoldneigh)
+            {
+              unsigned int seon = elemoldneigh->which_neighbor_am_i(&elem);
+              elemoldneigh->set_neighbor(seon, neigh);
+            }
+
+          elem.set_neighbor((n+1)%3, neigh->neighbor_ptr((nn+2)%3));
+          neigh->set_neighbor((nn+1)%3, elem.neighbor_ptr((n+2)%3));
+          elem.set_neighbor((n+2)%3, neigh);
+          neigh->set_neighbor((nn+2)%3, &elem);
+
+          // Start over after this much change, don't just loop to the
+          // next neighbor
+          break;
+        }
+    }
+}
+
+
+unsigned int segment_intersection(const Elem & elem,
+                                  Point & source,
+                                  const Point & target,
                                   unsigned int source_side)
 {
-  using namespace libMesh;
-
   libmesh_assert_equal_to(elem.dim(), 2);
 
   const auto ns = elem.n_sides();
@@ -170,6 +355,8 @@ Poly2TriTriangulator::~Poly2TriTriangulator() = default;
 // Primary function responsible for performing the triangulation
 void Poly2TriTriangulator::triangulate()
 {
+  LOG_SCOPE("triangulate()", "Poly2TriTriangulator");
+
   // We only operate on serialized meshes.  And it's not safe to
   // serialize earlier, because it would then be possible for the user
   // to re-parallelize the mesh in between there and here.
@@ -278,6 +465,8 @@ bool Poly2TriTriangulator::is_refine_boundary_allowed
 
 void Poly2TriTriangulator::triangulate_current_points()
 {
+  LOG_SCOPE("triangulate_current_points()", "Poly2TriTriangulator");
+
   // Will the triangulation have holes?
   const std::size_t n_holes = _holes != nullptr ? _holes->size() : 0;
 
@@ -371,7 +560,8 @@ void Poly2TriTriangulator::triangulate_current_points()
 
           // We're not going to support overlapping nodes on the boundary
           if (point_node_map.count(*pt))
-            libmesh_not_implemented();
+            libmesh_not_implemented_msg
+              ("Triangulating overlapping boundary nodes is unsupported");
 
           point_node_map.emplace(*pt, node);
         }
@@ -566,6 +756,8 @@ void Poly2TriTriangulator::triangulate_current_points()
 
 bool Poly2TriTriangulator::insert_refinement_points()
 {
+  LOG_SCOPE("insert_refinement_points()", "Poly2TriTriangulator");
+
   if (this->minimum_angle() != 0)
     libmesh_not_implemented();
 
@@ -576,6 +768,8 @@ bool Poly2TriTriangulator::insert_refinement_points()
   if (this->desired_area() == 0 &&
       this->get_desired_area_function() == nullptr)
     return false;
+
+  BoundaryInfo & boundary_info = _mesh.get_boundary_info();
 
   // We won't immediately add these, lest we invalidate iterators on a
   // ReplicatedMesh.  They'll still be in the mesh neighbor topology
@@ -589,6 +783,19 @@ bool Poly2TriTriangulator::insert_refinement_points()
   // possible.
   std::unordered_map<Elem *, std::unique_ptr<Elem>> new_elems;
 
+  // We should already be Delaunay when we get here, otherwise we
+  // won't be able to stay Delaunay later.  But we're *not* always
+  // Delaunay when we get here?  What the hell, poly2tri?  Fixing this
+  // is expensive!
+  {
+    std::unordered_set<Elem *> all_elems
+      { mesh.elements_begin(), mesh.elements_end() };
+
+    restore_delaunay(all_elems, boundary_info);
+
+    libmesh_assert_delaunay(mesh, new_elems);
+  }
+
   // Map of which points follow which in the boundary polylines.  If
   // we have to add new boundary points, we'll use this to construct
   // an updated this->segments to retriangulate with.  If we have to
@@ -596,15 +803,40 @@ bool Poly2TriTriangulator::insert_refinement_points()
   // ArbitraryHole.
   std::unordered_map<Point, Node *> next_boundary_node;
 
-  BoundaryInfo & boundary_info = _mesh.get_boundary_info();
-
   // In cases where we've been working with contiguous node id ranges;
   // let's keep it that way.
   dof_id_type nn = _mesh.max_node_id();
   dof_id_type ne = _mesh.max_elem_id();
 
+  // We can't handle duplicated nodes.  We shouldn't ever create one,
+  // but let's make sure of that.
+#ifdef DEBUG
+  std::unordered_set<Point> mesh_points;
+  for (const Node * node : mesh.node_ptr_range())
+    {
+      libmesh_assert(!mesh_points.count(*node));
+      mesh_points.insert(*node);
+    }
+#endif
+
+  auto add_point = [&mesh,
+#ifdef DEBUG
+                    &mesh_points,
+#endif
+                    &nn](const Point & p)
+    {
+#ifdef DEBUG
+      libmesh_assert(!mesh_points.count(p));
+      mesh_points.insert(p);
+#endif
+      return mesh.add_point(p, nn++);
+    };
+
+  {
+  LOG_SCOPE("refine elements", "Poly2TriTriangulator");
   for (auto & elem : mesh.element_ptr_range())
     {
+      LOG_SCOPE("refine element", "Poly2TriTriangulator");
       // element_ptr_range skips deleted elements ... right?
       libmesh_assert(elem);
       libmesh_assert(elem->valid_id());
@@ -613,9 +845,13 @@ bool Poly2TriTriangulator::insert_refinement_points()
       libmesh_assert_equal_to(elem->level(), 0u);
       libmesh_assert_equal_to(elem->type(), TRI3);
 
+      {
+      LOG_SCOPE("check element", "Poly2TriTriangulator");
+
       // If this triangle is as small as we desire, move along
       if (!should_refine_elem(*elem))
         continue;
+      }
 
       // Otherwise add a Steiner point.  We'd like to add the
       // circumcenter ...
@@ -668,11 +904,16 @@ bool Poly2TriTriangulator::insert_refinement_points()
       // Let's find a triangle containing our new point, or at least
       // containing the end of a ray leading from our current triangle
       // to the new point.
-      Point ray_start = elem->vertex_average();
-
+      //
       // What side are we coming from, and what side are we going to?
       unsigned int source_side = invalid_uint;
       unsigned int side = invalid_uint;
+
+      {
+      LOG_SCOPE("find new point", "Poly2TriTriangulator");
+
+      Point ray_start = elem->vertex_average();
+
       while (!cavity_elem->contains_point(new_pt))
         {
           side = segment_intersection(*cavity_elem, ray_start, new_pt, source_side);
@@ -689,7 +930,7 @@ bool Poly2TriTriangulator::insert_refinement_points()
                                                    side))
                 {
                   new_pt = ray_start;
-                  new_node = mesh.add_point(new_pt, nn++);
+                  new_node = add_point(new_pt);
                   boundary_refine(side);
                 }
               else
@@ -710,7 +951,7 @@ bool Poly2TriTriangulator::insert_refinement_points()
                   // element.
                   cavity_elem = elem;
                   new_pt = cavity_elem->vertex_average();
-                  new_node = mesh.add_point(new_pt, nn++);
+                  new_node = add_point(new_pt);
 
                   // This was going to be a side refinement but it's
                   // now an internal refinement
@@ -766,13 +1007,13 @@ bool Poly2TriTriangulator::insert_refinement_points()
                   // Let's just try bisecting for now
                   new_pt = (cavity_elem->point(side) +
                             cavity_elem->point((side+1)%3)) / 2;
-                  new_node = mesh.add_point(new_pt, nn++);
+                  new_node = add_point(new_pt);
                   boundary_refine(side);
                 }
               else // Do the best we can under these restrictions
                 {
                   new_pt = cavity_elem->vertex_average();
-                  new_node = mesh.add_point(new_pt, nn++);
+                  new_node = add_point(new_pt);
 
                   // This was going to be a side refinement but it's
                   // now an internal refinement
@@ -780,15 +1021,19 @@ bool Poly2TriTriangulator::insert_refinement_points()
                 }
             }
           else
-            new_node = mesh.add_point(new_pt, nn++);
+            new_node = add_point(new_pt);
         }
       else
         libmesh_assert(new_node);
-
+      }
 
       // Find the Delaunay cavity around the new point.
-      std::set<Elem *> unchecked_cavity {cavity_elem};
       std::set<Elem *> cavity;
+
+      {
+      LOG_SCOPE("find cavity", "Poly2TriTriangulator");
+
+      std::set<Elem *> unchecked_cavity {cavity_elem};
       std::set<Node *> cavity_nodes {cavity_elem->node_ptr(0),
                                      cavity_elem->node_ptr(1),
                                      cavity_elem->node_ptr(2)};
@@ -810,7 +1055,7 @@ bool Poly2TriTriangulator::insert_refinement_points()
                       cavity.end())
                     continue;
 
-                  if (in_circumcircle(*neigh, new_pt))
+                  if (in_circumcircle(*neigh, new_pt, TOLERANCE*TOLERANCE))
                     {
                       unchecked_cavity.insert(neigh);
                       for (auto v : make_range(3u))
@@ -821,13 +1066,20 @@ bool Poly2TriTriangulator::insert_refinement_points()
 
           libmesh_merge_move(cavity, checking_cavity);
         }
+      }
 
       // Retriangulate the Delaunay cavity.
       // Each of our cavity triangle edges that are exterior to the
       // cavity will be a source of one new triangle.
 
+      // Set of elements that might need Delaunay swaps
+      std::unordered_set<Elem *> check_delaunay_on;
+
+      {
+      LOG_SCOPE("retriangulate cavity", "Poly2TriTriangulator");
+
       // Keep maps for doing neighbor pointer assignment
-      std::map<Node *, std::pair<Elem *, boundary_id_type>>
+      std::unordered_map<Node *, std::pair<Elem *, boundary_id_type>>
         neighbors_CCW, neighbors_CW;
 
       for (Elem * old_elem : cavity)
@@ -940,6 +1192,8 @@ bool Poly2TriTriangulator::insert_refinement_points()
                   // order, but we need get() to precede move
                   Elem * new_elem_ptr = new_elem.get();
                   new_elems.emplace(new_elem_ptr, std::move(new_elem));
+
+                  check_delaunay_on.insert(new_elem_ptr);
                 }
             }
 
@@ -955,11 +1209,23 @@ bool Poly2TriTriangulator::insert_refinement_points()
       // Everybody found their match?
       libmesh_assert(neighbors_CW.empty());
       libmesh_assert(neighbors_CCW.empty());
+      }
+
+      // Because we're preserving boundaries here, our naive cavity
+      // triangulation might not be a Delaunay triangulation.  Let's
+      // check and if necessary fix that; we depend on it when doing
+      // future point insertions.
+      restore_delaunay(check_delaunay_on, boundary_info);
+
+      libmesh_assert_delaunay(mesh, new_elems);
     }
+  }
 
   // If we added any new boundary nodes, we're going to need to keep
   // track of the changes they made to the outer polyline and/or to
   // any holes.
+  {
+  LOG_SCOPE("correct boundary", "Poly2TriTriangulator");
   if (!next_boundary_node.empty())
     {
       auto checked_emplace = [this](dof_id_type new_first,
@@ -1175,6 +1441,7 @@ bool Poly2TriTriangulator::insert_refinement_points()
             }
         }
     }
+  }
 
   // Okay, *now* we can add the new elements.
   for (auto & [raw_elem, unique_elem] : new_elems)
