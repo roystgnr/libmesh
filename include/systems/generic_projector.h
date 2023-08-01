@@ -1267,6 +1267,9 @@ template <typename FFunctor, typename GFunctor,
           typename FValue, typename ProjectionAction>
 GenericProjector<FFunctor, GFunctor, FValue, ProjectionAction>::SubFunctor::SubFunctor
   (GenericProjector & p) :
+  projector(p),
+  action(p.master_action),
+  f(p.master_f),
   context(p.system, &p.variables, /* allocate_local_matrices= */ false),
   conts(p.system.n_vars()),
   field_types(p.system.n_vars()), system(p.system)
