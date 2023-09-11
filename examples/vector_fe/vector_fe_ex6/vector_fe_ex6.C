@@ -77,6 +77,10 @@ using namespace libMesh;
 void assemble_divgrad(EquationSystems & es,
                       const std::string & system_name);
 
+// We use the penalty method to set the flux of the vector variable at
+// the boundary, i.e. the RT vector boundary dof.
+Real penalty = 1.e10;
+
 int main (int argc, char ** argv)
 {
   // Initialize libMesh.
@@ -95,6 +99,9 @@ int main (int argc, char ** argv)
   // Read in parameters from the command line and the input file.
   const unsigned int dimension = infile("dim", 2);
   const unsigned int grid_size = infile("grid_size", 15);
+
+  // Let users override the penalty BC coefficient
+  penalty = infile("penalty", penalty);
 
   // Skip higher-dimensional examples on a lower-dimensional libMesh build.
   libmesh_example_requires(dimension <= LIBMESH_DIM, dimension << "D support");
@@ -490,10 +497,6 @@ void assemble_divgrad(EquationSystems & es,
                     {
                       vector_value = DivGradExactSolution()(xf, yf, zf);
                     }
-
-                  // We use the penalty method to set the flux of the vector
-                  // variable at the boundary, i.e. the RT vector boundary dof.
-                  const Real penalty = 1.e10;
 
                   for (unsigned int i = 0; i != vector_n_dofs; i++)
                     for (unsigned int j = 0; j != vector_n_dofs; j++)
