@@ -275,7 +275,6 @@ void assemble_divgrad(EquationSystems & es,
 
   // Declare a special finite element object for boundary integration.
   std::unique_ptr<FEVectorBase> vector_fe_face (FEVectorBase::build(dim, vector_fe_type));
-  std::unique_ptr<FEBase> scalar_fe_face (FEBase::build(dim, scalar_fe_type));
 
   // Boundary integration requires one quadrature rule with dimensionality one
   // less than the dimensionality of the element.
@@ -283,7 +282,6 @@ void assemble_divgrad(EquationSystems & es,
 
   // Tell the finite element objects to use our quadrature rule.
   vector_fe_face->attach_quadrature_rule (&qface);
-  scalar_fe_face->attach_quadrature_rule (&qface);
 
   // Here we define some references to cell-specific data that
   // will be used to assemble the linear system.
@@ -457,7 +455,6 @@ void assemble_divgrad(EquationSystems & es,
             {
               // The value of the shape functions at the quadrature points.
               const std::vector<std::vector<RealGradient>> & vector_phi_face = vector_fe_face->get_phi();
-              const std::vector<std::vector<Real>> & scalar_phi_face = scalar_fe_face->get_phi();
 
               // The Jacobian * Quadrature Weight at the quadrature
               // points on the face.
@@ -471,12 +468,10 @@ void assemble_divgrad(EquationSystems & es,
 
               // Compute the shape function values on the element face.
               vector_fe_face->reinit(elem, side);
-              scalar_fe_face->reinit(elem, side);
 
               // Some shape functions will be 0 on the face, but for ease of
               // indexing and generality of code we loop over them anyway.
               libmesh_assert_equal_to (vector_n_dofs, vector_phi_face.size());
-              libmesh_assert_equal_to (scalar_n_dofs, scalar_phi_face.size());
 
               // Loop over the face quadrature points for integration.
               for (unsigned int qp=0; qp<qface.n_points(); qp++)
