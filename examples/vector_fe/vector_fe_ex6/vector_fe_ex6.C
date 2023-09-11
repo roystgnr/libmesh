@@ -481,16 +481,13 @@ void assemble_divgrad(EquationSystems & es,
                   const Real zf = qface_point[qp](2);
 
                   // The boundary values for both variables.
-                  Real scalar_value = 0;
                   RealGradient vector_value;
                   if (dim == 2)
                     {
-                      scalar_value = DivGradExactSolution().scalar(xf, yf);
                       vector_value = DivGradExactSolution()(xf, yf);
                     }
                   else if (dim == 3)
                     {
-                      scalar_value = DivGradExactSolution().scalar(xf, yf, zf);
                       vector_value = DivGradExactSolution()(xf, yf, zf);
                     }
 
@@ -507,21 +504,6 @@ void assemble_divgrad(EquationSystems & es,
                   for (unsigned int i = 0; i != vector_n_dofs; i++)
                     {
                       Fe(i) += JxW_face[qp]*penalty*vector_phi_face[i][qp]*normals[qp]*vector_value*normals[qp];
-                    }
-
-                  // In addition, since the scalar variable is defined only up
-                  // to an additive constant with the previous constraints, we
-                  // constrain the boundary integral of the scalar variable to
-                  // the boundary integral of the exact solution we seek.
-                  for (unsigned int k = 0; k != scalar_n_dofs; k++)
-                    for (unsigned int l = 0; l != scalar_n_dofs; l++)
-                      {
-                        Ke(k + vector_n_dofs, l + vector_n_dofs) += JxW_face[qp]*scalar_phi_face[k][qp]*scalar_phi_face[l][qp];
-                      }
-
-                  for (unsigned int k = 0; k != scalar_n_dofs; k++)
-                    {
-                      Fe(k + vector_n_dofs) += JxW_face[qp]*scalar_phi_face[k][qp]*scalar_value;
                     }
                 }
             }
