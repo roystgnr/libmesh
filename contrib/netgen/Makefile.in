@@ -13,6 +13,8 @@
 # PARTICULAR PURPOSE.
 
 @SET_MAKE@
+
+
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -88,11 +90,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-
-#  need to link files for VPATH builds
-@LIBMESH_VPATH_BUILD_TRUE@am__append_1 = .linkstamp
-@LIBMESH_VPATH_BUILD_TRUE@am__append_2 = *.css .linkstamp
-subdir = doc/html
+subdir = contrib/netgen
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps =  \
 	$(top_srcdir)/m4/autoconf-submodule/acsm_code_coverage.m4 \
@@ -154,7 +152,8 @@ am__aclocal_m4_deps =  \
 	$(top_srcdir)/m4/xdr.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
-DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
+DIST_COMMON = $(srcdir)/Makefile.am $(am__netgeninclude_HEADERS_DIST) \
+	$(am__nglibinclude_HEADERS_DIST) $(am__DIST_COMMON)
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/include/libmesh_config.h.tmp
 CONFIG_CLEAN_FILES =
@@ -171,12 +170,48 @@ AM_V_at = $(am__v_at_@AM_V@)
 am__v_at_ = $(am__v_at_@AM_DEFAULT_V@)
 am__v_at_0 = @
 am__v_at_1 = 
+SOURCES =
 DIST_SOURCES =
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
+am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
+am__vpath_adj = case $$p in \
+    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
+    *) f=$$p;; \
+  esac;
+am__strip_dir = f=`echo $$p | sed -e 's|^.*/||'`;
+am__install_max = 40
+am__nobase_strip_setup = \
+  srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*|]/\\\\&/g'`
+am__nobase_strip = \
+  for p in $$list; do echo "$$p"; done | sed -e "s|$$srcdirstrip/||"
+am__nobase_list = $(am__nobase_strip_setup); \
+  for p in $$list; do echo "$$p $$p"; done | \
+  sed "s| $$srcdirstrip/| |;"' / .*\//!s/ .*/ ./; s,\( .*\)/[^/]*$$,\1,' | \
+  $(AWK) 'BEGIN { files["."] = "" } { files[$$2] = files[$$2] " " $$1; \
+    if (++n[$$2] == $(am__install_max)) \
+      { print $$2, files[$$2]; n[$$2] = 0; files[$$2] = "" } } \
+    END { for (dir in files) print dir, files[dir] }'
+am__base_list = \
+  sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
+  sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
+am__uninstall_files_from_dir = { \
+  test -z "$$files" \
+    || { test ! -d "$$dir" && test ! -f "$$dir" && test ! -r "$$dir"; } \
+    || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
+         $(am__cd) "$$dir" && rm -f $$files; }; \
+  }
+am__installdirs = "$(DESTDIR)$(netgenlibdir)" \
+	"$(DESTDIR)$(ngliblibdir)" "$(DESTDIR)$(netgenincludedir)" \
+	"$(DESTDIR)$(nglibincludedir)"
+DATA = $(netgenlib_DATA) $(ngliblib_DATA)
+am__netgeninclude_HEADERS_DIST = build/netgen/netgen_config.hpp \
+	build/netgen/netgen_version.hpp
+am__nglibinclude_HEADERS_DIST = netgen/nglib/nglib.h
+HEADERS = $(netgeninclude_HEADERS) $(nglibinclude_HEADERS)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 # Read a list of newline-separated strings from the standard input,
 # and print each of them once, without duplicates.  Input order is
@@ -512,17 +547,19 @@ top_srcdir = @top_srcdir@
 vtkbuild = @vtkbuild@
 vtkmajor = @vtkmajor@
 vtkversion = @vtkversion@
-BUILT_SOURCES = developers.html examples.html externalsoftware.html \
-	index.html installation.html publications.html support.html \
-	$(am__append_1)
-CLEANFILES = $(BUILT_SOURCES) $(am__append_2)
-SOURCES = styles.css doxygen_stylesheet.css \
-	  src/developers.html src/doxygen_header.html src/simple_footer.html \
-	  src/examples.html src/index.html src/simple_header.html \
-	  src/externalsoftware.html src/installation.html src/support.html \
-	  src/doxygen_footer.html src/publications.html
+@LIBMESH_ENABLE_NETGEN_TRUE@netgenincludedir = $(includedir)/netgen
+@LIBMESH_ENABLE_NETGEN_TRUE@nglibincludedir = $(includedir)/netgen/nglib
+@LIBMESH_ENABLE_NETGEN_TRUE@netgenlibdir = $(libdir)
+@LIBMESH_ENABLE_NETGEN_TRUE@ngliblibdir = $(libdir)
+@LIBMESH_ENABLE_NETGEN_TRUE@netgeninclude_HEADERS = build/netgen/netgen_config.hpp \
+@LIBMESH_ENABLE_NETGEN_TRUE@                  build/netgen/netgen_version.hpp
 
-EXTRA_DIST = examples images src styles.css doxygen_stylesheet.css
+@LIBMESH_ENABLE_NETGEN_TRUE@nglibinclude_HEADERS = netgen/nglib/nglib.h
+@LIBMESH_ENABLE_NETGEN_TRUE@BUILT_SOURCES = build/netgen/netgen_config.hpp \
+@LIBMESH_ENABLE_NETGEN_TRUE@                build/netgen/netgen_version.hpp
+
+@LIBMESH_ENABLE_NETGEN_TRUE@ngliblib_DATA = build/netgen/libnglib$(LIBMESH_LIBRARY_SUFFIX)
+@LIBMESH_ENABLE_NETGEN_TRUE@netgenlib_DATA = build/netgen/libsrc/core/libngcore$(LIBMESH_LIBRARY_SUFFIX)
 all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -536,9 +573,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu doc/html/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu contrib/netgen/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu doc/html/Makefile
+	  $(AUTOMAKE) --gnu contrib/netgen/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -562,6 +599,90 @@ mostlyclean-libtool:
 
 clean-libtool:
 	-rm -rf .libs _libs
+install-netgenlibDATA: $(netgenlib_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(netgenlib_DATA)'; test -n "$(netgenlibdir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(netgenlibdir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(netgenlibdir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(netgenlibdir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(netgenlibdir)" || exit $$?; \
+	done
+
+uninstall-netgenlibDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(netgenlib_DATA)'; test -n "$(netgenlibdir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(netgenlibdir)'; $(am__uninstall_files_from_dir)
+install-ngliblibDATA: $(ngliblib_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(ngliblib_DATA)'; test -n "$(ngliblibdir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(ngliblibdir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(ngliblibdir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(ngliblibdir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(ngliblibdir)" || exit $$?; \
+	done
+
+uninstall-ngliblibDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(ngliblib_DATA)'; test -n "$(ngliblibdir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(ngliblibdir)'; $(am__uninstall_files_from_dir)
+install-netgenincludeHEADERS: $(netgeninclude_HEADERS)
+	@$(NORMAL_INSTALL)
+	@list='$(netgeninclude_HEADERS)'; test -n "$(netgenincludedir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(netgenincludedir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(netgenincludedir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_HEADER) $$files '$(DESTDIR)$(netgenincludedir)'"; \
+	  $(INSTALL_HEADER) $$files "$(DESTDIR)$(netgenincludedir)" || exit $$?; \
+	done
+
+uninstall-netgenincludeHEADERS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(netgeninclude_HEADERS)'; test -n "$(netgenincludedir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(netgenincludedir)'; $(am__uninstall_files_from_dir)
+install-nglibincludeHEADERS: $(nglibinclude_HEADERS)
+	@$(NORMAL_INSTALL)
+	@list='$(nglibinclude_HEADERS)'; test -n "$(nglibincludedir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(nglibincludedir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(nglibincludedir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_HEADER) $$files '$(DESTDIR)$(nglibincludedir)'"; \
+	  $(INSTALL_HEADER) $$files "$(DESTDIR)$(nglibincludedir)" || exit $$?; \
+	done
+
+uninstall-nglibincludeHEADERS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(nglibinclude_HEADERS)'; test -n "$(nglibincludedir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(nglibincludedir)'; $(am__uninstall_files_from_dir)
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
@@ -650,8 +771,12 @@ distdir-am: $(DISTFILES)
 check-am: all-am
 check: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) check-am
-all-am: Makefile
+@LIBMESH_ENABLE_NETGEN_FALSE@all-local:
+all-am: Makefile $(DATA) $(HEADERS) all-local
 installdirs:
+	for dir in "$(DESTDIR)$(netgenlibdir)" "$(DESTDIR)$(ngliblibdir)" "$(DESTDIR)$(netgenincludedir)" "$(DESTDIR)$(nglibincludedir)"; do \
+	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
+	done
 install: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) install-am
 install-exec: $(BUILT_SOURCES)
@@ -676,7 +801,6 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
-	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
@@ -686,6 +810,8 @@ maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
 	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
+@LIBMESH_ENABLE_NETGEN_FALSE@clean-local:
+@LIBMESH_ENABLE_NETGEN_FALSE@install-exec-local:
 clean: clean-am
 
 clean-am: clean-generic clean-libtool clean-local mostlyclean-am
@@ -706,13 +832,14 @@ info: info-am
 
 info-am:
 
-install-data-am:
+install-data-am: install-netgenincludeHEADERS install-netgenlibDATA \
+	install-nglibincludeHEADERS install-ngliblibDATA
 
 install-dvi: install-dvi-am
 
 install-dvi-am:
 
-install-exec-am:
+install-exec-am: install-exec-local
 
 install-html: install-html-am
 
@@ -750,76 +877,77 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am:
+uninstall-am: uninstall-netgenincludeHEADERS uninstall-netgenlibDATA \
+	uninstall-nglibincludeHEADERS uninstall-ngliblibDATA
 
 .MAKE: all check install install-am install-exec install-strip
 
-.PHONY: CTAGS GTAGS TAGS all all-am check check-am clean clean-generic \
-	clean-libtool clean-local cscopelist-am ctags ctags-am \
-	distclean distclean-generic distclean-libtool distclean-tags \
-	distdir dvi dvi-am html html-am info info-am install \
-	install-am install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-info install-info-am install-man \
-	install-pdf install-pdf-am install-ps install-ps-am \
-	install-strip installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags tags-am uninstall uninstall-am
+.PHONY: CTAGS GTAGS TAGS all all-am all-local check check-am clean \
+	clean-generic clean-libtool clean-local cscopelist-am ctags \
+	ctags-am distclean distclean-generic distclean-libtool \
+	distclean-tags distdir dvi dvi-am html html-am info info-am \
+	install install-am install-data install-data-am install-dvi \
+	install-dvi-am install-exec install-exec-am install-exec-local \
+	install-html install-html-am install-info install-info-am \
+	install-man install-netgenincludeHEADERS install-netgenlibDATA \
+	install-nglibincludeHEADERS install-ngliblibDATA install-pdf \
+	install-pdf-am install-ps install-ps-am install-strip \
+	installcheck installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-am uninstall \
+	uninstall-am uninstall-netgenincludeHEADERS \
+	uninstall-netgenlibDATA uninstall-nglibincludeHEADERS \
+	uninstall-ngliblibDATA
 
 .PRECIOUS: Makefile
 
 
-developers.html: src/$@ src/simple_header.html src/simple_footer.html
-	-cat $(srcdir)/src/simple_header.html $(srcdir)/src/$@ $(srcdir)/src/simple_footer.html > $@.html.tmp
-	$(AM_V_GEN)mv $@.html.tmp $@
+# Use a stamp file to make sure we don't have multiple sub-$(MAKE)
+# going at once; cmake gets horribly confused if that happens.
+@LIBMESH_ENABLE_NETGEN_TRUE@.buildstamp:
+@LIBMESH_ENABLE_NETGEN_TRUE@	$(MAKE) -C build $(AM_MAKEFLAGS)
+@LIBMESH_ENABLE_NETGEN_TRUE@	touch .buildstamp
 
-examples.html: src/$@ src/simple_header.html src/simple_footer.html
-	-cat $(srcdir)/src/simple_header.html $(srcdir)/src/$@ $(srcdir)/src/simple_footer.html > $@.html.tmp
-	$(AM_V_GEN)mv $@.html.tmp $@
+@LIBMESH_ENABLE_NETGEN_TRUE@all-local : .buildstamp
 
-externalsoftware.html: src/$@ src/simple_header.html src/simple_footer.html
-	-cat $(srcdir)/src/simple_header.html $(srcdir)/src/$@ $(srcdir)/src/simple_footer.html > $@.html.tmp
-	$(AM_V_GEN)mv $@.html.tmp $@
+# This doesn't seem to be cleaning...
+@LIBMESH_ENABLE_NETGEN_TRUE@clean-local:
+@LIBMESH_ENABLE_NETGEN_TRUE@	$(MAKE) -C build $(AM_MAKEFLAGS) clean
+@LIBMESH_ENABLE_NETGEN_TRUE@	rm -f .buildstamp
 
-index.html: src/$@ src/simple_header.html src/simple_footer.html
-	-cat $(srcdir)/src/simple_header.html $(srcdir)/src/$@ $(srcdir)/src/simple_footer.html > $@.html.tmp
-	$(AM_V_GEN)mv $@.html.tmp $@
-
-installation.html: src/$@ src/simple_header.html src/simple_footer.html
-	-cat $(srcdir)/src/simple_header.html $(srcdir)/src/$@ $(srcdir)/src/simple_footer.html > $@.html.tmp
-	$(AM_V_GEN)mv $@.html.tmp $@
-
-publications.html: src/$@ src/simple_header.html src/simple_footer.html
-	-cat $(srcdir)/src/simple_header.html $(srcdir)/src/$@ $(srcdir)/src/simple_footer.html > $@.html.tmp
-	$(AM_V_GEN)mv $@.html.tmp $@
-
-support.html: src/$@ src/simple_header.html src/simple_footer.html
-	-cat $(srcdir)/src/simple_header.html $(srcdir)/src/$@ $(srcdir)/src/simple_footer.html > $@.html.tmp
-	$(AM_V_GEN)mv $@.html.tmp $@
-
+# Make sure the installed libnglib is linking to the installed
+# libngcore, not to the libngcore in the build directory
 #
-# doxygen documentation - be sure to generate symlinks in include/libmesh!
-doc html: doxygen
-doxygen:
-	@$(MAKE) -C $(top_builddir)/include/libmesh
-	$(DOXYGEN) $(top_builddir)/doc/Doxyfile
-@LIBMESH_VPATH_BUILD_TRUE@.linkstamp:
-@LIBMESH_VPATH_BUILD_TRUE@	-rm -rf examples              && cp -r $(srcdir)/examples . && chmod -R u+rw examples
-@LIBMESH_VPATH_BUILD_TRUE@	-rm -rf images                && cp -r $(srcdir)/images .   && chmod -R u+rw images
-@LIBMESH_VPATH_BUILD_TRUE@	-rm -f styles.css             && cp -r $(srcdir)/styles.css  .
-@LIBMESH_VPATH_BUILD_TRUE@	-rm -f doxygen_stylesheet.css && cp -r $(srcdir)/doxygen_stylesheet.css .
-@LIBMESH_VPATH_BUILD_TRUE@	$(AM_V_GEN)touch .linkstamp
+# Install-exec is automake speak for anything platform-dependent, not
+# just for executables
+@LIBMESH_ENABLE_NETGEN_TRUE@install-exec-local:
+@LIBMESH_ENABLE_NETGEN_TRUE@	if which install_name_tool 2>/dev/null; then \
+@LIBMESH_ENABLE_NETGEN_TRUE@	  echo "install_name_tool exists on OSX but is unneeded for rpath-based libnglib there"; \
+@LIBMESH_ENABLE_NETGEN_TRUE@	elif which patchelf 2>/dev/null; then \
+@LIBMESH_ENABLE_NETGEN_TRUE@	  patchelf --set-rpath "$(libdir)" "$(libdir)/libnglib$(LIBMESH_LIBRARY_SUFFIX)"; \
+@LIBMESH_ENABLE_NETGEN_TRUE@	elif which chrpath 2>/dev/null; then \
+@LIBMESH_ENABLE_NETGEN_TRUE@	  chrpath -r "$(libdir)" "$(libdir)/libnglib$(LIBMESH_LIBRARY_SUFFIX)"; \
+@LIBMESH_ENABLE_NETGEN_TRUE@	else \
+@LIBMESH_ENABLE_NETGEN_TRUE@	  echo "No tools to change RPATH when installing libnglib$(LIBMESH_LIBRARY_SUFFIX)"; \
+@LIBMESH_ENABLE_NETGEN_TRUE@	  echo "If linking fails we may need install_name_tool/patchelf/chrpath installed"; \
+@LIBMESH_ENABLE_NETGEN_TRUE@	fi
 
-@LIBMESH_VPATH_BUILD_TRUE@clean-local:
-@LIBMESH_VPATH_BUILD_TRUE@	-rm -rf doxygen images examples
+@LIBMESH_ENABLE_NETGEN_TRUE@.PHONY : .buildstamp
 
-@LIBMESH_VPATH_BUILD_FALSE@clean-local:
-@LIBMESH_VPATH_BUILD_FALSE@	-rm -rf doxygen
+@LIBMESH_ENABLE_NETGEN_TRUE@.buildstamp:
+@LIBMESH_ENABLE_NETGEN_TRUE@	$(MAKE) -C build $(AM_MAKEFLAGS)
+@LIBMESH_ENABLE_NETGEN_TRUE@	touch .buildstamp
 
-# Mark doxygen as a phony target to build the documentation even when the
-# doxygen directory already exists.
-.PHONY: doxygen
+@LIBMESH_ENABLE_NETGEN_TRUE@build/netgen/netgen_config.hpp : .buildstamp
+@LIBMESH_ENABLE_NETGEN_TRUE@build/netgen/netgen_version.hpp : .buildstamp
+@LIBMESH_ENABLE_NETGEN_TRUE@build/netgen/libnglib$(LIBMESH_LIBRARY_SUFFIX): .buildstamp
+@LIBMESH_ENABLE_NETGEN_TRUE@build/netgen/libsrc/core/libngcore$(LIBMESH_LIBRARY_SUFFIX) : .buildstamp
+
+# Maybe useful later?
+#              build/netgen/libnggui.so \
+#              build/netgen/libsrc/core/pyngcore.cpython-310-x86_64-linux-gnu.so \
+#              build/netgen/ng/libngpy.so \
+#              build/netgen/ng/libngguipy.so
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
