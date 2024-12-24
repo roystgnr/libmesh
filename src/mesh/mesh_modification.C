@@ -1431,6 +1431,142 @@ void MeshTools::Modification::all_tri (MeshBase & mesh)
 }
 
 
+
+void MeshTools::Modification::all_rbb (MeshBase & mesh)
+{
+  // By default, use 1.0 as the weight on every RATIONAL_BERNSTEIN
+  // mapped node
+  const Real default_weight = 1.0;
+
+  weight_index = cast_int<unsigned char>
+    (mesh.add_node_datum<Real>("rational_weight", true,
+                               &default_weight));
+
+  mesh.set_default_mapping_type(RATIONAL_BERNSTEIN_MAP);
+  mesh.set_default_mapping_data(weight_index);
+
+  // Out of loop to reduce heap allocations
+  std::unique_ptr<Elem> edge, face;
+
+  for (auto & elem : mesh.element_ptr_range())
+    {
+      if (elem->level())
+        libmesh_not_implemented_msg
+          ("all_rbb() currently only supports flat meshes with no refinement levels");
+
+#ifdef LIBMESH_ENABLE_INFINITE_ELEMENTS
+      if (elem->infinite())
+        libmesh_not_implemented_msg
+          ("all_rbb() currently only supports finite geometric elements");
+#endif
+
+      elem->set_mapping_type(RATIONAL_BERNSTEIN_MAP);
+      elem->set_mapping_data(weight_index);
+
+      // Nothing to do unless we have curves to correct
+      if (elem->default_order() == FIRST)
+        continue;
+
+      // Check each edge for a curve, and adjust it if needed.
+      bool check_face_points = 
+        elem->n_nodes() > elem->n_edges() + elem->n_vertices();
+
+      for (auto e : elem->edge_index_range())
+        {
+          elem->build_edge_ptr(edge, e);
+
+          // We should add EDGE4 once we have QUAD16/TRI10/HEX64 to
+          // use it
+          if (edge->type() != EDGE3)
+            libmesh_not_implemented_msg
+              ("all_rbb() currently only supports meshes with 2- and/or 3-node edges");
+
+          // Skip edges we've already modified; the center node for
+          // these is no longer at the curve point we wish to
+          // interpolate, it's already at the control point that
+          // accomplishes the interpolation.
+          Node & n2 = edge->node_ref(2);
+          const Real old_weight = n2.get_extra_datum<Real>(weight_index);
+          if (old_weight != default_weight)
+            continue;
+
+          const Point & p0 = edge->point(0);
+          const Point & p1 = edge->point(1);
+          Point & p2 = n2;
+
+          // Skip straight edges
+          const Point midchord = (p0+p1)/2;
+          const Real edge_chord_len = (p1-p0).norm_sq();
+          const Point displacement_vec = p2-midchord;
+          if (displacement_vec.norm_sq() <
+              edge_chord_len*edge_chord_len*TOLERANCE*TOLERANCE*TOLERANCE)
+            continue;
+
+          // If we see edges that are unevenly parameterized, not just
+          // curved, I'm not sure what we want to do with those.
+          // Presumably we want to maintain a somewhat similar uneven
+          // parameterization, for whatever boundary layer grading the
+          // mesh user wanted?  For now just scream and die.
+          const Point e20 = p0-p2, 
+                      e21 = p1-p2;
+          const Real chord_20_len = e20.norm_sq(),
+                     chord_21_len = e21.norm_sq();
+          if (std::abs(chord_20_len-chord_21_len) > edge_chord_len * TOLERANCE)
+            libmesh_not_implemented_msg
+              ("all_rbb() currently doesn't support unevenly parameterized edges");
+
+          // Circularize the curve on curved edges
+          //
+          // First find the cosine of phi, the angle between our two
+          // subchords.  This is the same as half of the angle of our
+          // circular arc, which nicely enough is also the angle we
+          // take cos and sec of in NURBS formulae
+          const Real cos_phi = (e20*e21)/chord_20_len/chord_21_len;
+          n2.set_extra_datum<Real>(weight_index, cos_phi);
+
+          // There's a way to do really large arcs using negative
+          // weights, but we're going to get lousy approximation
+          // quality from isoparametric elements if we go too low, as
+          // well as bad numerics here, so let's just disallow it.
+          if (cos_phi < 0.5)
+            libmesh_not_implemented_msg
+              ("all_rbb() is not recommended for extremely sharp curves on one edge");
+
+          // Next find the radius of the circle our arc is from
+          const Real r = edge_chord_len/2/std::sqrt(1-cos_phi*cos_phi);
+
+          // And perturb our center node so that it becomes a control
+          // point for that arc rather than a midpoint of that arc.
+          const Real R = r/cos_phi;
+
+          p2 += displacement_vec.unit() * (R-r);
+        }
+
+      // If we're in 3D, we may have face nodes that also need to be
+      // adjusted to replace an interpolated curve with a spline
+      // curve.  We know what to do with a quad face, but we'll have
+      // to scream and die if we see a Tri7 face node.
+      if (check_face_points)
+        for (auto f : elem->side_index_range())
+          {
+            // Prisms and pyramids may need to skip some faces while
+            // adjusting others
+            if (elem->side_type(f) == TRI6)
+              continue;
+
+            elem->build_side_ptr(face, f);
+
+            if (face->type() != QUAD9)
+              libmesh_not_implemented_msg
+                ("all_rbb() currently only supports mid-face nodes on Quad9 faces");
+
+            libmesh_not_implemented(); // FIXME
+          }
+    }
+}
+
+
+
 void MeshTools::Modification::smooth (MeshBase & mesh,
                                       const unsigned int n_iterations,
                                       const Real power)
