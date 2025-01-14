@@ -421,7 +421,7 @@ public:
 
   /**
    * \returns The local node id for node \p side_node on side \p side of
-   * this Elem. Simply relies on the \p side_nodes_map for each of the
+   * this Elem. Typically relies on the \p side_nodes_map for each of the
    * derived types. For example,
    * Tri3::local_side_node(0, 0) -> 0
    * Tri3::local_side_node(0, 1) -> 1
