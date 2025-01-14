@@ -66,9 +66,9 @@ public:
   virtual ~QuadNSq() = default;
 
   /**
-   * \returns \p the appopriate enum depending on N
+   * \returns the appropriate enum depending on N
    */
-  virtual ElemType type () const override { return static_cast<unsigned int>(QUADNSQ) + N - 3; }
+  virtual ElemType type () const override;
 
   /**
    * \returns N^2.
@@ -121,7 +121,7 @@ public:
   virtual bool has_affine_map () const override;
 
   /**
-   * \returns SECOND.
+   * \returns N-1
    */
   virtual Order default_order() const override;
 
