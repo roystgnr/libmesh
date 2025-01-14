@@ -17,8 +17,7 @@
 
 // Local includes
 #include "libmesh/side.h"
-#include "libmesh/edge_edge3.h"
-#include "libmesh/face_quad9.h"
+#include "libmesh/face_quadn2.h"
 #include "libmesh/enum_io_package.h"
 #include "libmesh/enum_order.h"
 
@@ -39,6 +38,18 @@ const int QuadNSq::nodes_per_side;
 
 // ------------------------------------------------------------
 // QuadNSq class member functions
+
+template <unsigned int N>
+ElemType QuadNSq::type() const
+{
+  if (N == 2)
+    return QUAD4;
+  if (N == 3)
+    return QUAD9;
+
+  return static_cast<ElemType>(static_cast<unsigned int>(QUADN2)+N);
+}
+
 
 template <unsigned int N>
 bool QuadNSq::is_vertex(const unsigned int i) const
@@ -289,7 +300,7 @@ void QuadNSq::flip(BoundaryInfo * boundary_info)
 
   for (auto j : make_range((N-2)/2))
     {
-      swap2nodes(3+i, N+2-i);
+      swap2nodes(4+i, N+2-i);
       swap2nodes(2*N-1+i, 3*N-2-i);
     }
 
@@ -304,6 +315,18 @@ unsigned int QuadNSq::center_node_on_side(const unsigned short side) const
 {
   libmesh_not_implemented();
   return invalid_uint;
+}
+
+
+template <unsigned int N>
+ElemType type () const
+{
+  if (N == 2)
+    return QUAD4;
+  if (N == 3)
+    return QUAD9;
+
+  return static_cast<unsigned int>(QUADNSQ) + N;
 }
 
 
