@@ -79,6 +79,20 @@ enum ElemType : int {
                PYRAMID18 = 37,
                // Another shell elem
                QUADSHELL9 = 38,
+               // Higher-order elements.  These must be numbered with
+               // offsets we can do arithmetic on.
+               EDGEN = 80,
+               EDGE5 = 85,
+               EDGE6 = 86,
+               EDGE7 = 87,
+               EDGE8 = 88,
+               EDGE9 = 89,
+               QUADNSQ = 100,
+               QUAD16 = 104,
+               QUAD25 = 105,
+               QUAD36 = 106,
+               QUAD49 = 107,
+               QUAD64 = 108,
                // Invalid
                INVALID_ELEM};   // should always be last
 
