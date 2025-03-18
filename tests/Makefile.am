@@ -96,6 +96,7 @@ unit_tests_sources = \
   mesh/write_edgeset_data.C \
   mesh/write_vec_and_scalar.C \
   mesh/project_solution_test.C \
+  mesh/xdrio_test.C \
   numerics/composite_function_test.C \
   numerics/coupling_matrix_test.C \
   numerics/distributed_vector_test.C \
