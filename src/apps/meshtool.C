@@ -520,11 +520,15 @@ int main (int argc, char ** argv)
     mesh.partition(n_subdomains);
 
   // Possibly smooth the mesh
+#if LIBMESH_DIM > 1
   if (vsmooth)
   {
     VariationalMeshSmoother vsmoother(mesh);
     vsmoother.smooth();
   }
+#else
+  libmesh_ignore(vsmooth);
+#endif
 
   // Possibly write the mesh
   if (output_names.size())
