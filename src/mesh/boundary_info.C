@@ -1541,9 +1541,14 @@ void BoundaryInfo::side_boundary_ids (const Elem * const elem,
 
   // Clear out any previous contents
   vec_to_fill.clear();
-  // We are going to gather boundary ids for each side
-  vec_to_fill.resize(elem->n_sides());
+  auto num_sides = elem->n_sides();
 
+  // No sides, no boundary ids
+  if (!num_sides)
+    return;
+
+  // We are going to gather boundary ids for each side
+  vec_to_fill.resize(num_sides);
   // In most cases only level-0 elements store BCs.
   // In certain applications (such as time-dependent domains), however, children
   // need to store BCs too. This case is covered with the _children_on_boundary
