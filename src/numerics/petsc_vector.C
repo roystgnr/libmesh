@@ -518,6 +518,10 @@ PetscVector<T>::operator = (const PetscVector<T> & v)
   enum AssignmentType { ParallelToSerial, SerialToParallel, SameToSame, Error };
 
   parallel_object_only();
+  libmesh_assert(this->comm().verify(
+      static_cast<typename std::underlying_type<ParallelType>::type>(this->type())));
+  libmesh_assert(this->comm().verify(
+      static_cast<typename std::underlying_type<ParallelType>::type>(v.type())));
 
   if (this == &v)
     return *this;
@@ -536,10 +540,8 @@ PetscVector<T>::operator = (const PetscVector<T> & v)
   else if (this->local_size() == v.local_size())
     assign_type = SameToSame;
 
-#ifdef DEBUG
   libmesh_assert(this->comm().verify(
       static_cast<typename std::underlying_type<AssignmentType>::type>(assign_type)));
-#endif
 
   switch (assign_type)
     {
