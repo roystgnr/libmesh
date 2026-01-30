@@ -707,7 +707,11 @@ void PetscVector<T>::init (const numeric_index_type n,
   if (this->initialized())
     this->clear();
 
-  if (ptype == AUTOMATIC)
+  if (this->comm().size() == 1)
+    // This can help with some branching decisions and is also consistent with what PETSc does... a
+    // single rank Vec is going to be a sequential vector
+    this->_type = SERIAL;
+  else if (ptype == AUTOMATIC)
     {
       if (n == n_local)
         this->_type = SERIAL;
