@@ -75,6 +75,7 @@ RBConstruction::RBConstruction (EquationSystems & es,
     impose_internal_fluxes(false),
     skip_degenerate_sides(true),
     compute_RB_inner_product(false),
+    store_dirichlet_operators(true),
     store_non_dirichlet_operators(false),
     store_untransformed_basis(false),
     use_empty_rb_solve_in_greedy(true),
@@ -106,9 +107,12 @@ void RBConstruction::clear()
 
   Parent::clear();
 
-  Aq_vector.clear();
-  Fq_vector.clear();
-  outputs_vector.clear();
+  if (store_dirichlet_operators)
+    {
+      Aq_vector.clear();
+      Fq_vector.clear();
+      outputs_vector.clear();
+    }
 
   if (store_non_dirichlet_operators)
     {
@@ -539,9 +543,12 @@ void RBConstruction::allocate_data_structures()
   {
     DofMap & dof_map = this->get_dof_map();
 
-    dof_map.attach_matrix(*inner_product_matrix);
-    inner_product_matrix->init();
-    inner_product_matrix->zero();
+    if (store_dirichlet_operators)
+      {
+        dof_map.attach_matrix(*inner_product_matrix);
+        inner_product_matrix->init();
+        inner_product_matrix->zero();
+      }
 
     if(store_non_dirichlet_operators)
       {
@@ -552,14 +559,15 @@ void RBConstruction::allocate_data_structures()
         non_dirichlet_inner_product_matrix->zero();
       }
 
-    for (unsigned int q=0; q<get_rb_theta_expansion().get_n_A_terms(); q++)
-      {
-        // Initialize the memory for the matrices
-        Aq_vector[q] = SparseMatrix<Number>::build(this->comm());
-        dof_map.attach_matrix(*Aq_vector[q]);
-        Aq_vector[q]->init();
-        Aq_vector[q]->zero();
-      }
+    if (store_dirichlet_operators)
+      for (unsigned int q=0; q<get_rb_theta_expansion().get_n_A_terms(); q++)
+        {
+          // Initialize the memory for the matrices
+          Aq_vector[q] = SparseMatrix<Number>::build(this->comm());
+          dof_map.attach_matrix(*Aq_vector[q]);
+          Aq_vector[q]->init();
+          Aq_vector[q]->zero();
+        }
 
     // We also need to initialize a second set of non-Dirichlet operators
     if (store_non_dirichlet_operators)
@@ -577,12 +585,13 @@ void RBConstruction::allocate_data_structures()
   }
 
   // Initialize the vectors
-  for (unsigned int q=0; q<get_rb_theta_expansion().get_n_F_terms(); q++)
-    {
-      // Initialize the memory for the vectors
-      Fq_vector[q] = NumericVector<Number>::build(this->comm());
-      Fq_vector[q]->init (this->n_dofs(), this->n_local_dofs(), false, PARALLEL);
-    }
+  if (store_dirichlet_operators)
+    for (unsigned int q=0; q<get_rb_theta_expansion().get_n_F_terms(); q++)
+      {
+        // Initialize the memory for the vectors
+        Fq_vector[q] = NumericVector<Number>::build(this->comm());
+        Fq_vector[q]->init (this->n_dofs(), this->n_local_dofs(), false, PARALLEL);
+      }
 
   // We also need to initialize a second set of non-Dirichlet operators
   if (store_non_dirichlet_operators)
@@ -596,13 +605,14 @@ void RBConstruction::allocate_data_structures()
         }
     }
 
-  for (unsigned int n=0; n<get_rb_theta_expansion().get_n_outputs(); n++)
-    for (unsigned int q_l=0; q_l<get_rb_theta_expansion().get_n_output_terms(n); q_l++)
-      {
-        // Initialize the memory for the truth output vectors
-        outputs_vector[n][q_l] = NumericVector<Number>::build(this->comm());
-        outputs_vector[n][q_l]->init (this->n_dofs(), this->n_local_dofs(), false, PARALLEL);
-      }
+  if (store_dirichlet_operators)
+    for (unsigned int n=0; n<get_rb_theta_expansion().get_n_outputs(); n++)
+      for (unsigned int q_l=0; q_l<get_rb_theta_expansion().get_n_output_terms(n); q_l++)
+        {
+          // Initialize the memory for the truth output vectors
+          outputs_vector[n][q_l] = NumericVector<Number>::build(this->comm());
+          outputs_vector[n][q_l]->init (this->n_dofs(), this->n_local_dofs(), false, PARALLEL);
+        }
 
   if (store_non_dirichlet_operators)
     {
@@ -1070,8 +1080,11 @@ void RBConstruction::add_scaled_Aq(Number scalar,
 
 void RBConstruction::assemble_misc_matrices()
 {
-  libMesh::out << "Assembling inner product matrix" << std::endl;
-  assemble_inner_product_matrix(inner_product_matrix.get());
+  if (store_dirichlet_operators)
+    {
+      libMesh::out << "Assembling inner product matrix" << std::endl;
+      assemble_inner_product_matrix(inner_product_matrix.get());
+    }
 
   if (store_non_dirichlet_operators)
     {
@@ -1082,12 +1095,13 @@ void RBConstruction::assemble_misc_matrices()
 
 void RBConstruction::assemble_all_affine_operators()
 {
-  for (unsigned int q_a=0; q_a<get_rb_theta_expansion().get_n_A_terms(); q_a++)
-    {
-      libMesh::out << "Assembling affine operator " << (q_a+1) << " of "
-                   << get_rb_theta_expansion().get_n_A_terms() << std::endl;
-      assemble_Aq_matrix(q_a, get_Aq(q_a));
-    }
+  if (store_dirichlet_operators)
+    for (unsigned int q_a=0; q_a<get_rb_theta_expansion().get_n_A_terms(); q_a++)
+      {
+        libMesh::out << "Assembling affine operator " << (q_a+1) << " of "
+                    << get_rb_theta_expansion().get_n_A_terms() << std::endl;
+        assemble_Aq_matrix(q_a, get_Aq(q_a));
+      }
 
   if (store_non_dirichlet_operators)
     {
@@ -1102,12 +1116,13 @@ void RBConstruction::assemble_all_affine_operators()
 
 void RBConstruction::assemble_all_affine_vectors()
 {
-  for (unsigned int q_f=0; q_f<get_rb_theta_expansion().get_n_F_terms(); q_f++)
-    {
-      libMesh::out << "Assembling affine vector " << (q_f+1) << " of "
-                   << get_rb_theta_expansion().get_n_F_terms() << std::endl;
-      assemble_Fq_vector(q_f, get_Fq(q_f));
-    }
+  if (store_dirichlet_operators)
+    for (unsigned int q_f=0; q_f<get_rb_theta_expansion().get_n_F_terms(); q_f++)
+      {
+        libMesh::out << "Assembling affine vector " << (q_f+1) << " of "
+                    << get_rb_theta_expansion().get_n_F_terms() << std::endl;
+        assemble_Fq_vector(q_f, get_Fq(q_f));
+      }
 
   if (store_non_dirichlet_operators)
     {
@@ -1140,20 +1155,21 @@ void RBConstruction::assemble_Fq_vector(unsigned int q,
 
 void RBConstruction::assemble_all_output_vectors()
 {
-  for (unsigned int n=0; n<get_rb_theta_expansion().get_n_outputs(); n++)
-    for (unsigned int q_l=0; q_l<get_rb_theta_expansion().get_n_output_terms(n); q_l++)
-      {
-        libMesh::out << "Assembling output vector, (" << (n+1) << "," << (q_l+1)
-                     << ") of (" << get_rb_theta_expansion().get_n_outputs()
-                     << "," << get_rb_theta_expansion().get_n_output_terms(n) << ")"
-                     << std::endl;
-        get_output_vector(n, q_l)->zero();
-        add_scaled_matrix_and_vector(1., &rb_assembly_expansion->get_output_assembly(n,q_l),
-                                     nullptr,
-                                     get_output_vector(n,q_l),
-                                     false, /* symmetrize */
-                                     true   /* apply_dof_constraints */);
-      }
+  if (store_dirichlet_operators)
+    for (unsigned int n=0; n<get_rb_theta_expansion().get_n_outputs(); n++)
+      for (unsigned int q_l=0; q_l<get_rb_theta_expansion().get_n_output_terms(n); q_l++)
+        {
+          libMesh::out << "Assembling output vector, (" << (n+1) << "," << (q_l+1)
+                      << ") of (" << get_rb_theta_expansion().get_n_outputs()
+                      << "," << get_rb_theta_expansion().get_n_output_terms(n) << ")"
+                      << std::endl;
+          get_output_vector(n, q_l)->zero();
+          add_scaled_matrix_and_vector(1., &rb_assembly_expansion->get_output_assembly(n,q_l),
+                                      nullptr,
+                                      get_output_vector(n,q_l),
+                                      false, /* symmetrize */
+                                      true   /* apply_dof_constraints */);
+        }
 
   if (store_non_dirichlet_operators)
     {
@@ -2304,11 +2320,15 @@ Real RBConstruction::compute_residual_dual_norm_slow(const unsigned int N)
 
 SparseMatrix<Number> * RBConstruction::get_inner_product_matrix()
 {
+  libmesh_error_msg_if(!store_dirichlet_operators,
+                       "Error: Must have store_dirichlet_operators==true to access inner_product_matrix.");
   return inner_product_matrix.get();
 }
 
 const SparseMatrix<Number> * RBConstruction::get_inner_product_matrix() const
 {
+  libmesh_error_msg_if(!store_dirichlet_operators,
+                       "Error: Must have store_dirichlet_operators==true to access inner_product_matrix.");
   return inner_product_matrix.get();
 }
 
@@ -2350,6 +2370,9 @@ const SparseMatrix<Number> * RBConstruction::get_non_dirichlet_inner_product_mat
 
 SparseMatrix<Number> * RBConstruction::get_Aq(unsigned int q)
 {
+  libmesh_error_msg_if(!store_dirichlet_operators,
+                       "Error: Must have store_dirichlet_operators==true to access non_dirichlet_Aq.");
+
   libmesh_error_msg_if(q >= get_rb_theta_expansion().get_n_A_terms(),
                        "Error: We must have q < Q_a in get_Aq.");
 
@@ -2379,6 +2402,9 @@ SparseMatrix<Number> * RBConstruction::get_non_dirichlet_Aq_if_avail(unsigned in
 
 NumericVector<Number> * RBConstruction::get_Fq(unsigned int q)
 {
+  libmesh_error_msg_if(!store_dirichlet_operators,
+                       "Error: Must have store_dirichlet_operators==true to access non_dirichlet_Fq.");
+
   libmesh_error_msg_if(q >= get_rb_theta_expansion().get_n_F_terms(),
                        "Error: We must have q < Q_f in get_Fq.");
 
@@ -2430,18 +2456,19 @@ void RBConstruction::get_all_matrices(std::map<std::string, SparseMatrix<Number>
 {
   all_matrices.clear();
 
-  all_matrices["inner_product"] = get_inner_product_matrix();
+  if (store_dirichlet_operators)
+    all_matrices["inner_product"] = get_inner_product_matrix();
 
   if (store_non_dirichlet_operators)
-    {
-      all_matrices["non_dirichlet_inner_product"] = get_non_dirichlet_inner_product_matrix();
-    }
+    all_matrices["non_dirichlet_inner_product"] = get_non_dirichlet_inner_product_matrix();
 
   for (unsigned int q_a=0; q_a<get_rb_theta_expansion().get_n_A_terms(); q_a++)
     {
       std::stringstream matrix_name;
       matrix_name << "A" << q_a;
-      all_matrices[matrix_name.str()] = get_Aq(q_a);
+
+      if (store_dirichlet_operators)
+        all_matrices[matrix_name.str()] = get_Aq(q_a);
 
       if (store_non_dirichlet_operators)
         {
@@ -2461,7 +2488,9 @@ void RBConstruction::get_all_vectors(std::map<std::string, NumericVector<Number>
     {
       std::stringstream F_vector_name;
       F_vector_name << "F" << q_f;
-      all_vectors[F_vector_name.str()] = get_Fq(q_f);
+
+      if (store_dirichlet_operators)
+        all_vectors[F_vector_name.str()] = get_Fq(q_f);
 
       if (store_non_dirichlet_operators)
         {
@@ -2479,8 +2508,11 @@ void RBConstruction::get_output_vectors(std::map<std::string, NumericVector<Numb
     for (unsigned int q_l=0; q_l<get_rb_theta_expansion().get_n_output_terms(n); q_l++)
       {
         std::stringstream output_name;
-        output_name << "output_" << n << "_"<< q_l;
-        output_vectors[output_name.str()] = get_output_vector(n,q_l);
+        if (store_dirichlet_operators)
+          {
+            output_name << "output_" << n << "_"<< q_l;
+            output_vectors[output_name.str()] = get_output_vector(n,q_l);
+          }
 
         if (store_non_dirichlet_operators)
           {
