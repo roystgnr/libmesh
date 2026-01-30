@@ -785,6 +785,7 @@ void PetscVector<T>::init (const numeric_index_type n,
     {
       libmesh_assert(ghost.empty());
       this->init(n, n_local, fast, SERIAL);
+      return;
     }
 
   PetscInt petsc_n=static_cast<PetscInt>(n);
