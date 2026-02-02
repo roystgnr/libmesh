@@ -617,6 +617,15 @@ public:
   bool compute_RB_inner_product;
 
   /**
+   * Boolean flag to indicate whether we store affine operator matrices
+   * and vectors with constraints enforced. This is true by default, but
+   * we can choose to skip it in some cases when all we need are operators
+   * without constraints enforced (e.g. when we only need to compute
+   * inner-product-type terms).
+   */
+  bool store_dirichlet_operators;
+
+  /**
    * Boolean flag to indicate whether we store a second copy of each
    * affine operator and vector which does not have Dirichlet bcs
    * enforced.
