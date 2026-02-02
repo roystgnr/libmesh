@@ -533,6 +533,9 @@
 /* define if the compiler has the sstream header */
 #undef HAVE_SSTREAM
 
+/* Define to 1 if static libraries are enabled. */
+#undef HAVE_STATIC_LIBS
+
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
 
@@ -801,6 +804,9 @@
 
 /* size of unique_id */
 #undef UNIQUE_ID_BYTES
+
+/* Define to 1 if -all-static libraries are enabled. */
+#undef USE_ALL_STATIC_LIBS
 
 /* Flag indicating if the library should be built using complex numbers */
 #undef USE_COMPLEX_NUMBERS
