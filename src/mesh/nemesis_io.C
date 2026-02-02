@@ -1681,6 +1681,38 @@ const std::vector<std::string> & Nemesis_IO::get_nodal_var_names()
   return nemhelper->nodal_var_names;
 }
 
+const std::vector<std::string> & Nemesis_IO::get_elem_var_names()
+{
+  nemhelper->read_var_names(ExodusII_IO_Helper::ELEMENTAL);
+  return nemhelper->elem_var_names;
+}
+
+const std::vector<std::string> & Nemesis_IO::get_global_var_names()
+{
+  nemhelper->read_var_names(ExodusII_IO_Helper::GLOBAL);
+  return nemhelper->global_var_names;
+}
+
+
+const std::vector<Real> & Nemesis_IO::get_time_steps()
+{
+  libmesh_error_msg_if
+    (!nemhelper->opened_for_reading,
+     "ERROR, ExodusII file must be opened for reading before calling Nemesis_IO::get_time_steps()!");
+
+  nemhelper->read_time_steps();
+  return nemhelper->time_steps;
+}
+
+
+int Nemesis_IO::get_num_time_steps()
+{
+  libmesh_error_msg_if(!nemhelper->opened_for_reading && !nemhelper->opened_for_writing,
+                       "ERROR, ExodusII file must be opened for reading or writing before calling Nemesis_IO::get_num_time_steps()!");
+
+  nemhelper->read_num_time_steps();
+  return nemhelper->num_time_steps;
+}
 
 
 void Nemesis_IO::copy_nodal_solution(System & system,
@@ -1829,6 +1861,16 @@ void Nemesis_IO::read_global_variable(std::vector<std::string> global_var_names,
     }
 }
 
+Nemesis_IO_Helper & Nemesis_IO::get_nemio_helper()
+{
+  // Provide a warning when accessing the helper object
+  // since it is a non-public API and is likely to see
+  // future API changes
+  libmesh_experimental();
+
+  return *nemhelper;
+}
+
 void Nemesis_IO::set_hdf5_writing(bool write_hdf5)
 {
     nemhelper->set_hdf5_writing(write_hdf5);
@@ -1841,6 +1883,14 @@ void Nemesis_IO::write_information_records ( const std::vector<std::string> & )
   libmesh_error_msg("ERROR, Nemesis API is not defined.");
 }
 
+const std::vector<std::string> & Nemesis_IO::get_elem_var_names()
+{
+  libmesh_error_msg("ERROR, Nemesis API is not defined.");
+
+  // Prevent potential compiler warnings about missing return statement
+  return _output_variables;
+}
+
 const std::vector<std::string> & Nemesis_IO::get_nodal_var_names()
 {
   libmesh_error_msg("ERROR, Nemesis API is not defined.");
@@ -1848,6 +1898,26 @@ const std::vector<std::string> & Nemesis_IO::get_nodal_var_names()
   // Prevent potential compiler warnings about missing return statement
   return _output_variables;
 }
+
+const std::vector<std::string> & Nemesis_IO::get_global_var_names()
+{
+  libmesh_error_msg("ERROR, Nemesis API is not defined.");
+
+  // Prevent potential compiler warnings about missing return statement
+  return _output_variables;
+}
+
+const std::vector<Real> & Nemesis_IO::get_time_steps()
+{
+  libmesh_error_msg("ERROR, Nemesis API is not defined.");
+}
+
+int Nemesis_IO::get_num_time_steps()
+{
+  libmesh_error_msg("ERROR, Nemesis API is not defined.");
+}
+
+
 
 void Nemesis_IO::copy_nodal_solution(System &, std::string, std::string, unsigned int)
 {
