@@ -1071,29 +1071,37 @@ void PetscVector<T>::create_subvector(NumericVector<T> & subvector,
   // If not, we use the appropriate PETSc routines to initialize it.
   if (!petsc_subvector->initialized())
     {
-      libmesh_assert(petsc_subvector->_type == AUTOMATIC || petsc_subvector->_type == PARALLEL);
-
-      if (supplying_global_rows)
-        // Initialize the petsc_subvector to have enough space to hold
-        // the entries which will be scattered into it.  Note: such an
-        // init() function (where we let PETSc decide the number of local
-        // entries) is not currently offered by the PetscVector
-        // class.  Should we differentiate here between sequential and
-        // parallel vector creation based on this->n_processors() ?
-        LibmeshPetscCall(VecCreateMPI(this->comm().get(),
-                                      PETSC_DECIDE,                    // n_local
-                                      cast_int<PetscInt>(rows.size()), // n_global
-                                      &(petsc_subvector->_vec)));
+      if (this->type() == SERIAL)
+        {
+          libmesh_assert(this->comm().verify(rows.size()));
+          LibmeshPetscCall(VecCreateSeq(this->comm().get(), rows.size(), &(petsc_subvector->_vec)));
+          petsc_subvector->_type = SERIAL;
+        }
       else
-        LibmeshPetscCall(VecCreateMPI(this->comm().get(),
-                                      cast_int<PetscInt>(rows.size()),
-                                      PETSC_DETERMINE,
-                                      &(petsc_subvector->_vec)));
+        {
+          if (supplying_global_rows)
+            // Initialize the petsc_subvector to have enough space to hold
+            // the entries which will be scattered into it.  Note: such an
+            // init() function (where we let PETSc decide the number of local
+            // entries) is not currently offered by the PetscVector
+            // class.  Should we differentiate here between sequential and
+            // parallel vector creation based on this->n_processors() ?
+            LibmeshPetscCall(VecCreateMPI(this->comm().get(),
+                                          PETSC_DECIDE,                    // n_local
+                                          cast_int<PetscInt>(rows.size()), // n_global
+                                          &(petsc_subvector->_vec)));
+          else
+            LibmeshPetscCall(VecCreateMPI(this->comm().get(),
+                                          cast_int<PetscInt>(rows.size()),
+                                          PETSC_DETERMINE,
+                                          &(petsc_subvector->_vec)));
+
+          // We created a parallel vector
+          petsc_subvector->_type = PARALLEL;
+        }
 
       LibmeshPetscCall(VecSetFromOptions (petsc_subvector->_vec));
 
-      // We created a parallel vector
-      petsc_subvector->_type = PARALLEL;
 
       // Mark the subvector as initialized
       petsc_subvector->_is_initialized = true;
