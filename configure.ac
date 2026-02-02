@@ -222,6 +222,11 @@ LIBMESH_TEST_CXX17_FALLTHROUGH_ATTRIBUTE
 #-----------------------------------------------------
 LT_INIT([disable-static])
 
+# Make the --enable-static setting visible in config header
+AS_IF([test "x$enable_static" = "xyes"], [
+  AC_DEFINE([HAVE_STATIC_LIBS], [1], [Define to 1 if static libraries are enabled.])
+])
+
 #-----------------------------------------------------
 # See if the user requested --enable-all-static
 #-----------------------------------------------------
