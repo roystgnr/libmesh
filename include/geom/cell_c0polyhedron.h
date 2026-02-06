@@ -151,6 +151,12 @@ public:
                             std::vector<dof_id_type> & conn) const override;
 
   /**
+   * \returns the master-space points of a subelement of the
+   * polyhedron
+   */
+  virtual std::array<Point, 4> master_subelement (unsigned int i) const override;
+
+  /**
    * Element refinement is not implemented for polyhedra.
    */
   virtual std::pair<unsigned short int, unsigned short int>

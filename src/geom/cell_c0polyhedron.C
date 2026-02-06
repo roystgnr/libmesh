@@ -163,6 +163,18 @@ void C0Polyhedron::connectivity(const unsigned int /*sf*/,
 }
 
 
+std::array<Point, 4> C0Polyhedron::master_subelement (unsigned int i) const
+{
+  libmesh_assert_less(i, this->_triangulation.size());
+
+  const auto & tet = this->_triangulation[i];
+
+  return { this->master_point(tet[0]),
+           this->master_point(tet[1]),
+           this->master_point(tet[2]),
+           tet[3] >= 0 ? this->master_point(tet[3]) : this->vertex_average() };
+}
+
 
 Real C0Polyhedron::volume () const
 {
@@ -175,10 +187,12 @@ Real C0Polyhedron::volume () const
   Real six_vol = 0;
   for (const auto & subtet : this->_triangulation)
     {
+
       const Point p0 = this->point(subtet[0]);
       const Point p1 = this->point(subtet[1]);
       const Point p2 = this->point(subtet[2]);
-      const Point p3 = this->point(subtet[3]);
+      // Last tet node can be the mid-element node
+      const Point p3 = (subtet[3] >= 0) ? this->point(subtet[3]) : this->vertex_average();
 
       const Point v01 = p1 - p0;
       const Point v02 = p2 - p0;
@@ -205,7 +219,8 @@ Point C0Polyhedron::true_centroid () const
       const Point p0 = this->point(subtet[0]);
       const Point p1 = this->point(subtet[1]);
       const Point p2 = this->point(subtet[2]);
-      const Point p3 = this->point(subtet[3]);
+      // Last tet node can be the mid-element node
+      const Point p3 = (subtet[3] >= 0) ? this->point(subtet[3]) : this->vertex_average();
 
       const Point v01 = p1 - p0;
       const Point v02 = p2 - p0;
@@ -496,6 +511,11 @@ void C0Polyhedron::retriangulate()
     node_index[node] =
       nodes_by_geometry.emplace(geometry_at(*node), node);
 
+  // First heuristic: try with no interior point
+  // This might not succeed, not every surface triangulation gives a tetrahedralization
+  // with no additional interior point
+  try
+  {
   // In 3D, this will require nested loops: an outer loop to remove
   // each vertex, and an inner loop to remove multiple tetrahedra in
   // cases where the vertex has more than 3 neighboring triangles.
@@ -825,9 +845,40 @@ void C0Polyhedron::retriangulate()
       // eliminate again.
       nodes_by_geometry.erase(geometry_it);
     }
+    // At this point our surface should just have two triangles left.
+    libmesh_assert_equal_to(surface.n_elem(), 2);
+  }
+  // Failed without an interior point.
+  // Use a single vertex-average interior point and tetrahedralize around it
+  catch (libMesh::LogicError)
+  {
+    // Clear the triangulation we started building
+    this->_triangulation.clear();
 
-  // At this point our surface should just have two triangles left.
-  libmesh_assert_equal_to(surface.n_elem(), 2);
+    // Get the vertex-average, no need to triangulate for this
+    const auto v_avg = this->vertex_average();
+    std::cout << "Tetrahedralizing new way around " << v_avg << std::endl;
+
+    // Build the tetrahedralization with each of the triangles on each side
+    for (unsigned int s : make_range(this->n_sides()))
+    {
+      const auto & [side, inward_normal, node_map] = this->_sidelinks_data[s];
+
+      for (auto t : make_range(side->n_subtriangles()))
+      {
+        // Get all the nodes
+        const auto & n1 = node_map[side->subtriangle(t)[0]];
+        const auto & n2 = node_map[side->subtriangle(t)[1]];
+        const auto & n3 = node_map[side->subtriangle(t)[2]];
+
+        // add_tet knows to use the vertex average for -1
+        if (!inward_normal)
+          this->add_tet((int)n1, (int)n2, (int)n3, -1);
+        else
+          this->add_tet((int)n1, (int)n3, (int)n2, -1);
+      }
+    }
+  }
 }
 
 
@@ -845,7 +896,7 @@ void C0Polyhedron::add_tet(int n1,
 
   const Point v12 = this->point(n2) - this->point(n1);
   const Point v13 = this->point(n3) - this->point(n1);
-  const Point v14 = this->point(n4) - this->point(n1);
+  const Point v14 = (n4 > 0 ? this->point(n4) : this->vertex_average()) - this->point(n1);
   const Real six_vol = triple_product(v12, v13, v14);
   libmesh_assert_greater(six_vol, Real(0));
 #endif
