@@ -33,7 +33,6 @@ AC_DEFUN([CONFIGURE_HDF5],
                          [AC_MSG_ERROR(bad value ${enableval} for --enable-hdf5-required)])],
                 [hdf5required=no])
 
-
   AS_IF([test "x$enablehdf5" = "xyes"],
         [
           AX_PATH_HDF5(1.8.0,$hdf5required)
@@ -119,6 +118,14 @@ dnl If string-1 and string-2 are equal (character for character),
 dnl expands to the string in 'equal', otherwise to the string in
 dnl 'not-equal'.
 is_package_required=ifelse([$2], ,no, $2)
+
+dnl If we're told that HDF5 is required, but we weren't told where to
+dnl look for it, let's hope it's in the compiler paths already: we'll
+dnl set with_hdf5=yes so that we have a chance to auto-detect it and
+dnl so that we hit the code paths where we scream if we don't detect
+dnl it (or detect too old a version of it).
+AS_IF([test "x$is_package_required" = "xyes"],
+      [with_hdf5=yes])
 
 AS_IF([test "x${with_hdf5}" != "xno"],
       [
