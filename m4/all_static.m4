@@ -24,5 +24,10 @@ AC_DEFUN([AX_ALL_STATIC],
 
           dnl Substitute into Makefiles where relevant.
           AC_SUBST(libmesh_LDFLAGS)
+
+          dnl Make the setting visible in config header
+          AS_IF([test "x$enableallstatic" = "xyes"], [
+            AC_DEFINE([USE_ALL_STATIC_LIBS], [1], [Define to 1 if -all-static libraries are enabled.])
+          ])
         ])
 ])

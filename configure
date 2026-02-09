@@ -49180,6 +49180,16 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 
 
+# Make the --enable-static setting visible in config header
+if test "x$enable_static" = "xyes"
+then :
+
+
+printf "%s\n" "#define HAVE_STATIC_LIBS 1" >>confdefs.h
+
+
+fi
+
 #-----------------------------------------------------
 # See if the user requested --enable-all-static
 #-----------------------------------------------------
@@ -49210,6 +49220,15 @@ esac
 fi
 
 
+
+                    if test "x$enableallstatic" = "xyes"
+then :
+
+
+printf "%s\n" "#define USE_ALL_STATIC_LIBS 1" >>confdefs.h
+
+
+fi
 
 fi
 
