@@ -63,9 +63,9 @@ public:
 
 #if LIBMESH_DIM > 1
   CPPUNIT_TEST( test_subdomain_id_sets );
-  CPPUNIT_TEST( test_gradient_with_out_of_mesh_value );
+  CPPUNIT_TEST( test_bad_gradient_var_with_out_of_mesh_value );
 #ifdef LIBMESH_ENABLE_SECOND_DERIVATIVES
-  CPPUNIT_TEST( test_hessian_with_out_of_mesh_value );
+  CPPUNIT_TEST( test_bad_hessian_var_with_out_of_mesh_value );
 #endif
 #ifdef LIBMESH_HAVE_PETSC
   CPPUNIT_TEST( vectorMeshFunctionLagrange );
@@ -177,7 +177,7 @@ public:
       }
   }
 
-  void test_gradient_with_out_of_mesh_value()
+  void test_bad_gradient_var_with_out_of_mesh_value()
   {
     LOG_UNIT_TEST;
 
@@ -228,7 +228,7 @@ public:
   }
 
 #ifdef LIBMESH_ENABLE_SECOND_DERIVATIVES
-  void test_hessian_with_out_of_mesh_value()
+  void test_bad_hessian_var_with_out_of_mesh_value()
   {
     LOG_UNIT_TEST;
 
