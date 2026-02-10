@@ -210,9 +210,21 @@ public:
 
     std::vector<Gradient> gradients;
     const Point p(0.4, 0.6, 0.0);
+
+    // On a distributed mesh not every processor may have every
+    // element
+    const Elem * elem = (*mesh.sub_point_locator())(p);
+    bool someone_found_elem = elem;
+    mesh.comm().max(someone_found_elem);
+    CPPUNIT_ASSERT(someone_found_elem);
+
     mesh_function.gradient(p, 0.0, gradients);
 
     CPPUNIT_ASSERT_EQUAL(std::size_t(2), gradients.size());
+
+    // Let's only test our evaluation where we know we can evaluate, in parallel
+    if (!elem || elem->processor_id() != mesh.processor_id())
+      return;
 
     LIBMESH_ASSERT_FP_EQUAL(8.0, gradients[0](0), TOLERANCE * TOLERANCE);
     LIBMESH_ASSERT_FP_EQUAL(80.0, gradients[0](1), TOLERANCE * TOLERANCE);
@@ -264,9 +276,21 @@ public:
 
     std::vector<Tensor> hessians;
     const Point p(0.4, 0.6, 0.0);
+
+    // On a distributed mesh not every processor may have every
+    // element
+    const Elem * elem = (*mesh.sub_point_locator())(p);
+    bool someone_found_elem = elem;
+    mesh.comm().max(someone_found_elem);
+    CPPUNIT_ASSERT(someone_found_elem);
+
     mesh_function.hessian(p, 0.0, hessians);
 
     CPPUNIT_ASSERT_EQUAL(std::size_t(2), hessians.size());
+
+    // Let's only test our evaluation where we know we can evaluate, in parallel
+    if (!elem || elem->processor_id() != mesh.processor_id())
+      return;
 
     LIBMESH_ASSERT_FP_EQUAL(15.0, hessians[0](0,0), tol);
     LIBMESH_ASSERT_FP_EQUAL(0.75, hessians[0](0,1), tol);
