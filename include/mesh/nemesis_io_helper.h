@@ -36,24 +36,6 @@ namespace libMesh
 class EquationSystems;
 template <typename T> class NumericVector;
 
-// The Nemesis API header file.  Should already be
-// correctly extern C'd but it doesn't hurt :)
-namespace Nemesis {
-extern "C" {
-  // this include guard gets set by exodus, but we included it
-  // in a namespace, so nemesis will not properly resolve e.g.
-  // ex_entity_id in the global namespace.  undefine the guard
-  // to get ne_nemesisI.h to properly include the typedefs
-#  ifdef EXODUS_II_HDR
-#    undef EXODUS_II_HDR
-#  endif
-#  ifdef EXODUSII_H
-#    undef EXODUSII_H
-#  endif
-#  include "ne_nemesisI.h"
-}
-}
-
 
 /**
  * This is the \p Nemesis_IO_Helper class.  Think of it as

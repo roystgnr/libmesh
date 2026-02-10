@@ -167,9 +167,35 @@ public:
   void append(bool val);
 
   /**
+   * Return list of the elemental variable names
+   */
+  const std::vector<std::string> & get_elem_var_names();
+
+  /**
    * Return list of the nodal variable names
    */
   const std::vector<std::string> & get_nodal_var_names();
+
+  /**
+   * Return list of the global variable names
+   */
+  const std::vector<std::string> & get_global_var_names();
+
+  /**
+   * \returns An array containing the timesteps in the file.
+   */
+  const std::vector<Real> & get_time_steps();
+
+  /**
+   * \returns The number of timesteps currently stored in the Exodus
+   * file.
+   *
+   * Knowing the number of time steps currently stored in the file is
+   * sometimes necessary when appending, so we can know where to start
+   * writing new data.  Throws an error if the file is not currently
+   * open for reading or writing.
+   */
+  int get_num_time_steps();
 
   /**
    * If we read in a nodal solution while reading in a mesh, we can attempt
@@ -215,6 +241,13 @@ public:
    * setting does nothing.
    */
   void set_hdf5_writing(bool write_hdf5);
+
+#ifdef LIBMESH_HAVE_NEMESIS_API
+  /**
+   * Return a reference to the Nemesis_IO_Helper object.
+   */
+  Nemesis_IO_Helper & get_nemio_helper();
+#endif
 
 private:
 

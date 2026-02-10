@@ -169,11 +169,11 @@ am__v_P_1 = :
 AM_V_GEN = $(am__v_GEN_@AM_V@)
 am__v_GEN_ = $(am__v_GEN_@AM_DEFAULT_V@)
 am__v_GEN_0 = @echo "  GEN     " $@;
-am__v_GEN_1 = 
+am__v_GEN_1 =
 AM_V_at = $(am__v_at_@AM_V@)
 am__v_at_ = $(am__v_at_@AM_DEFAULT_V@)
 am__v_at_0 = @
-am__v_at_1 = 
+am__v_at_1 =
 SOURCES =
 DIST_SOURCES =
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
@@ -609,7 +609,6 @@ DISTCLEANFILES = libmesh_config.h
 # details which are not required for the public interface
 noinst_HEADERS = \
         base/libmesh_augment_std_namespace.h \
-        mesh/nemesis_io_helper.h \
         numerics/laspack_matrix.h \
         numerics/laspack_vector.h \
         solvers/laspack_linear_solver.h \
@@ -829,6 +828,7 @@ include_HEADERS = \
         mesh/mesh_triangle_wrapper.h \
         mesh/namebased_io.h \
         mesh/nemesis_io.h \
+        mesh/nemesis_io_helper.h \
         mesh/off_io.h \
         mesh/parallel_mesh.h \
         mesh/patch.h \
@@ -1120,7 +1120,7 @@ include_HEADERS = \
         utils/utility.h \
         utils/vectormap.h \
         utils/win_gettimeofday.h \
-        utils/xdr_cxx.h 
+        utils/xdr_cxx.h
 
 
 # definition of include_HEADERS - get from auto-maintained list
@@ -1179,7 +1179,7 @@ libmesh_config.h.tmp: stamp-h1
 stamp-h1: $(srcdir)/libmesh_config.h.in $(top_builddir)/config.status
 	$(AM_V_at)rm -f stamp-h1
 	$(AM_V_GEN)cd $(top_builddir) && $(SHELL) ./config.status include/libmesh_config.h.tmp
-$(srcdir)/libmesh_config.h.in: @MAINTAINER_MODE_TRUE@ $(am__configure_deps) 
+$(srcdir)/libmesh_config.h.in: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 	$(AM_V_GEN)($(am__cd) $(top_srcdir) && $(AUTOHEADER))
 	$(AM_V_at)rm -f stamp-h1
 	$(AM_V_at)touch $@
