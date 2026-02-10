@@ -191,52 +191,72 @@ public:
 
     EquationSystems es(mesh);
     System & sys = es.add_system<System>("SimpleSystem");
-    unsigned int u_var = sys.add_variable("u", FIRST, LAGRANGE);
+    const unsigned int u_var = sys.add_variable("u", FIRST, LAGRANGE);
+    const unsigned int v_var = sys.add_variable("v", CONSTANT, MONOMIAL);
 
     es.init();
     sys.project_solution(bilinear_function, nullptr, es.parameters);
 
-    std::vector<unsigned int> variables {u_var, libMesh::invalid_uint};
+    std::vector<unsigned int> variables {u_var, v_var, libMesh::invalid_uint};
     MeshFunction mesh_function(es,
                                *sys.current_local_solution,
                                sys.get_dof_map(),
                                variables);
     mesh_function.init();
 
-    DenseVector<Number> out_of_mesh_value(2);
+    DenseVector<Number> out_of_mesh_value(3);
     out_of_mesh_value(0) = -99.0;
     out_of_mesh_value(1) = 5.25;
+    out_of_mesh_value(1) = 42;
     mesh_function.enable_out_of_mesh_mode(out_of_mesh_value);
 
-    std::vector<Gradient> gradients;
-    const Point p(0.4, 0.6, 0.0);
+    // Pick an element centroid so u and v agree
+    const Point good_p(0.375, 0.625, 0.0);
 
     // On a distributed mesh not every processor may have every
     // element
-    const Elem * elem = (*mesh.sub_point_locator())(p);
+    const Elem * elem = (*mesh.sub_point_locator())(good_p);
     bool someone_found_elem = elem;
     mesh.comm().max(someone_found_elem);
     CPPUNIT_ASSERT(someone_found_elem);
 
-    mesh_function.gradient(p, 0.0, gradients);
+    std::vector<Gradient> gradients;
+    mesh_function.gradient(good_p, 0.0, gradients);
+
+    CPPUNIT_ASSERT_EQUAL(std::size_t(3), gradients.size());
 
     // Let's only test our evaluation where we know we can evaluate, in parallel
     if (!elem || elem->processor_id() != mesh.processor_id())
       return;
-
-    CPPUNIT_ASSERT_EQUAL(std::size_t(2), gradients.size());
 
     LIBMESH_ASSERT_NUMBERS_EQUAL(8.0, gradients[0](0), TOLERANCE * TOLERANCE);
     LIBMESH_ASSERT_NUMBERS_EQUAL(80.0, gradients[0](1), TOLERANCE * TOLERANCE);
     if (LIBMESH_DIM > 2)
       LIBMESH_ASSERT_NUMBERS_EQUAL(0.0, gradients[0](2), TOLERANCE * TOLERANCE);
 
-    LIBMESH_ASSERT_NUMBERS_EQUAL(out_of_mesh_value(1),
-                                 gradients[1](0),
+    // Piecewise-constant functions have zero gradients
+    for (unsigned int d = 0; d < LIBMESH_DIM; ++d)
+      LIBMESH_ASSERT_NUMBERS_EQUAL(0, gradients[1](d), TOLERANCE * TOLERANCE);
+
+    LIBMESH_ASSERT_NUMBERS_EQUAL(out_of_mesh_value(2),
+                                 gradients[2](0),
                                  TOLERANCE * TOLERANCE);
     for (unsigned int d = 1; d < LIBMESH_DIM; ++d)
-      LIBMESH_ASSERT_NUMBERS_EQUAL(0, gradients[1](d),
+      LIBMESH_ASSERT_NUMBERS_EQUAL(0, gradients[2](d),
                                    TOLERANCE * TOLERANCE);
+
+    const Point bad_p(1.375, 0.625, 0.0);
+    mesh_function.gradient(bad_p, 0.0, gradients);
+
+    for (unsigned int vn = 0; vn != 3; ++vn)
+      {
+        LIBMESH_ASSERT_NUMBERS_EQUAL(out_of_mesh_value(vn),
+                                     gradients[vn](0),
+                                     TOLERANCE * TOLERANCE);
+        for (unsigned int d = 1; d < LIBMESH_DIM; ++d)
+          LIBMESH_ASSERT_NUMBERS_EQUAL(0, gradients[vn](d),
+                                       TOLERANCE * TOLERANCE);
+      }
   }
 
 #ifdef LIBMESH_ENABLE_SECOND_DERIVATIVES
@@ -258,20 +278,22 @@ public:
     EquationSystems es(mesh);
     System & sys = es.add_system<System>("SimpleSystem");
     unsigned int u_var = sys.add_variable("u", SECOND, LAGRANGE);
+    unsigned int v_var = sys.add_variable("v", CONSTANT, MONOMIAL);
 
     es.init();
     sys.project_solution(biquadratic_function, nullptr, es.parameters);
 
-    std::vector<unsigned int> variables {u_var, libMesh::invalid_uint};
+    std::vector<unsigned int> variables {u_var, v_var, libMesh::invalid_uint};
     MeshFunction mesh_function(es,
                                *sys.current_local_solution,
                                sys.get_dof_map(),
                                variables);
     mesh_function.init();
 
-    DenseVector<Number> out_of_mesh_value(2);
+    DenseVector<Number> out_of_mesh_value(3);
     out_of_mesh_value(0) = -99.0;
     out_of_mesh_value(1) = 5.25;
+    out_of_mesh_value(2) = 42;
     mesh_function.enable_out_of_mesh_mode(out_of_mesh_value);
 
     std::vector<Tensor> hessians;
@@ -286,11 +308,11 @@ public:
 
     mesh_function.hessian(p, 0.0, hessians);
 
+    CPPUNIT_ASSERT_EQUAL(std::size_t(3), hessians.size());
+
     // Let's only test our evaluation where we know we can evaluate, in parallel
     if (!elem || elem->processor_id() != mesh.processor_id())
       return;
-
-    CPPUNIT_ASSERT_EQUAL(std::size_t(2), hessians.size());
 
     LIBMESH_ASSERT_NUMBERS_EQUAL(15.0, hessians[0](0,0), tol);
     LIBMESH_ASSERT_NUMBERS_EQUAL(0.75, hessians[0](0,1), tol);
@@ -301,17 +323,35 @@ public:
        for (unsigned int d = 0; d < LIBMESH_DIM; ++d)
          for (unsigned int d2 = 0; d2 < LIBMESH_DIM; ++d2)
            if (d>1 || d2>1)
-             LIBMESH_ASSERT_NUMBERS_EQUAL(0, hessians[1](d,d2),
+             LIBMESH_ASSERT_NUMBERS_EQUAL(0, hessians[0](d,d2),
                                           tol);
 
-    LIBMESH_ASSERT_NUMBERS_EQUAL(out_of_mesh_value(1),
-                                 hessians[1](0,0),
+    // Piecewise-constant functions have zero Hessians
+    for (unsigned int d = 0; d < LIBMESH_DIM; ++d)
+      for (unsigned int d2 = 0; d2 < LIBMESH_DIM; ++d2)
+        LIBMESH_ASSERT_NUMBERS_EQUAL(0, hessians[1](d,d2), tol);
+
+    LIBMESH_ASSERT_NUMBERS_EQUAL(out_of_mesh_value(2),
+                                 hessians[2](0,0),
                                  tol);
     for (unsigned int d = 0; d < LIBMESH_DIM; ++d)
       for (unsigned int d2 = 0; d2 < LIBMESH_DIM; ++d2)
         if (d || d2)
-          LIBMESH_ASSERT_NUMBERS_EQUAL(0, hessians[1](d,d2),
+          LIBMESH_ASSERT_NUMBERS_EQUAL(0, hessians[2](d,d2),
                                        tol);
+
+    const Point bad_p(1.375, 0.625, 0.0);
+    mesh_function.hessian(bad_p, 0.0, hessians);
+
+    for (unsigned int vn = 0; vn != 2; ++vn)
+      {
+        LIBMESH_ASSERT_NUMBERS_EQUAL(out_of_mesh_value(vn),
+                                     hessians[vn](0,0), tol);
+        for (unsigned int d = 0; d < LIBMESH_DIM; ++d)
+          for (unsigned int d2 = 0; d2 < LIBMESH_DIM; ++d2)
+            if (d || d2)
+              LIBMESH_ASSERT_NUMBERS_EQUAL(0, hessians[vn](d,d2), tol);
+      }
   }
 #endif // LIBMESH_ENABLE_SECOND_DERIVATIVES
 
