@@ -43,6 +43,15 @@ Number bilinear_function (const Point & p,
 }
 
 
+Number biquadratic_function (const Point & p,
+                             const Parameters &,
+                             const std::string &,
+                             const std::string &)
+{
+  return 7.5*p(0)*p(0) + 75*p(1)*p(1) + 0.75*p(1)*p(0);
+}
+
+
 
 class MeshFunctionTest : public CppUnit::TestCase
 {
@@ -55,6 +64,9 @@ public:
 #if LIBMESH_DIM > 1
   CPPUNIT_TEST( test_subdomain_id_sets );
   CPPUNIT_TEST( test_gradient_with_out_of_mesh_value );
+#ifdef LIBMESH_ENABLE_SECOND_DERIVATIVES
+  CPPUNIT_TEST( test_hessian_with_out_of_mesh_value );
+#endif
 #ifdef LIBMESH_HAVE_PETSC
   CPPUNIT_TEST( vectorMeshFunctionLagrange );
   CPPUNIT_TEST( vectorMeshFunctionNedelec );
@@ -214,6 +226,67 @@ public:
       LIBMESH_ASSERT_FP_EQUAL(0, gradients[1](d),
                               TOLERANCE * TOLERANCE);
   }
+
+#ifdef LIBMESH_ENABLE_SECOND_DERIVATIVES
+  void test_hessian_with_out_of_mesh_value()
+  {
+    LOG_UNIT_TEST;
+
+    ReplicatedMesh mesh(*TestCommWorld);
+
+    MeshTools::Generation::build_square(mesh,
+                                        4, 4,
+                                        0., 1.,
+                                        0., 1.,
+                                        QUAD9);
+
+    EquationSystems es(mesh);
+    System & sys = es.add_system<System>("SimpleSystem");
+    unsigned int u_var = sys.add_variable("u", SECOND, LAGRANGE);
+
+    es.init();
+    sys.project_solution(biquadratic_function, nullptr, es.parameters);
+
+    std::vector<unsigned int> variables {u_var, libMesh::invalid_uint};
+    MeshFunction mesh_function(es,
+                               *sys.current_local_solution,
+                               sys.get_dof_map(),
+                               variables);
+    mesh_function.init();
+
+    DenseVector<Number> out_of_mesh_value(2);
+    out_of_mesh_value(0) = -99.0;
+    out_of_mesh_value(1) = 5.25;
+    mesh_function.enable_out_of_mesh_mode(out_of_mesh_value);
+
+    std::vector<Tensor> hessians;
+    const Point p(0.4, 0.6, 0.0);
+    mesh_function.hessian(p, 0.0, hessians);
+
+    CPPUNIT_ASSERT_EQUAL(std::size_t(2), hessians.size());
+
+    LIBMESH_ASSERT_FP_EQUAL(15.0, hessians[0](0,0), TOLERANCE * TOLERANCE);
+    LIBMESH_ASSERT_FP_EQUAL(0.75, hessians[0](0,1), TOLERANCE * TOLERANCE);
+    LIBMESH_ASSERT_FP_EQUAL(0.75, hessians[0](1,0), TOLERANCE * TOLERANCE);
+    LIBMESH_ASSERT_FP_EQUAL(150.0, hessians[0](1,1), TOLERANCE * TOLERANCE);
+
+    if (LIBMESH_DIM > 2)
+       for (unsigned int d = 0; d < LIBMESH_DIM; ++d)
+         for (unsigned int d2 = 0; d2 < LIBMESH_DIM; ++d2)
+           if (d>1 || d2>1)
+             LIBMESH_ASSERT_FP_EQUAL(0, hessians[1](d,d2),
+                                     TOLERANCE * TOLERANCE);
+
+    LIBMESH_ASSERT_FP_EQUAL(out_of_mesh_value(1),
+                            hessians[1](0,0),
+                            TOLERANCE * TOLERANCE);
+    for (unsigned int d = 0; d < LIBMESH_DIM; ++d)
+      for (unsigned int d2 = 0; d2 < LIBMESH_DIM; ++d2)
+        if (d || d2)
+          LIBMESH_ASSERT_FP_EQUAL(0, hessians[1](d,d2),
+                                  TOLERANCE * TOLERANCE);
+  }
+#endif // LIBMESH_ENABLE_SECOND_DERIVATIVES
 
   // test that mesh function works correctly with non-zero
   // Elem::p_level() values.
