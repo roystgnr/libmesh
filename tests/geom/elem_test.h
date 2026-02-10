@@ -1,3 +1,6 @@
+#ifndef ELEM_TEST_H
+#define ELEM_TEST_H
+
 #include "test_comm.h"
 
 #include <libmesh/elem.h>
@@ -296,3 +299,5 @@ public:
     this->_mesh->sync_subdomain_name_map();
   }
 };
+
+#endif // ELEM_TEST_H
