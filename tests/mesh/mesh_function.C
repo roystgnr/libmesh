@@ -226,17 +226,17 @@ public:
     if (!elem || elem->processor_id() != mesh.processor_id())
       return;
 
-    LIBMESH_ASSERT_FP_EQUAL(8.0, gradients[0](0), TOLERANCE * TOLERANCE);
-    LIBMESH_ASSERT_FP_EQUAL(80.0, gradients[0](1), TOLERANCE * TOLERANCE);
+    LIBMESH_ASSERT_NUMBERS_EQUAL(8.0, gradients[0](0), TOLERANCE * TOLERANCE);
+    LIBMESH_ASSERT_NUMBERS_EQUAL(80.0, gradients[0](1), TOLERANCE * TOLERANCE);
     if (LIBMESH_DIM > 2)
-      LIBMESH_ASSERT_FP_EQUAL(0.0, gradients[0](2), TOLERANCE * TOLERANCE);
+      LIBMESH_ASSERT_NUMBERS_EQUAL(0.0, gradients[0](2), TOLERANCE * TOLERANCE);
 
-    LIBMESH_ASSERT_FP_EQUAL(out_of_mesh_value(1),
-                            gradients[1](0),
-                            TOLERANCE * TOLERANCE);
+    LIBMESH_ASSERT_NUMBERS_EQUAL(out_of_mesh_value(1),
+                                 gradients[1](0),
+                                 TOLERANCE * TOLERANCE);
     for (unsigned int d = 1; d < LIBMESH_DIM; ++d)
-      LIBMESH_ASSERT_FP_EQUAL(0, gradients[1](d),
-                              TOLERANCE * TOLERANCE);
+      LIBMESH_ASSERT_NUMBERS_EQUAL(0, gradients[1](d),
+                                   TOLERANCE * TOLERANCE);
   }
 
 #ifdef LIBMESH_ENABLE_SECOND_DERIVATIVES
@@ -292,26 +292,26 @@ public:
     if (!elem || elem->processor_id() != mesh.processor_id())
       return;
 
-    LIBMESH_ASSERT_FP_EQUAL(15.0, hessians[0](0,0), tol);
-    LIBMESH_ASSERT_FP_EQUAL(0.75, hessians[0](0,1), tol);
-    LIBMESH_ASSERT_FP_EQUAL(0.75, hessians[0](1,0), tol);
-    LIBMESH_ASSERT_FP_EQUAL(150.0, hessians[0](1,1), tol);
+    LIBMESH_ASSERT_NUMBERS_EQUAL(15.0, hessians[0](0,0), tol);
+    LIBMESH_ASSERT_NUMBERS_EQUAL(0.75, hessians[0](0,1), tol);
+    LIBMESH_ASSERT_NUMBERS_EQUAL(0.75, hessians[0](1,0), tol);
+    LIBMESH_ASSERT_NUMBERS_EQUAL(150.0, hessians[0](1,1), tol);
 
     if (LIBMESH_DIM > 2)
        for (unsigned int d = 0; d < LIBMESH_DIM; ++d)
          for (unsigned int d2 = 0; d2 < LIBMESH_DIM; ++d2)
            if (d>1 || d2>1)
-             LIBMESH_ASSERT_FP_EQUAL(0, hessians[1](d,d2),
-                                     tol);
+             LIBMESH_ASSERT_NUMBERS_EQUAL(0, hessians[1](d,d2),
+                                          tol);
 
-    LIBMESH_ASSERT_FP_EQUAL(out_of_mesh_value(1),
-                            hessians[1](0,0),
-                            tol);
+    LIBMESH_ASSERT_NUMBERS_EQUAL(out_of_mesh_value(1),
+                                 hessians[1](0,0),
+                                 tol);
     for (unsigned int d = 0; d < LIBMESH_DIM; ++d)
       for (unsigned int d2 = 0; d2 < LIBMESH_DIM; ++d2)
         if (d || d2)
-          LIBMESH_ASSERT_FP_EQUAL(0, hessians[1](d,d2),
-                                  tol);
+          LIBMESH_ASSERT_NUMBERS_EQUAL(0, hessians[1](d,d2),
+                                       tol);
   }
 #endif // LIBMESH_ENABLE_SECOND_DERIVATIVES
 
