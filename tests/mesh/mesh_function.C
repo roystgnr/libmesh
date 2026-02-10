@@ -34,6 +34,16 @@ Number trilinear_function (const Point & p,
 }
 
 
+Number bilinear_function (const Point & p,
+                          const Parameters &,
+                          const std::string &,
+                          const std::string &)
+{
+  return 8*p(0) + 80*p(1);
+}
+
+
+
 class MeshFunctionTest : public CppUnit::TestCase
 {
   /**
@@ -44,6 +54,7 @@ public:
 
 #if LIBMESH_DIM > 1
   CPPUNIT_TEST( test_subdomain_id_sets );
+  CPPUNIT_TEST( test_gradient_with_out_of_mesh_value );
 #ifdef LIBMESH_HAVE_PETSC
   CPPUNIT_TEST( vectorMeshFunctionLagrange );
   CPPUNIT_TEST( vectorMeshFunctionNedelec );
@@ -152,6 +163,54 @@ public:
               }
           }
       }
+  }
+
+  void test_gradient_with_out_of_mesh_value()
+  {
+    LOG_UNIT_TEST;
+
+    ReplicatedMesh mesh(*TestCommWorld);
+
+    MeshTools::Generation::build_square(mesh,
+                                        4, 4,
+                                        0., 1.,
+                                        0., 1.,
+                                        QUAD4);
+
+    EquationSystems es(mesh);
+    System & sys = es.add_system<System>("SimpleSystem");
+    unsigned int u_var = sys.add_variable("u", FIRST, LAGRANGE);
+
+    es.init();
+    sys.project_solution(bilinear_function, nullptr, es.parameters);
+
+    std::vector<unsigned int> variables {u_var, libMesh::invalid_uint};
+    MeshFunction mesh_function(es,
+                               *sys.current_local_solution,
+                               sys.get_dof_map(),
+                               variables);
+    mesh_function.init();
+
+    DenseVector<Number> out_of_mesh_value(2);
+    out_of_mesh_value(0) = -99.0;
+    out_of_mesh_value(1) = 5.25;
+    mesh_function.enable_out_of_mesh_mode(out_of_mesh_value);
+
+    std::vector<Gradient> gradients;
+    const Point p(0.4, 0.6, 0.0);
+    mesh_function.gradient(p, 0.0, gradients);
+
+    CPPUNIT_ASSERT_EQUAL(std::size_t(2), gradients.size());
+
+    LIBMESH_ASSERT_FP_EQUAL(8.0, gradients[0](0), TOLERANCE * TOLERANCE);
+    LIBMESH_ASSERT_FP_EQUAL(80.0, gradients[0](1), TOLERANCE * TOLERANCE);
+    if (LIBMESH_DIM > 2)
+      LIBMESH_ASSERT_FP_EQUAL(0.0, gradients[0](2), TOLERANCE * TOLERANCE);
+
+    for (unsigned int d = 0; d < LIBMESH_DIM; ++d)
+      LIBMESH_ASSERT_FP_EQUAL(out_of_mesh_value(1),
+                              gradients[1](d),
+                              TOLERANCE * TOLERANCE);
   }
 
   // test that mesh function works correctly with non-zero
