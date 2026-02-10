@@ -220,11 +220,11 @@ public:
 
     mesh_function.gradient(p, 0.0, gradients);
 
-    CPPUNIT_ASSERT_EQUAL(std::size_t(2), gradients.size());
-
     // Let's only test our evaluation where we know we can evaluate, in parallel
     if (!elem || elem->processor_id() != mesh.processor_id())
       return;
+
+    CPPUNIT_ASSERT_EQUAL(std::size_t(2), gradients.size());
 
     LIBMESH_ASSERT_NUMBERS_EQUAL(8.0, gradients[0](0), TOLERANCE * TOLERANCE);
     LIBMESH_ASSERT_NUMBERS_EQUAL(80.0, gradients[0](1), TOLERANCE * TOLERANCE);
@@ -286,11 +286,11 @@ public:
 
     mesh_function.hessian(p, 0.0, hessians);
 
-    CPPUNIT_ASSERT_EQUAL(std::size_t(2), hessians.size());
-
     // Let's only test our evaluation where we know we can evaluate, in parallel
     if (!elem || elem->processor_id() != mesh.processor_id())
       return;
+
+    CPPUNIT_ASSERT_EQUAL(std::size_t(2), hessians.size());
 
     LIBMESH_ASSERT_NUMBERS_EQUAL(15.0, hessians[0](0,0), tol);
     LIBMESH_ASSERT_NUMBERS_EQUAL(0.75, hessians[0](0,1), tol);
