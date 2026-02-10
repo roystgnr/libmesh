@@ -11,23 +11,27 @@ class XdrIOTest : public MeshPerElemTest<elem_type> {
 
 public:
 
-  void test_read_gold_xda()
+  void test_read_gold(bool binary)
   {
     LOG_UNIT_TEST;
 
     Mesh input_mesh(*TestCommWorld);
 
     XdrIO xdr_io(input_mesh);
-    xdr_io.binary() = false;
+    xdr_io.binary() = binary;
     xdr_io.read("meshes/xdrio_elements/read_xdrio_" +
-                Utility::enum_to_string(elem_type) + ".xda");
+                Utility::enum_to_string(elem_type) +
+                (binary ? ".xdr" : ".xda"));
 
     input_mesh.prepare_for_use();
 
     CPPUNIT_ASSERT(this->meshes_equal_enough(input_mesh, false));
   }
 
-  void test_write_xda()
+  void test_read_gold_xda() { this->test_read_gold(false); }
+  void test_read_gold_xdr() { this->test_read_gold(true); }
+
+  void test_write(bool binary)
   {
     LOG_UNIT_TEST;
 
@@ -37,27 +41,41 @@ public:
     // was written.
     {
       XdrIO xdr_io(*this->_mesh);
-      xdr_io.binary() = false;
+      xdr_io.binary() = binary;
       xdr_io.write("write_xdrio_" +
-                   Utility::enum_to_string(elem_type) + ".xda");
+                   Utility::enum_to_string(elem_type) +
+                   (binary ? ".xdr" : ".xda"));
     }
 
     Mesh input_mesh(*TestCommWorld);
     XdrIO xdr_io_input(input_mesh);
-    xdr_io_input.binary() = false;
+    xdr_io_input.binary() = binary;
     xdr_io_input.read("write_xdrio_" +
-                      Utility::enum_to_string(elem_type) + ".xda");
+                      Utility::enum_to_string(elem_type) +
+                      (binary ? ".xdr" : ".xda"));
 
     MeshCommunication().broadcast(input_mesh);
     input_mesh.prepare_for_use();
 
     CPPUNIT_ASSERT(this->meshes_equal_enough(input_mesh, false));
   }
+
+  void test_write_xda() { this->test_write(false); }
+  void test_write_xdr() { this->test_write(true); }
+
 };
 
+#if LIBMESH_HAVE_XDR
+#define XDRIOTEST                     \
+  CPPUNIT_TEST( test_read_gold_xda ); \
+  CPPUNIT_TEST( test_read_gold_xdr ); \
+  CPPUNIT_TEST( test_write_xda ); \
+  CPPUNIT_TEST( test_write_xdr );
+#else
 #define XDRIOTEST                     \
   CPPUNIT_TEST( test_read_gold_xda ); \
   CPPUNIT_TEST( test_write_xda );
+#endif
 
 #define INSTANTIATE_XDRIOTEST(elemtype)                        \
   class XdrIOTest_##elemtype : public XdrIOTest<elemtype> {   \
