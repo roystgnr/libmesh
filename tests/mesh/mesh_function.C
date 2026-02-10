@@ -207,9 +207,11 @@ public:
     if (LIBMESH_DIM > 2)
       LIBMESH_ASSERT_FP_EQUAL(0.0, gradients[0](2), TOLERANCE * TOLERANCE);
 
-    for (unsigned int d = 0; d < LIBMESH_DIM; ++d)
-      LIBMESH_ASSERT_FP_EQUAL(out_of_mesh_value(1),
-                              gradients[1](d),
+    LIBMESH_ASSERT_FP_EQUAL(out_of_mesh_value(1),
+                            gradients[1](0),
+                            TOLERANCE * TOLERANCE);
+    for (unsigned int d = 1; d < LIBMESH_DIM; ++d)
+      LIBMESH_ASSERT_FP_EQUAL(0, gradients[1](d),
                               TOLERANCE * TOLERANCE);
   }
 
