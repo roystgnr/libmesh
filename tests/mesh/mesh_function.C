@@ -232,6 +232,9 @@ public:
   {
     LOG_UNIT_TEST;
 
+    // Hessian calculations are a little weaker in FP on some systems
+    const Real tol = TOLERANCE * std::sqrt(TOLERANCE);
+
     ReplicatedMesh mesh(*TestCommWorld);
 
     MeshTools::Generation::build_square(mesh,
@@ -265,26 +268,26 @@ public:
 
     CPPUNIT_ASSERT_EQUAL(std::size_t(2), hessians.size());
 
-    LIBMESH_ASSERT_FP_EQUAL(15.0, hessians[0](0,0), TOLERANCE * TOLERANCE);
-    LIBMESH_ASSERT_FP_EQUAL(0.75, hessians[0](0,1), TOLERANCE * TOLERANCE);
-    LIBMESH_ASSERT_FP_EQUAL(0.75, hessians[0](1,0), TOLERANCE * TOLERANCE);
-    LIBMESH_ASSERT_FP_EQUAL(150.0, hessians[0](1,1), TOLERANCE * TOLERANCE);
+    LIBMESH_ASSERT_FP_EQUAL(15.0, hessians[0](0,0), tol);
+    LIBMESH_ASSERT_FP_EQUAL(0.75, hessians[0](0,1), tol);
+    LIBMESH_ASSERT_FP_EQUAL(0.75, hessians[0](1,0), tol);
+    LIBMESH_ASSERT_FP_EQUAL(150.0, hessians[0](1,1), tol);
 
     if (LIBMESH_DIM > 2)
        for (unsigned int d = 0; d < LIBMESH_DIM; ++d)
          for (unsigned int d2 = 0; d2 < LIBMESH_DIM; ++d2)
            if (d>1 || d2>1)
              LIBMESH_ASSERT_FP_EQUAL(0, hessians[1](d,d2),
-                                     TOLERANCE * TOLERANCE);
+                                     tol);
 
     LIBMESH_ASSERT_FP_EQUAL(out_of_mesh_value(1),
                             hessians[1](0,0),
-                            TOLERANCE * TOLERANCE);
+                            tol);
     for (unsigned int d = 0; d < LIBMESH_DIM; ++d)
       for (unsigned int d2 = 0; d2 < LIBMESH_DIM; ++d2)
         if (d || d2)
           LIBMESH_ASSERT_FP_EQUAL(0, hessians[1](d,d2),
-                                  TOLERANCE * TOLERANCE);
+                                  tol);
   }
 #endif // LIBMESH_ENABLE_SECOND_DERIVATIVES
 
