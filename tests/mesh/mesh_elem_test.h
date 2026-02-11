@@ -3,8 +3,6 @@
 
 #include "../geom/elem_test.h"
 
-#ifdef LIBMESH_HAVE_EXODUS_API
-
 #include "libmesh/mesh_serializer.h"
 
 using namespace libMesh;
@@ -116,7 +114,5 @@ protected:
     return *this->_mesh == other_mesh;
   }
 };
-
-#endif // LIBMESH_HAVE_EXODUS_API
 
 #endif // MESH_ELEM_TEST_H
