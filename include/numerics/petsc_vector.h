@@ -121,7 +121,11 @@ public:
 
   /**
    * Copy assignment operator.
-   * Calls VecCopy after performing various checks.
+   * Supported assignments based on ParallelType combination (note that we lump ghosted into
+   * parallel for this method documentation):
+   *   - Assign from parallel to parallel
+   *   - Assign from serial to serial
+   *   - Assign from parallel to serial
    * \returns A reference to *this as the derived type.
    */
   PetscVector<T> & operator= (const PetscVector<T> & v);
@@ -703,7 +707,11 @@ void PetscVector<T>::init (const numeric_index_type n,
   if (this->initialized())
     this->clear();
 
-  if (ptype == AUTOMATIC)
+  if (this->comm().size() == 1)
+    // This can help with some branching decisions and is also consistent with what PETSc does... a
+    // single rank Vec is going to be a sequential vector
+    this->_type = SERIAL;
+  else if (ptype == AUTOMATIC)
     {
       if (n == n_local)
         this->_type = SERIAL;
@@ -772,6 +780,13 @@ void PetscVector<T>::init (const numeric_index_type n,
                            const ParallelType libmesh_dbg_var(ptype))
 {
   parallel_object_only();
+
+  if (this->comm().size() == 1)
+    {
+      libmesh_assert(ghost.empty());
+      this->init(n, n_local, fast, SERIAL);
+      return;
+    }
 
   PetscInt petsc_n=static_cast<PetscInt>(n);
   PetscInt petsc_n_local=static_cast<PetscInt>(n_local);
