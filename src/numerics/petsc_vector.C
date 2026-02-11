@@ -533,9 +533,9 @@ PetscVector<T>::operator = (const PetscVector<T> & v)
   libmesh_assert (v.closed());
 
   AssignmentType assign_type = Error;
-  if (this->type() == SERIAL && v.type() != SERIAL && v.size() == this->local_size())
+  if (this->type() == SERIAL && v.type() != SERIAL)
     assign_type = ParallelToSerial;
-  else if (this->type() != SERIAL && v.type() == SERIAL && this->size() == v.local_size())
+  else if (this->type() != SERIAL && v.type() == SERIAL)
     assign_type = SerialToParallel;
   else if (this->local_size() == v.local_size())
     assign_type = SameToSame;
