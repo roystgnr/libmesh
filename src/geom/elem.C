@@ -1458,7 +1458,11 @@ void Elem::make_links_to_me_local(unsigned int n, unsigned int nn)
 
   // Find any elements that might need to point to elem
   std::vector<Elem *> neigh_family;
+#ifdef LIBMESH_ENABLE_AMR
   neigh->total_family_tree_by_side(neigh_family, nn);
+#else
+  neigh_family.push_back(neigh);
+#endif
 
   // Pull objects out of the loop to reduce heap operations
   std::unique_ptr<Elem> my_side, neigh_side;

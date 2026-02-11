@@ -2329,6 +2329,7 @@ unsigned int BoundaryInfo::side_with_boundary_id(const Elem * const elem,
         // we need to check if our parents are consistent.
         if (!_children_on_boundary)
         {
+#ifdef LIBMESH_ENABLE_AMR
           // If we're on this external boundary then we share this
           // external boundary id
           if (elem->neighbor_ptr(side) == nullptr)
@@ -2337,7 +2338,6 @@ unsigned int BoundaryInfo::side_with_boundary_id(const Elem * const elem,
           // Internal boundary case
           const Elem * p = elem;
 
-#ifdef LIBMESH_ENABLE_AMR
           // If we're on an internal boundary then we need to be sure
           // it's the same internal boundary as our top_parent
           while (p != nullptr)
@@ -2347,13 +2347,14 @@ unsigned int BoundaryInfo::side_with_boundary_id(const Elem * const elem,
               break;
             p = parent;
           }
+
+          // We're on that side of our top_parent; return it
+          if (!p)
+            return side;
 #else
           // do not forget to return the internal boundary when AMR is disabled
           return side;
 #endif
-          // We're on that side of our top_parent; return it
-          if (!p)
-            return side;
         }
         // Otherwise we need to check if the child's ancestors have something on
         // the side of the child
