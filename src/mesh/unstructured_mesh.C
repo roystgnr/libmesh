@@ -677,10 +677,12 @@ void UnstructuredMesh::copy_nodes_and_elements(const MeshBase & other_mesh,
 
   // We're assuming the other mesh has proper element number ordering,
   // so that we add parents before their children, and that the other
-  // mesh is consistently partitioned.
+  // mesh is consistently partitioned.  We're not assuming that node
+  // proc ids are topologically consistent, so we don't just
+  // libmesh_assert_valid_procids.
 #ifdef DEBUG
   MeshTools::libmesh_assert_valid_amr_elem_ids(other_mesh);
-  MeshTools::libmesh_assert_valid_procids<Node>(other_mesh);
+  MeshTools::libmesh_assert_parallel_consistent_procids<Node>(other_mesh);
 #endif
 
   //Copy in Nodes
