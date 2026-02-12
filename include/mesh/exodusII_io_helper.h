@@ -1104,13 +1104,30 @@ protected:
                                    int & count,
                                    std::vector<std::string> & result);
 
-private:
+protected:
 
   /**
    * Set to true iff we want to write separate "side" elements too.
    */
   bool _add_sides = false;
 
+  /**
+   * Map of subdomains to element numbers.
+   */
+  std::map<subdomain_id_type, std::vector<dof_id_type>> _subdomain_map;
+
+  /**
+   * One beyond the last "real" subdomain id, in cases where we have
+   * "fake" subdomain ids for added sides
+   */
+  subdomain_id_type _subdomain_id_end;
+
+  /**
+   * Method for constructing _subdomain_map
+   */
+  void build_subdomain_map(const MeshBase & mesh, bool local);
+
+private:
   /**
    * write_var_names() dispatches to this function.
    */
