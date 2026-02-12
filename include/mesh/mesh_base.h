@@ -2006,7 +2006,8 @@ public:
   /**
    * Flags indicating in what ways a mesh has been prepared for use.
    */
-  struct Preparation {
+  struct Preparation
+  {
     bool is_partitioned = false,
          has_synched_id_counts = false,
          has_neighbor_ptrs = false,
