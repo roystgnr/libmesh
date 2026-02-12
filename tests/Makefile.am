@@ -78,6 +78,7 @@ unit_tests_sources = \
   mesh/mesh_input.C \
   mesh/mesh_smoother_test.C \
   mesh/mesh_stitch.C \
+  mesh/mesh_elem_test.h \
   mesh/mesh_tet_test.C \
   mesh/mesh_triangulation.C \
   mesh/mixed_dim_mesh_test.C \
@@ -95,6 +96,7 @@ unit_tests_sources = \
   mesh/write_edgeset_data.C \
   mesh/write_vec_and_scalar.C \
   mesh/project_solution_test.C \
+  mesh/xdrio_test.C \
   numerics/composite_function_test.C \
   numerics/coupling_matrix_test.C \
   numerics/distributed_vector_test.C \
