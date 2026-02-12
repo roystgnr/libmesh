@@ -198,57 +198,6 @@ const std::vector<int> prism_inverse_face_map = {4, 1, 2, 3, 5};
 #endif
   }
 
-
-  std::map<subdomain_id_type, std::vector<unsigned int>>
-  build_subdomain_map(const MeshBase & mesh, bool add_sides, subdomain_id_type & subdomain_id_end)
-  {
-    std::map<subdomain_id_type, std::vector<unsigned int>> subdomain_map;
-
-    // If we've been asked to add side elements, those will go in
-    // their own blocks.
-    if (add_sides)
-      {
-        std::set<subdomain_id_type> sbd_ids;
-        mesh.subdomain_ids(sbd_ids);
-        if (!sbd_ids.empty())
-          subdomain_id_end = *sbd_ids.rbegin()+1;
-      }
-
-    // Loop through element and map between block and element vector.
-    for (const auto & elem : mesh.active_element_ptr_range())
-      {
-        // We skip writing infinite elements to the Exodus file, so
-        // don't put them in the subdomain_map. That way the number of
-        // blocks should be correct.
-        if (elem->infinite())
-          continue;
-
-        subdomain_map[ elem->subdomain_id() ].push_back(elem->id());
-
-        // If we've been asked to add side elements, those will go in their own
-        // blocks.  We don't have any ids to list for elements that don't
-        // explicitly exist in the mesh, but we do an entry to keep
-        // track of the number of elements we'll add in each new block.
-        if (add_sides)
-          for (auto s : elem->side_index_range())
-            {
-              if (EquationSystems::redundant_added_side(*elem,s))
-                continue;
-
-              auto & marker =
-                subdomain_map[subdomain_id_end + elem->side_type(s)];
-              if (marker.empty())
-                marker.push_back(1);
-              else
-                ++marker[0];
-            }
-      }
-
-    if (!add_sides && !subdomain_map.empty())
-      subdomain_id_end = subdomain_map.rbegin()->first + 1;
-
-    return subdomain_map;
-  }
 } // end anonymous namespace
 
 
@@ -2356,8 +2305,7 @@ void ExodusII_IO_Helper::initialize(std::string str_title, const MeshBase & mesh
   num_edge = bi.n_edge_conds();
 
   // We need to know about all processors' subdomains
-  subdomain_id_type subdomain_id_end = 0;
-  auto subdomain_map = build_subdomain_map(mesh, _add_sides, subdomain_id_end);
+  build_subdomain_map(mesh, false);
 
   num_elem = n_active_elem;
   num_nodes = 0;
@@ -2478,7 +2426,7 @@ void ExodusII_IO_Helper::initialize(std::string str_title, const MeshBase & mesh
   num_side_sets = cast_int<int>(unique_side_boundaries.size());
   num_node_sets = cast_int<int>(unique_node_boundaries.size());
 
-  num_elem_blk = cast_int<int>(subdomain_map.size());
+  num_elem_blk = cast_int<int>(this->_subdomain_map.size());
 
   if (str_title.size() > MAX_LINE_LENGTH)
     {
@@ -2702,16 +2650,11 @@ void ExodusII_IO_Helper::write_elements(const MeshBase & mesh, bool use_disconti
 {
   LOG_SCOPE("write_elements()", "ExodusII_IO_Helper");
 
-  // Map from block ID to a vector of element IDs in that block.  Element
-  // IDs are now of type dof_id_type, subdomain IDs are of type subdomain_id_type.
-  subdomain_id_type subdomain_id_end = 0;
-  auto subdomain_map = build_subdomain_map(mesh, _add_sides, subdomain_id_end);
-
   if ((_run_only_on_proc0) && (this->processor_id() != 0))
     return;
 
   // element map vector
-  num_elem_blk = cast_int<int>(subdomain_map.size());
+  num_elem_blk = cast_int<int>(this->_subdomain_map.size());
   block_ids.resize(num_elem_blk);
 
   std::vector<int> elem_blk_id;
@@ -2732,15 +2675,15 @@ void ExodusII_IO_Helper::write_elements(const MeshBase & mesh, bool use_disconti
 
   // counter indexes into the block_ids vector
   unsigned int counter = 0;
-  for (auto & [subdomain_id, element_id_vec] : subdomain_map)
+  for (auto & [subdomain_id, element_id_vec] : this->_subdomain_map)
     {
       block_ids[counter] = subdomain_id;
 
-      const ElemType elem_t = (subdomain_id >= subdomain_id_end) ?
-        ElemType(subdomain_id - subdomain_id_end) :
+      const ElemType elem_t = (subdomain_id >= this->_subdomain_id_end) ?
+        ElemType(subdomain_id - this->_subdomain_id_end) :
         mesh.elem_ref(element_id_vec[0]).type();
 
-      if (subdomain_id >= subdomain_id_end)
+      if (subdomain_id >= this->_subdomain_id_end)
         {
           libmesh_assert(_add_sides);
           libmesh_assert(element_id_vec.size() == 1);
@@ -2993,14 +2936,14 @@ void ExodusII_IO_Helper::write_elements(const MeshBase & mesh, bool use_disconti
     next_fake_id = mesh.next_unique_id();
 #endif
 
-  for (auto & [subdomain_id, element_id_vec] : subdomain_map)
+  for (auto & [subdomain_id, element_id_vec] : this->_subdomain_map)
     {
       // Use the first element in the block to get representative
       // information for a "real" block.  Note that Exodus assumes all
       // elements in a block are of the same type!  We are using that
       // same assumption here!
-      const ElemType elem_t = (subdomain_id >= subdomain_id_end) ?
-        ElemType(subdomain_id - subdomain_id_end) :
+      const ElemType elem_t = (subdomain_id >= this->_subdomain_id_end) ?
+        ElemType(subdomain_id - this->_subdomain_id_end) :
         mesh.elem_ref(element_id_vec[0]).type();
 
       const auto & conv = get_conversion(elem_t);
@@ -3010,7 +2953,7 @@ void ExodusII_IO_Helper::write_elements(const MeshBase & mesh, bool use_disconti
 
       // If this is a *real* block, we just loop over vectors of
       // element ids to add.
-      if (subdomain_id < subdomain_id_end)
+      if (subdomain_id < this->_subdomain_id_end)
       {
         connect.resize(element_id_vec.size()*num_nodes_per_elem);
 
@@ -3130,7 +3073,7 @@ void ExodusII_IO_Helper::write_elements(const MeshBase & mesh, bool use_disconti
          nullptr,        // elem_edge_conn (unused)
          nullptr);       // elem_face_conn (unused)
       EX_CHECK_ERR(ex_err, "Error writing element connectivities");
-    } // end for (auto & [subdomain_id, element_id_vec] : subdomain_map)
+    } // end for (auto & [subdomain_id, element_id_vec] : this->_subdomain_map)
 
   // write out the element number map that we created
   ex_err = exII::ex_put_elem_num_map(ex_id, elem_num_map.data());
@@ -4509,12 +4452,7 @@ void ExodusII_IO_Helper::write_element_values
   ex_err = exII::ex_get_variable_param(ex_id, exII::EX_ELEM_BLOCK, &num_elem_vars);
   EX_CHECK_ERR(ex_err, "Error reading number of elemental variables.");
 
-  // We will eventually loop over the element blocks (subdomains) and
-  // write the data one block at a time. Build a data structure that
-  // maps each subdomain to a list of element ids it contains.
-  std::map<subdomain_id_type, std::vector<unsigned int>> subdomain_map;
-  for (const auto & elem : mesh.active_element_ptr_range())
-    subdomain_map[elem->subdomain_id()].push_back(elem->id());
+  this->build_subdomain_map(mesh, false);
 
   // Use mesh.n_elem() to access into the values vector rather than
   // the number of elements the Exodus writer thinks the mesh has,
@@ -4533,13 +4471,13 @@ void ExodusII_IO_Helper::write_element_values
   for (unsigned int var_id=0; var_id<static_cast<unsigned>(num_elem_vars); ++var_id)
     {
       // The size of the subdomain map is the number of blocks.
-      auto it = subdomain_map.begin();
+      auto it = this->_subdomain_map.begin();
 
       // Reference to the set of active subdomains for the current variable.
       const auto & active_subdomains
         = vars_active_subdomains[var_id];
 
-      for (unsigned int j=0; it!=subdomain_map.end(); ++it, ++j)
+      for (unsigned int j=0; it!=this->_subdomain_map.end(); ++it, ++j)
         {
           // Skip any variable/subdomain pairs that are inactive.
           // Note that if active_subdomains is empty, it is interpreted
@@ -4955,6 +4893,59 @@ get_complex_subdomain_to_var_names
   return ret;
 }
 
+
+
+void ExodusII_IO_Helper::build_subdomain_map(const MeshBase & mesh, bool local)
+{
+  // Start from scratch
+  this->_subdomain_map.clear();
+  this->_subdomain_id_end = 0;
+
+  // If we've been asked to add side elements, those will go in
+  // their own blocks.
+  if (this->_add_sides)
+    {
+      std::set<subdomain_id_type> sbd_ids;
+      mesh.subdomain_ids(sbd_ids);
+      if (!sbd_ids.empty())
+        this->_subdomain_id_end = *sbd_ids.rbegin()+1;
+    }
+
+  // Loop through element and map between block and element vector.
+  const auto range = local ? mesh.active_local_element_ptr_range() :
+      mesh.active_element_ptr_range();
+  for (const auto & elem : range)
+    {
+      // We skip writing infinite elements to the Exodus file, so
+      // don't put them in the subdomain_map. That way the number of
+      // blocks should be correct.
+      if (elem->infinite())
+        continue;
+
+      this->_subdomain_map[ elem->subdomain_id() ].push_back(elem->id());
+
+      // If we've been asked to add side elements, those will go in their own
+      // blocks.  We don't have any ids to list for elements that don't
+      // explicitly exist in the mesh, but we do an entry to keep
+      // track of the number of elements we'll add in each new block.
+      if (this->_add_sides)
+        for (auto s : elem->side_index_range())
+          {
+            if (EquationSystems::redundant_added_side(*elem,s))
+              continue;
+
+            auto & marker =
+              this->_subdomain_map[this->_subdomain_id_end + elem->side_type(s)];
+            if (marker.empty())
+              marker.push_back(1);
+            else
+              ++marker[0];
+          }
+    }
+
+  if (!this->_add_sides && !this->_subdomain_map.empty())
+    this->_subdomain_id_end = this->_subdomain_map.rbegin()->first + 1;
+}
 
 
 int ExodusII_IO_Helper::Conversion::get_node_map(int i) const
