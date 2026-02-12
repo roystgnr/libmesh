@@ -191,17 +191,13 @@ DistributedMesh::DistributedMesh (const MeshBase & other_mesh) :
   _next_free_unpartitioned_node_id(this->n_processors()),
   _next_free_unpartitioned_elem_id(this->n_processors())
 {
-  this->copy_nodes_and_elements(other_mesh, true);
+  // Just copy, skipping preparation
+  this->copy_nodes_and_elements(other_mesh, true, 0, 0, 0, nullptr, true);
 
   this->allow_find_neighbors(other_mesh.allow_find_neighbors());
   this->allow_renumbering(other_mesh.allow_renumbering());
   this->allow_remote_element_removal(other_mesh.allow_remote_element_removal());
   this->skip_partitioning(other_mesh.skip_partitioning());
-
-  // The prepare_for_use() in copy_nodes_and_elements() is going to be
-  // tricky to remove without breaking backwards compatibility, but it
-  // updates some things we want to just copy.
-  this->copy_cached_data(other_mesh);
 
   this->copy_constraint_rows(other_mesh);
 
