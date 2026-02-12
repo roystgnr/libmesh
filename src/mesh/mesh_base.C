@@ -119,6 +119,7 @@ MeshBase::MeshBase (const MeshBase & other_mesh) :
   _elem_dims(other_mesh._elem_dims),
   _elem_default_orders(other_mesh._elem_default_orders),
   _supported_nodal_order(other_mesh._supported_nodal_order),
+  _mesh_subdomains(other_mesh._mesh_subdomains),
   _elemset_codes_inverse_map(other_mesh._elemset_codes_inverse_map),
   _all_elemset_ids(other_mesh._all_elemset_ids),
   _spatial_dimension(other_mesh._spatial_dimension),
@@ -207,6 +208,7 @@ MeshBase& MeshBase::operator= (MeshBase && other_mesh)
   _elem_dims = std::move(other_mesh.elem_dimensions());
   _elem_default_orders = std::move(other_mesh.elem_default_orders());
   _supported_nodal_order = other_mesh.supported_nodal_order();
+  _mesh_subdomains = other_mesh._mesh_subdomains;
   _elemset_codes = std::move(other_mesh._elemset_codes);
   _elemset_codes_inverse_map = std::move(other_mesh._elemset_codes_inverse_map);
   _all_elemset_ids = std::move(other_mesh._all_elemset_ids);
