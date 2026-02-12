@@ -1766,7 +1766,7 @@ void MeshTools::Modification::change_subdomain_id (MeshBase & mesh,
 
   // We just invalidated mesh.get_subdomain_ids(), but it might not be
   // efficient to fix that here.
-  mesh.set_hasnt_cached_elem_data();
+  mesh.unset_has_cached_elem_data();
 }
 
 

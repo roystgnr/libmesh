@@ -899,7 +899,7 @@ void UnstructuredMesh::copy_nodes_and_elements(const MeshBase & other_mesh,
   // actually be prepared now.
   if (skip_find_neighbors ||
       !was_prepared || !other_mesh.is_prepared())
-    this->set_isnt_prepared();
+    this->unset_is_prepared();
 }
 
 

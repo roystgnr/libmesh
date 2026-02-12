@@ -219,12 +219,28 @@ public:
   Preparation preparation () const
   { return _preparation; }
 
+#ifdef LIBMESH_ENABLE_DEPRECATED
+  /**
+   * Tells this we have done some operation where we should no longer
+   * consider ourself prepared.  This is a very coarse setting; it is
+   * generally more efficient to mark finer-grained settings instead.
+   *
+   * This method name is now deprecated, in part to match the less
+   * awkward unset_has_ names of the more fine-grained methods, in
+   * part as a way to prompt older user codes to use the more
+   * fine-grained methods where they can, to speed up the
+   * complete_preparation() calls afterward.
+   */
+  void set_isnt_prepared()
+  { libmesh_deprecated(); _preparation = false; }
+#endif // LIBMESH_ENABLE_DEPRECATED
+
   /**
    * Tells this we have done some operation where we should no longer
    * consider ourself prepared.  This is a very coarse setting; it is
    * generally more efficient to mark finer-grained settings instead.
    */
-  void set_isnt_prepared()
+  void unset_is_prepared()
   { _preparation = false; }
 
   /**
@@ -234,7 +250,7 @@ public:
    * User code which adds elements to this mesh must either partition
    * them too or call this method.
    */
-  void set_isnt_partitioned()
+  void unset_is_partitioned()
   { _preparation.is_partitioned = false; }
 
   /**
@@ -245,7 +261,7 @@ public:
    * User code which does distributed additions of nodes or elements
    * must call either this method or \p update_parallel_id_counts().
    */
-  void set_hasnt_synched_id_counts()
+  void unset_has_synched_id_counts()
   { _preparation.has_synched_id_counts = false; }
 
   /**
@@ -258,7 +274,7 @@ public:
    * function or manually set neighbor pointer from and to those
    * elements.
    */
-  void set_hasnt_neighbor_ptrs()
+  void unset_has_neighbor_ptrs()
   { _preparation.has_neighbor_ptrs = false; }
 
   /**
@@ -269,7 +285,7 @@ public:
    * User code which adds new elements to this mesh must call this
    * function.
    */
-  void set_hasnt_cached_elem_data()
+  void unset_has_cached_elem_data()
   { _preparation.has_cached_elem_data = false; }
 
   /**
@@ -281,7 +297,7 @@ public:
    * that manipulates interior parents or their boundary elements may
    * be an exception.
    */
-  void set_hasnt_interior_parent_ptrs()
+  void unset_has_interior_parent_ptrs()
   { _preparation.has_interior_parent_ptrs = false; }
 
   /**
@@ -295,7 +311,7 @@ public:
    * addition to manually communicating elements with newly-created
    * ghosting requirements.
    */
-  void set_hasnt_removed_remote_elements()
+  void unset_has_removed_remote_elements()
   { _preparation.has_removed_remote_elements = false; }
 
   /**
@@ -306,7 +322,7 @@ public:
    * it in MeshRefinement.  User code which deletes elements without
    * carefully deleting orphaned nodes should call this manually.
    */
-  void set_hasnt_removed_orphaned_nodes()
+  void unset_has_removed_orphaned_nodes()
   { _preparation.has_removed_orphaned_nodes = false; }
 
   /**
@@ -318,7 +334,7 @@ public:
    * User code which moves nodes ... should probably call this method,
    * in case ghosting functors depending on position exist?
    */
-  void hasnt_reinit_ghosting_functors()
+  void unset_has_reinit_ghosting_functors()
   { _preparation.has_reinit_ghosting_functors = false; }
 
   /**
@@ -328,7 +344,7 @@ public:
    * User code which removes elements, or which adds or removes
    * boundary entries, should call this method.
    */
-  void set_hasnt_boundary_id_sets()
+  void unset_has_boundary_id_sets()
   { _preparation.has_boundary_id_sets = false; }
 
   /**
@@ -1259,7 +1275,7 @@ public:
    * For backwards compatibility, prepare_for_use() performs *all* those
    * steps, regardless of the official preparation() state of the
    * mesh.  In codes which have maintained a valid preparation() state
-   * via methods such as set_hasnt_synched_id_counts(), calling
+   * via methods such as unset_has_synched_id_counts(), calling
    * complete_preparation() will result in a fully-prepared mesh at
    * less cost.
    *
