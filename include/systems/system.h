@@ -1189,12 +1189,15 @@ public:
    * for this system.  Same as before, but assumes \p LAGRANGE
    * as default value for \p FEType.family. If \p active_subdomains is either
    * \p nullptr (the default) or points to an empty set, then it will be assumed
-   * that \p var has no subdomain restrictions
+   * that \p var has no subdomain restrictions. If \p p_refinement is
+   * false, then even when on an \p Elem with non-zero \p p_level()
+   * this variable will not be p-refined.
    */
   unsigned int add_variable (std::string_view var,
                              const Order order = FIRST,
                              const FEFamily = LAGRANGE,
-                             const std::set<subdomain_id_type> * const active_subdomains = nullptr);
+                             const std::set<subdomain_id_type> * const active_subdomains = nullptr,
+                             const bool p_refinement = true);
 
   /**
    * Adds the variables \p vars to the list of variables
@@ -1235,12 +1238,15 @@ public:
    * for this system.  Same as before, but assumes \p LAGRANGE
    * as default value for \p FEType.family. If \p active_subdomains is either
    * \p nullptr (the default) or points to an empty set, then it will be assumed that
-   * \p var has no subdomain restrictions
+   * \p var has no subdomain restrictions. If \p p_refinement is
+   * false, then even when on an \p Elem with non-zero \p p_level()
+   * this variable will not be p-refined.
    */
   unsigned int add_variables (const std::vector<std::string> & vars,
                               const Order order = FIRST,
                               const FEFamily = LAGRANGE,
-                              const std::set<subdomain_id_type> * const active_subdomains = nullptr);
+                              const std::set<subdomain_id_type> * const active_subdomains = nullptr,
+                              const bool p_refinement = true);
 
   /**
    * Return a constant reference to \p Variable \p var.

@@ -1349,10 +1349,11 @@ unsigned int System::add_variable (std::string_view var,
 unsigned int System::add_variable (std::string_view var,
                                    const Order order,
                                    const FEFamily family,
-                                   const std::set<subdomain_id_type> * const active_subdomains)
+                                   const std::set<subdomain_id_type> * const active_subdomains,
+                                   const bool p_refinement)
 {
   return this->add_variable(var,
-                            FEType(order, family),
+                            FEType(order, family).with_p_refinement(p_refinement),
                             active_subdomains);
 }
 
@@ -1370,10 +1371,11 @@ unsigned int System::add_variables (const std::vector<std::string> & vars,
 unsigned int System::add_variables (const std::vector<std::string> & vars,
                                     const Order order,
                                     const FEFamily family,
-                                    const std::set<subdomain_id_type> * const active_subdomains)
+                                    const std::set<subdomain_id_type> * const active_subdomains,
+                                    const bool p_refinement)
 {
   return this->add_variables(vars,
-                             FEType(order, family),
+                             FEType(order, family).with_p_refinement(p_refinement),
                              active_subdomains);
 }
 
