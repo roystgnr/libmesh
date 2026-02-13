@@ -1628,9 +1628,7 @@ void GenericProjector<FFunctor, GFunctor, FValue, ProjectionAction>::SortAndCopy
           if (!var.active_on_subdomain(elem->subdomain_id()))
             continue;
           const FEType fe_type = var.type();
-          const auto & dof_map = this->projector.system.get_dof_map();
-          const auto vg = dof_map.var_group_from_var_number(v_num);
-          const bool add_p_level = dof_map.should_p_refine(vg);
+          const bool add_p_level = fe_type.p_refinement;
 
           // If we're trying to do projections on an isogeometric
           // analysis mesh, only the finite element nodes constrained
@@ -2305,8 +2303,7 @@ void GenericProjector<FFunctor, GFunctor, FValue, ProjectionAction>::ProjectVert
                           base_fe_type,
                           &elem,
                           elem.get_node_index(&vertex),
-                          this->projector.system.get_dof_map().should_p_refine(
-                              this->projector.system.get_dof_map().var_group_from_var_number(var))),
+                          base_fe_type.p_refinement),
                       (unsigned int)(1 + dim));
 
                   const FValue val =
@@ -2561,8 +2558,7 @@ void GenericProjector<FFunctor, GFunctor, FValue, ProjectionAction>::ProjectSide
             continue;
 
           FEType fe_type = base_fe_type;
-          const auto & dof_map = system.get_dof_map();
-          const bool add_p_level = dof_map.should_p_refine_var(var);
+          const bool add_p_level = base_fe_type.p_refinement;
 
           // This may be a p refined element
           fe_type.order = fe_type.order + add_p_level*elem.p_level();
@@ -2721,9 +2717,7 @@ void GenericProjector<FFunctor, GFunctor, FValue, ProjectionAction>::ProjectInte
           context.get_element_fe( var, fe, dim );
 
           FEType fe_type = base_fe_type;
-          const auto & dof_map = system.get_dof_map();
-          const auto vg = dof_map.var_group_from_var_number(var);
-          const bool add_p_level = dof_map.should_p_refine(vg);
+          const bool add_p_level = fe_type.p_refinement;
 
           // This may be a p refined element
           fe_type.order = fe_type.order + add_p_level * elem->p_level();

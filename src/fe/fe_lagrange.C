@@ -907,7 +907,7 @@ void lagrange_compute_constraints (DofConstraints & constraints,
 
   const Variable & var = dof_map.variable(variable_number);
   const FEType fe_type = var.type();
-  const bool add_p_level = dof_map.should_p_refine_var(variable_number);
+  const bool add_p_level = fe_type.p_refinement;
 
   // Pull objects out of the loop to reduce heap operations
   std::vector<dof_id_type> my_dof_indices, parent_dof_indices;

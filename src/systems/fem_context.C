@@ -244,8 +244,7 @@ void FEMContext::init_internal_data(const System & sys)
                                    unsigned int i)
     {
       FEType fe_type = sys.variable_type(i);
-      const auto & dof_map = sys.get_dof_map();
-      const bool add_p_level = dof_map.should_p_refine(dof_map.var_group_from_var_number(i));
+      const bool add_p_level = fe_type.p_refinement;
 
       auto & element_fe = _element_fe[dim][fe_type];
       auto & side_fe = _side_fe[dim][fe_type];

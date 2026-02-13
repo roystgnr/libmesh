@@ -1550,7 +1550,7 @@ FEGenericBase<OutputType>::compute_proj_constraints (DofConstraints & constraint
 
   const Variable & var = dof_map.variable(variable_number);
   const FEType & base_fe_type = var.type();
-  const bool add_p_level = dof_map.should_p_refine_var(variable_number);
+  const bool add_p_level = base_fe_type.p_refinement;
 
   // Construct FE objects for this element and its neighbors.
   std::unique_ptr<FEGenericBase<OutputShape>> my_fe
