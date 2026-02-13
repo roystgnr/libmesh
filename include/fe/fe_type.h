@@ -438,7 +438,13 @@ struct hash<libMesh::FEType>
       // Old compiler versions seem to need the static_cast
       libMesh::boostcopy::hash_combine(seed, static_cast<int>(fe_type.family));
       libMesh::boostcopy::hash_combine(seed, fe_type.order._order);
-      return seed;
+      libMesh::boostcopy::hash_combine(seed, static_cast<int>(fe_type.p_refinement));
+#ifdef LIBMESH_ENABLE_INFINITE_ELEMENTS
+      libMesh::boostcopy::hash_combine(seed, static_cast<int>(fe_type.radial_family));
+      libMesh::boostcopy::hash_combine(seed, fe_type.radial_order._order);
+      libMesh::boostcopy::hash_combine(seed, static_cast<int>(fe_type.inf_map));
+#endif // ifdef LIBMESH_ENABLE_INFINITE_ELEMENTS
+     return seed;
     }
 };
 }
