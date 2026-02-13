@@ -833,8 +833,7 @@ EquationSystems::build_parallel_solution_vector(const std::set<std::string> * sy
           const FEType & fe_type           = system.variable_type(var);
           const Variable & var_description = system.variable(var);
           unsigned int n_vec_dim = FEInterface::n_vec_dim( sys_ptr->get_mesh(), fe_type );
-          const auto vg = dof_map.var_group_from_var_number(var);
-          const bool add_p_level = dof_map.should_p_refine(vg);
+          const bool add_p_level = fe_type.p_refinement;
 
           for (const auto & elem : _mesh.active_local_element_ptr_range())
             {
@@ -1374,8 +1373,7 @@ EquationSystems::build_discontinuous_solution_vector
 
               const FEType & fe_type = system->variable_type(var);
               const Variable & var_description = system->variable(var);
-              const auto vg = dof_map.var_group_from_var_number(var);
-              const bool add_p_level = dof_map.should_p_refine(vg);
+              const bool add_p_level = fe_type.p_refinement;
 
               unsigned int nn=0;
 
