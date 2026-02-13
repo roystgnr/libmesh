@@ -2131,6 +2131,77 @@ void ExodusII_IO_Helper::read_elemental_var_values(std::string elemental_var_nam
 
 
 
+std::vector<std::map<dof_id_type, dof_id_type>>
+ExodusII_IO_Helper::read_extra_integers
+  (const std::vector<std::string> & extra_integer_var_names)
+{
+  std::vector<std::map<dof_id_type, dof_id_type>>
+    extra_integer_values(extra_integer_var_names.size());
+
+  if (extra_integer_var_names.empty())
+    return extra_integer_values;
+
+  // Make sure we have an up-to-date count of the number of time steps in the file.
+  this->read_num_time_steps();
+
+  // Prepare to check if each real number is outside of the
+  // range we can convert exactly
+
+  const int exodus_digits = _single_precision ?
+                            std::numeric_limits<float>::digits :
+                            std::numeric_limits<double>::digits;
+
+  const int shift = std::min(std::numeric_limits<Real>::digits,
+                             exodus_digits);
+
+  const long long max_representation = 1LL << shift;
+
+  for (auto i : index_range(extra_integer_var_names))
+    {
+      std::map<dof_id_type, Real> raw_vals;
+
+      // Read element extra "integers" as doubles from the last time step
+      this->read_elemental_var_values(extra_integer_var_names[i], this->num_time_steps, raw_vals);
+
+      // Convert doubles to actual integers, at least within the
+      // largest convex subset of doubles where this is a bijection.
+      auto & values = extra_integer_values[i];
+
+      for (auto [elem_id, extra_val] : raw_vals)
+        {
+          if (extra_val == Real(-1))
+            {
+              values[elem_id] = DofObject::invalid_id;
+              continue;
+            }
+
+          // Ignore FE_INVALID here even if we've enabled FPEs; a
+          // thrown exception is preferred over an FPE signal.
+          FPEDisabler disable_fpes;
+          const long long int_val = std::llround(extra_val);
+
+          libmesh_error_msg_if(int_val > max_representation,
+                               "Error! An element integer value higher than "
+                               << max_representation
+                               << " was found! Exodus uses real numbers for storing element "
+                               " integers, which can only represent integers from 0 to "
+                               << max_representation << ".");
+
+          libmesh_error_msg_if(int_val < 0,
+                               "Error! An element integer value less than -1"
+                               << " was found! Exodus uses real numbers for storing element "
+                               " integers, which can only represent integers from 0 to "
+                               << max_representation << ".");
+
+          values[elem_id] = cast_int<dof_id_type>(int_val);
+        }
+    }
+
+  return extra_integer_values;
+}
+
+
+
 dof_id_type ExodusII_IO_Helper::get_libmesh_node_id(int exodus_node_id)
 {
   return this->get_libmesh_id(exodus_node_id, this->node_num_map);

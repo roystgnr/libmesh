@@ -307,6 +307,18 @@ public:
                                  std::map<dof_id_type, Real> & elem_var_value_map);
 
   /**
+   * Reads element "extra integer" values, using the variable names
+   * specified in \p extra_integer_var_names, and converting the
+   * stored values to integer format.  The returned value is a vector
+   * (indexed in the same way as extra_integer_vars) of maps from
+   * element id to extra integer value.
+   *
+   * Currently values from the last time step are used.
+   */
+  std::vector<std::map<dof_id_type, dof_id_type>> read_extra_integers(
+    const std::vector<std::string> & extra_integer_var_names);
+
+  /**
    * Helper function that takes a (1-based) Exodus node/elem id and
    * determines the corresponding libMesh Node/Elem id. Takes into account
    * whether the user has chosen to set the Node/Elem unique ids based on
