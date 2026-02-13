@@ -66,7 +66,7 @@ MeshBase::MeshBase (const Parallel::Communicator & comm_in,
   _n_parts       (1),
   _default_mapping_type(LAGRANGE_MAP),
   _default_mapping_data(0),
-  _is_prepared   (false),
+  _preparation (),
   _point_locator (),
   _count_lower_dim_elems_in_point_locator(true),
   _partitioner   (),
@@ -99,7 +99,7 @@ MeshBase::MeshBase (const MeshBase & other_mesh) :
   _n_parts       (other_mesh._n_parts),
   _default_mapping_type(other_mesh._default_mapping_type),
   _default_mapping_data(other_mesh._default_mapping_data),
-  _is_prepared   (other_mesh._is_prepared),
+  _preparation (other_mesh._preparation),
   _point_locator (),
   _count_lower_dim_elems_in_point_locator(other_mesh._count_lower_dim_elems_in_point_locator),
   _partitioner   (),
@@ -119,6 +119,7 @@ MeshBase::MeshBase (const MeshBase & other_mesh) :
   _elem_dims(other_mesh._elem_dims),
   _elem_default_orders(other_mesh._elem_default_orders),
   _supported_nodal_order(other_mesh._supported_nodal_order),
+  _mesh_subdomains(other_mesh._mesh_subdomains),
   _elemset_codes_inverse_map(other_mesh._elemset_codes_inverse_map),
   _all_elemset_ids(other_mesh._all_elemset_ids),
   _spatial_dimension(other_mesh._spatial_dimension),
@@ -187,7 +188,7 @@ MeshBase& MeshBase::operator= (MeshBase && other_mesh)
   _n_parts = other_mesh.n_partitions();
   _default_mapping_type = other_mesh.default_mapping_type();
   _default_mapping_data = other_mesh.default_mapping_data();
-  _is_prepared = other_mesh.is_prepared();
+  _preparation = other_mesh._preparation;
   _point_locator = std::move(other_mesh._point_locator);
   _count_lower_dim_elems_in_point_locator = other_mesh.get_count_lower_dim_elems_in_point_locator();
 #ifdef LIBMESH_ENABLE_UNIQUE_ID
@@ -207,6 +208,7 @@ MeshBase& MeshBase::operator= (MeshBase && other_mesh)
   _elem_dims = std::move(other_mesh.elem_dimensions());
   _elem_default_orders = std::move(other_mesh.elem_default_orders());
   _supported_nodal_order = other_mesh.supported_nodal_order();
+  _mesh_subdomains = other_mesh._mesh_subdomains;
   _elemset_codes = std::move(other_mesh._elemset_codes);
   _elemset_codes_inverse_map = std::move(other_mesh._elemset_codes_inverse_map);
   _all_elemset_ids = std::move(other_mesh._all_elemset_ids);
@@ -283,7 +285,7 @@ bool MeshBase::locally_equals (const MeshBase & other_mesh) const
     return false;
   if (_default_mapping_data != other_mesh._default_mapping_data)
     return false;
-  if (_is_prepared != other_mesh._is_prepared)
+  if (_preparation != other_mesh._preparation)
     return false;
   if (_count_lower_dim_elems_in_point_locator !=
         other_mesh._count_lower_dim_elems_in_point_locator)
@@ -794,6 +796,8 @@ void MeshBase::remove_orphaned_nodes ()
   for (const auto & node : this->node_ptr_range())
     if (!connected_nodes.count(node))
       this->delete_node(node);
+
+  _preparation.has_removed_orphaned_nodes = true;
 }
 
 
@@ -834,9 +838,23 @@ void MeshBase::prepare_for_use (const bool skip_renumber_nodes_and_elements)
 
 
 
+
 void MeshBase::prepare_for_use ()
 {
-  LOG_SCOPE("prepare_for_use()", "MeshBase");
+  // Mark everything as unprepared, except for those things we've been
+  // told we don't need to prepare, for backwards compatibility
+  this->clear_point_locator();
+  _preparation = false;
+  _preparation.has_neighbor_ptrs = _skip_find_neighbors;
+  _preparation.has_removed_remote_elements = !_allow_remote_element_removal;
+
+  this->complete_preparation();
+}
+
+
+void MeshBase::complete_preparation()
+{
+  LOG_SCOPE("complete_preparation()", "MeshBase");
 
   parallel_object_only();
 
@@ -871,15 +889,21 @@ void MeshBase::prepare_for_use ()
   // using, but our partitioner might need that consistency and/or
   // might be confused by orphaned nodes.
   if (!_skip_renumber_nodes_and_elements)
-    this->renumber_nodes_and_elements();
+    {
+      if (!_preparation.has_removed_orphaned_nodes ||
+          !_preparation.has_synched_id_counts)
+        this->renumber_nodes_and_elements();
+    }
   else
     {
-      this->remove_orphaned_nodes();
-      this->update_parallel_id_counts();
+      if (!_preparation.has_removed_orphaned_nodes)
+        this->remove_orphaned_nodes();
+      if (!_preparation.has_synched_id_counts)
+        this->update_parallel_id_counts();
     }
 
   // Let all the elements find their neighbors
-  if (!_skip_find_neighbors)
+  if (!_skip_find_neighbors && !_preparation.has_neighbor_ptrs)
     this->find_neighbors();
 
   // The user may have set boundary conditions.  We require that the
@@ -892,11 +916,13 @@ void MeshBase::prepare_for_use ()
 
   // Search the mesh for all the dimensions of the elements
   // and cache them.
-  this->cache_elem_data();
+  if (!_preparation.has_cached_elem_data)
+    this->cache_elem_data();
 
   // Search the mesh for elements that have a neighboring element
   // of dim+1 and set that element as the interior parent
-  this->detect_interior_parents();
+  if (!_preparation.has_interior_parent_ptrs)
+    this->detect_interior_parents();
 
   // Fix up node unique ids in case mesh generation code didn't take
   // exceptional care to do so.
@@ -908,39 +934,49 @@ void MeshBase::prepare_for_use ()
   MeshTools::libmesh_assert_valid_unique_ids(*this);
 #endif
 
-  // Reset our PointLocator.  Any old locator is invalidated any time
-  // the elements in the underlying elements in the mesh have changed,
-  // so we clear it here.
-  this->clear_point_locator();
-
   // Allow our GhostingFunctor objects to reinit if necessary.
   // Do this before partitioning and redistributing, and before
   // deleting remote elements.
-  this->reinit_ghosting_functors();
+  if (!_preparation.has_reinit_ghosting_functors)
+    this->reinit_ghosting_functors();
 
   // Partition the mesh unless *all* partitioning is to be skipped.
   // If only noncritical partitioning is to be skipped, the
   // partition() call will still check for orphaned nodes.
-  if (!skip_partitioning())
+  if (!skip_partitioning() && !_preparation.is_partitioned)
     this->partition();
+  else if (!this->n_unpartitioned_elem() &&
+           !this->n_unpartitioned_nodes())
+    _preparation.is_partitioned = true;
 
   // If we're using DistributedMesh, we'll probably want it
   // parallelized.
-  if (this->_allow_remote_element_removal)
+  if (this->_allow_remote_element_removal &&
+      !_preparation.has_removed_remote_elements)
     this->delete_remote_elements();
+  else
+    _preparation.has_removed_remote_elements = true;
 
   // Much of our boundary info may have been for now-remote parts of the mesh,
   // in which case we don't want to keep local copies of data meant to be
   // local. On the other hand we may have deleted, or the user may have added in
   // a distributed fashion, boundary data that is meant to be global. So we
   // handle both of those scenarios here
-  this->get_boundary_info().regenerate_id_sets();
+  if (!_preparation.has_boundary_id_sets)
+    this->get_boundary_info().regenerate_id_sets();
 
   if (!_skip_renumber_nodes_and_elements)
     this->renumber_nodes_and_elements();
 
-  // The mesh is now prepared for use.
-  _is_prepared = true;
+  // The mesh is now prepared for use, with the possible exception of
+  // partitioning that was supposed to be skipped, and it should know
+  // it.
+#ifndef NDEBUG
+  Preparation completed_preparation = _preparation;
+  if (skip_partitioning())
+    completed_preparation.is_partitioned = true;
+  libmesh_assert(completed_preparation);
+#endif
 
 #ifdef DEBUG
   MeshTools::libmesh_assert_valid_boundary_ids(*this);
@@ -958,6 +994,8 @@ MeshBase::reinit_ghosting_functors()
       libmesh_assert(gf);
       gf->mesh_reinit();
     }
+
+  _preparation.has_reinit_ghosting_functors = true;
 }
 
 void MeshBase::clear ()
@@ -965,8 +1003,8 @@ void MeshBase::clear ()
   // Reset the number of partitions
   _n_parts = 1;
 
-  // Reset the _is_prepared flag
-  _is_prepared = false;
+  // Reset the preparation flags
+  _preparation = false;
 
   // Clear boundary information
   if (boundary_info)
@@ -1683,6 +1721,8 @@ void MeshBase::partition (const unsigned int n_parts)
       // Make sure any other locally cached data is correct
       this->update_post_partitioning();
     }
+
+  _preparation.is_partitioned = true;
 }
 
 void MeshBase::all_second_order (const bool full_ordered)
@@ -1886,6 +1926,8 @@ void MeshBase::cache_elem_data()
 #endif
         }
     }
+
+  _preparation.has_cached_elem_data = true;
 }
 
 
@@ -1903,10 +1945,16 @@ void MeshBase::detect_interior_parents()
   // This requires an inspection on every processor
   parallel_object_only();
 
+  // This requires up-to-date mesh dimensions in cache
+  libmesh_assert(_preparation.has_cached_elem_data);
+
   // Check if the mesh contains mixed dimensions. If so, then we may
   // have interior parents to set.  Otherwise return.
   if (this->elem_dimensions().size() == 1)
-    return;
+    {
+      _preparation.has_interior_parent_ptrs = true;
+      return;
+    }
 
   // Do we have interior parent pointers going to a different mesh?
   // If so then we'll still check to make sure that's the only place
@@ -2002,6 +2050,8 @@ void MeshBase::detect_interior_parents()
               ("interior_parent() values in multiple meshes are unsupported.");
         }
     }
+
+  _preparation.has_interior_parent_ptrs = true;
 }
 
 

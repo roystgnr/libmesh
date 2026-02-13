@@ -263,6 +263,16 @@ public:
    * If an \p id_remapping map is provided, then element subdomain ids
    * in \p other_mesh will be converted using it before adding them to
    * \p this mesh.
+   *
+   * For backwards compatibility, this does some limited mesh
+   * preparation after the copy: everything except for renumbering,
+   * remote element removal, and partitioning.  To skip just the
+   * step of that preparation which finds new neighbor_ptr links
+   * between elements, set \p skip_find_neighbors.  To skip all of
+   * that preparation, set \p skip_preparation.  If preparation is
+   * skipped, it is the users responsibility to set the flags
+   * indicating what preparation may still be necessary before using
+   * the mesh later.
    */
   virtual void copy_nodes_and_elements (const MeshBase & other_mesh,
                                         const bool skip_find_neighbors = false,
@@ -270,7 +280,8 @@ public:
                                         dof_id_type node_id_offset = 0,
                                         unique_id_type unique_id_offset = 0,
                                         std::unordered_map<subdomain_id_type, subdomain_id_type> *
-                                          id_remapping = nullptr);
+                                          id_remapping = nullptr,
+                                        const bool skip_preparation = false);
 
   /**
    * Move node and elements from other_mesh to this mesh.

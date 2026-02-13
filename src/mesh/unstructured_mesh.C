@@ -650,9 +650,14 @@ void UnstructuredMesh::copy_nodes_and_elements(const MeshBase & other_mesh,
 #endif
                                                ,
                                                std::unordered_map<subdomain_id_type, subdomain_id_type> *
-                                                 id_remapping)
+                                                 id_remapping,
+                                               const bool skip_preparation)
 {
   LOG_SCOPE("copy_nodes_and_elements()", "UnstructuredMesh");
+
+  // If we're asked to skip all preparation, we should be skipping
+  // find_neighbors specifically.
+  libmesh_assert(!skip_preparation || skip_find_neighbors);
 
   std::pair<std::vector<unsigned int>, std::vector<unsigned int>>
     extra_int_maps = this->merge_extra_integer_names(other_mesh);
@@ -672,10 +677,12 @@ void UnstructuredMesh::copy_nodes_and_elements(const MeshBase & other_mesh,
 
   // We're assuming the other mesh has proper element number ordering,
   // so that we add parents before their children, and that the other
-  // mesh is consistently partitioned.
+  // mesh is consistently partitioned.  We're not assuming that node
+  // proc ids are topologically consistent, so we don't just
+  // libmesh_assert_valid_procids.
 #ifdef DEBUG
   MeshTools::libmesh_assert_valid_amr_elem_ids(other_mesh);
-  MeshTools::libmesh_assert_valid_procids<Node>(other_mesh);
+  MeshTools::libmesh_assert_parallel_consistent_procids<Node>(other_mesh);
 #endif
 
   //Copy in Nodes
@@ -867,39 +874,57 @@ void UnstructuredMesh::copy_nodes_and_elements(const MeshBase & other_mesh,
   this->set_next_unique_id(other_mesh.parallel_max_unique_id() + unique_id_offset + 1);
 #endif
 
-  // Finally, partially prepare the new Mesh for use.
-  // This is for backwards compatibility, so we don't want to prepare
-  // everything.
-  //
-  // Keep the same numbering and partitioning and distribution status
-  // for now, but save our original policies to restore later.
-  const bool allowed_renumbering = this->allow_renumbering();
-  const bool allowed_find_neighbors = this->allow_find_neighbors();
-  const bool allowed_elem_removal = this->allow_remote_element_removal();
-  this->allow_renumbering(false);
-  this->allow_remote_element_removal(false);
-  this->allow_find_neighbors(!skip_find_neighbors);
+  // Finally, partially prepare the new Mesh for use, if that isn't
+  // being skipped.
+  // Even the default behavior here is for backwards compatibility,
+  // and we don't want to prepare everything.
 
-  // We should generally be able to skip *all* partitioning here
-  // because we're only adding one already-consistent mesh to another.
-  const bool skipped_partitioning = this->skip_partitioning();
-  this->skip_partitioning(true);
+  if (!skip_preparation)
+    {
+      // Keep the same numbering and partitioning and distribution
+      // status for now, but save our original policies to restore
+      // later.
+      const bool allowed_renumbering = this->allow_renumbering();
+      const bool allowed_find_neighbors = this->allow_find_neighbors();
+      const bool allowed_elem_removal = this->allow_remote_element_removal();
+      this->allow_renumbering(false);
+      this->allow_remote_element_removal(false);
+      this->allow_find_neighbors(!skip_find_neighbors);
 
-  const bool was_prepared = this->is_prepared();
-  this->prepare_for_use();
+      // We should generally be able to skip *all* partitioning here
+      // because we're only adding one already-consistent mesh to
+      // another.
+      const bool skipped_partitioning = this->skip_partitioning();
+      this->skip_partitioning(true);
 
-  //But in the long term, don't change our policies.
-  this->allow_find_neighbors(allowed_find_neighbors);
-  this->allow_renumbering(allowed_renumbering);
-  this->allow_remote_element_removal(allowed_elem_removal);
-  this->skip_partitioning(skipped_partitioning);
+      const bool was_prepared = this->is_prepared();
+      this->prepare_for_use();
 
-  // That prepare_for_use() call marked us as prepared, but we
-  // specifically avoided some important preparation, so we might not
-  // actually be prepared now.
-  if (skip_find_neighbors ||
-      !was_prepared || !other_mesh.is_prepared())
-    this->set_isnt_prepared();
+      //But in the long term, don't change our policies.
+      this->allow_find_neighbors(allowed_find_neighbors);
+      this->allow_renumbering(allowed_renumbering);
+      this->allow_remote_element_removal(allowed_elem_removal);
+      this->skip_partitioning(skipped_partitioning);
+
+      // That prepare_for_use() call marked us as prepared, but we
+      // specifically avoided some important preparation, so we might not
+      // actually be prepared now.
+      if (skip_find_neighbors ||
+          !was_prepared || !other_mesh.is_prepared())
+        this->unset_is_prepared();
+    }
+
+  // In general we've just invalidated just about everything, and we'd
+  // like to unset_is_prepared(), but specific use cases might know a
+  // priori that they're still partitioned well, or that they've
+  // copied in a disjoint mesh component and don't need new neighbor
+  // pointers, or that they're not adding anything that would change
+  // cached subdomain/element/boundary sets, etc., so we'll rely on
+  // users of the "advanced" skip_preparation option to also set what
+  // preparation they still need.
+
+  // else
+    // this->unset_is_prepared();
 }
 
 
@@ -1298,15 +1323,15 @@ void UnstructuredMesh::find_neighbors (const bool reset_remote_elements,
           libmesh_assert(current_elem->interior_parent());
         }
     }
-
 #endif // AMR
-
 
 #ifdef DEBUG
   MeshTools::libmesh_assert_valid_neighbors(*this,
                                             !reset_remote_elements);
   MeshTools::libmesh_assert_valid_amr_interior_parents(*this);
 #endif
+
+  this->_preparation.has_neighbor_ptrs = true;
 }
 
 

@@ -191,21 +191,17 @@ DistributedMesh::DistributedMesh (const MeshBase & other_mesh) :
   _next_free_unpartitioned_node_id(this->n_processors()),
   _next_free_unpartitioned_elem_id(this->n_processors())
 {
-  this->copy_nodes_and_elements(other_mesh, true);
+  // Just copy, skipping preparation
+  this->copy_nodes_and_elements(other_mesh, true, 0, 0, 0, nullptr, true);
 
   this->allow_find_neighbors(other_mesh.allow_find_neighbors());
   this->allow_renumbering(other_mesh.allow_renumbering());
   this->allow_remote_element_removal(other_mesh.allow_remote_element_removal());
   this->skip_partitioning(other_mesh.skip_partitioning());
 
-  // The prepare_for_use() in copy_nodes_and_elements() is going to be
-  // tricky to remove without breaking backwards compatibility, but it
-  // updates some things we want to just copy.
-  this->copy_cached_data(other_mesh);
-
   this->copy_constraint_rows(other_mesh);
 
-  this->_is_prepared = other_mesh.is_prepared();
+  this->_preparation = other_mesh.preparation();
 
   auto & this_boundary_info = this->get_boundary_info();
   const auto & other_boundary_info = other_mesh.get_boundary_info();
@@ -291,6 +287,8 @@ void DistributedMesh::update_parallel_id_counts()
     ((_next_unique_id + this->n_processors() - 1) / (this->n_processors() + 1) + 1) *
     (this->n_processors() + 1) + this->processor_id();
 #endif
+
+  this->_preparation.has_synched_id_counts = true;
 }
 
 
@@ -1611,6 +1609,8 @@ void DistributedMesh::renumber_nodes_and_elements ()
       }
   }
 
+  this->_preparation.has_removed_orphaned_nodes = true;
+
   if (_skip_renumber_nodes_and_elements)
     {
       this->update_parallel_id_counts();
@@ -1776,6 +1776,8 @@ void DistributedMesh::delete_remote_elements()
   this->libmesh_assert_valid_parallel_ids();
   this->libmesh_assert_valid_parallel_flags();
 #endif
+
+  this->_preparation.has_removed_remote_elements = true;
 }
 
 
