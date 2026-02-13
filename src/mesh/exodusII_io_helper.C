@@ -4948,6 +4948,34 @@ void ExodusII_IO_Helper::build_subdomain_map(const MeshBase & mesh, bool local)
 }
 
 
+
+dof_id_type ExodusII_IO_Helper::node_id_to_vec_id(dof_id_type n) const
+{
+  if (_added_side_node_offsets.empty())
+    return n;
+
+  // Find the processor id that has node_id in the parallel vec
+  const auto lb = std::upper_bound(_true_node_offsets.begin(),
+                                   _true_node_offsets.end(), n);
+  libmesh_assert(lb != _true_node_offsets.end());
+  const processor_id_type p = lb - _true_node_offsets.begin();
+
+  return n + (p ? _added_side_node_offsets[p-1] : 0);
+}
+
+
+
+dof_id_type ExodusII_IO_Helper::added_node_offset_on(processor_id_type p) const
+{
+  libmesh_assert (p < _true_node_offsets.size());
+  const dof_id_type added_node_offsets =
+    (_added_side_node_offsets.empty() || !p) ? 0 :
+    _added_side_node_offsets[p-1];
+  return _true_node_offsets[p] + added_node_offsets;
+}
+
+
+
 int ExodusII_IO_Helper::Conversion::get_node_map(int i) const
 {
   if (!node_map)
