@@ -61329,7 +61329,6 @@ esac
 fi
 
 
-
   if test "x$enablehdf5" = "xyes"
 then :
 
@@ -61368,6 +61367,11 @@ fi
 
 
 is_package_required=$hdf5required
+
+if test "x$is_package_required" = "xyes"
+then :
+  with_hdf5=yes
+fi
 
 if test "x${with_hdf5}" != "xno"
 then :
