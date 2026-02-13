@@ -1381,7 +1381,7 @@ EquationSystems::build_discontinuous_solution_vector
                 {
                   if (var_description.active_on_subdomain(elem->subdomain_id()))
                     {
-                      system->get_dof_map().dof_indices (elem, dof_indices, var);
+                      dof_map.dof_indices (elem, dof_indices, var);
 
                       soln_coeffs.resize(dof_indices.size());
 
@@ -1440,7 +1440,7 @@ EquationSystems::build_discontinuous_solution_vector
                       {
                         if (var_description.active_on_subdomain(elem->subdomain_id()))
                           {
-                            system->get_dof_map().dof_indices (elem, dof_indices, var);
+                            dof_map.dof_indices (elem, dof_indices, var);
 
                             soln_coeffs.resize(dof_indices.size());
 
@@ -1484,7 +1484,7 @@ EquationSystems::build_discontinuous_solution_vector
                                     var_description.active_on_subdomain(neigh->subdomain_id()))
                                   {
                                     std::vector<dof_id_type> neigh_indices;
-                                    system->get_dof_map().dof_indices (neigh, neigh_indices, var);
+                                    dof_map.dof_indices (neigh, neigh_indices, var);
                                     std::vector<Number> neigh_coeffs(neigh_indices.size());
 
                                     for (auto i : index_range(neigh_indices))
