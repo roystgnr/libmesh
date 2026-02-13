@@ -1090,8 +1090,6 @@ protected:
                                    int & count,
                                    std::vector<std::string> & result);
 
-protected:
-
   /**
    * Set to true iff we want to write separate "side" elements too.
    */
