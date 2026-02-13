@@ -1764,8 +1764,9 @@ public:
                                                          bool use_condensed_system = false) const;
 
   /**
-   * Describe whether the given variable group should be p-refined. If this API is not called with
-   * \p false, the default is to p-refine
+   * Set whether the given variable group should be p-refined on a
+   * p-refined Elem.  This changes the FEType of the variable group to
+   * enable or disable p-refinement.
    */
   void should_p_refine(unsigned int g, bool p_refine);
 
@@ -2257,11 +2258,6 @@ private:
    * non-SCALAR variable v
    */
   std::vector<dof_id_type> _first_old_scalar_df;
-
-  /**
-   * A container of variable groups that we should not p-refine
-   */
-  std::unordered_set<unsigned int> _dont_p_refine;
 #endif
 
 #ifdef LIBMESH_ENABLE_CONSTRAINTS
@@ -2568,14 +2564,15 @@ inline
 void DofMap::should_p_refine(const unsigned int g, const bool p_refine)
 {
 #ifdef LIBMESH_ENABLE_AMR
-  if (p_refine)
-  {
-    auto it = _dont_p_refine.find(g);
-    if (it != _dont_p_refine.end())
-      _dont_p_refine.erase(it);
-  }
-  else
-    _dont_p_refine.insert(g);
+  VariableGroup & var = _variable_groups[g];
+  var.type().p_refinement = p_refine;
+
+  for (auto v : make_range(var.first_scalar_number(0),
+                           var.first_scalar_number(0) +
+                           var.n_variables()))
+    this->_variables[v].type().p_refinement = p_refine;
+
+
 #else
   libmesh_ignore(g, p_refine);
 #endif
@@ -2585,7 +2582,8 @@ inline
 bool DofMap::should_p_refine(const unsigned int g) const
 {
 #ifdef LIBMESH_ENABLE_AMR
-  return !_dont_p_refine.count(g);
+  const VariableGroup & var = this->variable_group(g);
+  return var.type().p_refinement;
 #else
   libmesh_ignore(g);
   return false;
@@ -2604,7 +2602,7 @@ bool DofMap::should_p_refine_var(const unsigned int var) const
 {
 #ifdef LIBMESH_ENABLE_AMR
   const auto vg = this->var_group_from_var_number(var);
-  return !_dont_p_refine.count(vg);
+  return this->should_p_refine(vg);
 #else
   libmesh_ignore(var);
   return false;
@@ -2640,12 +2638,7 @@ void DofMap::_dof_indices (const Elem & elem,
 
       FEType fe_type = var.type();
 
-      const bool add_p_level =
-#ifdef LIBMESH_ENABLE_AMR
-          !_dont_p_refine.count(vg);
-#else
-          false;
-#endif
+      const bool add_p_level = fe_type.p_refinement;
 
 #ifdef DEBUG
       // The number of dofs per element is non-static for subdivision FE
