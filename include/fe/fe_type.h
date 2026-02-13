@@ -217,7 +217,7 @@ public:
   {}
 
   /**
-   * The approximation order of the element.
+   * The approximation order of the element (at 0 p-refinement level).
    */
   OrderWrapper order;
 
@@ -360,16 +360,19 @@ public:
   }
 
   /**
-   * \returns The default quadrature order for this \p FEType.  The
-   * default quadrature order is calculated assuming a polynomial of
-   * degree \p order and is based on integrating the mass matrix for
-   * such an element exactly on affine elements.
+   * \returns The default quadrature order for this \p FEType, on an
+   * element without p refinement.  The default quadrature order is
+   * calculated assuming a polynomial of degree \p order and is based
+   * on integrating the mass matrix for such an element exactly on
+   * affine elements.
    */
   Order default_quadrature_order () const;
 
   /**
    * \returns A quadrature rule of appropriate type and order for this \p
-   * FEType.  The default quadrature rule is based on integrating the mass
+   * FEType, on an element without p refinement.
+   *
+   * The default quadrature rule is based on integrating the mass
    * matrix for such an element exactly, with an additional power on
    * the basis order to help account for nonlinearities and/or
    * nonuniform coefficients.  Higher or lower degree rules can be
@@ -380,7 +383,9 @@ public:
 
   /**
    * \returns The default quadrature order for integrating unweighted
-   * basis functions of this \p FEType.
+   * basis functions of this \p FEType, on an element without p
+   * refinement.
+   *
    * The unweighted quadrature order is calculated assuming a
    * polynomial of degree \p order and is based on integrating the
    * shape functions for such an element exactly on affine elements.
@@ -389,10 +394,12 @@ public:
 
   /**
    * \returns A quadrature rule of appropriate type and order for
-   * unweighted integration of this \p FEType.  The default quadrature
-   * rule is based on integrating the shape functions on an affine
-   * element exactly.  Higher or lower degree rules can be chosen by
-   * changing the extraorder parameter.
+   * unweighted integration of this \p FEType, on an element without p
+   * refinement
+   *
+   * The default quadrature rule is based on integrating the shape
+   * functions on an affine element exactly.  Higher or lower degree
+   * rules can be chosen by changing the extraorder parameter.
    */
   std::unique_ptr<QBase> unweighted_quadrature_rule (const unsigned int dim,
                                                      const int extraorder=0) const;
