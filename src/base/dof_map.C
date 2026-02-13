@@ -579,12 +579,7 @@ void DofMap::reinit
       const unsigned int n_var_in_group = vg_description.n_variables();
       const FEType & base_fe_type        = vg_description.type();
 
-      const bool add_p_level =
-#ifdef LIBMESH_ENABLE_AMR
-          !_dont_p_refine.count(vg);
-#else
-          false;
-#endif
+      const bool add_p_level = base_fe_type.p_refinement;
 
       // Don't need to loop over elements for a SCALAR variable
       // Just increment _n_SCALAR_dofs
@@ -2510,12 +2505,7 @@ void DofMap::_node_dof_indices (const Elem & elem,
   const bool extra_hanging_dofs =
     FEInterface::extra_hanging_dofs(fe_type);
 
-  const bool add_p_level =
-#ifdef LIBMESH_ENABLE_AMR
-      !_dont_p_refine.count(vg);
-#else
-      false;
-#endif
+  const bool add_p_level = fe_type.p_refinement;
 
   // There is a potential problem with h refinement.  Imagine a
   // quad9 that has a linear FE on it.  Then, on the hanging side,
@@ -2765,12 +2755,8 @@ void DofMap::old_dof_indices (const Elem * const elem,
                     // or just for the specified variable
 
                     FEType fe_type = var.type();
-                    const bool add_p_level =
-#ifdef LIBMESH_ENABLE_AMR
-                        !_dont_p_refine.count(vg);
-#else
-                        false;
-#endif
+                    const bool add_p_level = fe_type.p_refinement;
+
                     // Increase the polynomial order on p refined elements,
                     // but make sure you get the right polynomial order for
                     // the OLD degrees of freedom

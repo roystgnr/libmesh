@@ -145,6 +145,13 @@ public:
   { return _type; }
 
   /**
+   * \returns The \p FEType for this variable.  Altering this while
+   * this Variable is already in use may be dangerous!
+   */
+  FEType & type()
+  { return _type; }
+
+  /**
    * \returns The number of components of this variable if the \p FEFamily is \p SCALAR or if the
    * associated \p FEFieldType is \p TYPE_SCALAR. Otherwise this will error because determination of
    * the number of components for a \p TYPE_VECTOR requires the mesh
