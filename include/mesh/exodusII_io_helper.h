@@ -953,6 +953,12 @@ public:
 
 protected:
   /**
+   * Calculate _added_side_node_offsets needed to add "fake" side
+   * elements to the given mesh
+   */
+  void calculate_added_side_node_offsets(const MeshBase & mesh);
+
+  /**
    * When appending: during initialization, check that variable names
    * in the file match those you attempt to initialize with.
    */

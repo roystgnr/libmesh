@@ -2310,60 +2310,9 @@ void ExodusII_IO_Helper::initialize(std::string str_title, const MeshBase & mesh
   num_elem = n_active_elem;
   num_nodes = 0;
 
-  // If we're adding face elements they'll need copies of their nodes.
-  // We also have to count of how many nodes (and gaps between nodes!)
-  // are on each processor, to calculate offsets for any nodal data
-  // writing later.
-  _added_side_node_offsets.clear();
-  if (_add_sides)
-    {
-      dof_id_type num_side_elem = 0;
-      dof_id_type num_local_side_nodes = 0;
-
-      for (const auto & elem : mesh.active_local_element_ptr_range())
-        {
-          for (auto s : elem->side_index_range())
-            {
-              if (EquationSystems::redundant_added_side(*elem,s))
-                continue;
-
-              num_side_elem++;
-              num_local_side_nodes += elem->nodes_on_side(s).size();
-            }
-        }
-
-      mesh.comm().sum(num_side_elem);
-      num_elem += num_side_elem;
-
-      mesh.comm().allgather(num_local_side_nodes, _added_side_node_offsets);
-      const processor_id_type n_proc = mesh.n_processors();
-      libmesh_assert_equal_to(n_proc, _added_side_node_offsets.size());
-
-      for (auto p : make_range(n_proc-1))
-        _added_side_node_offsets[p+1] += _added_side_node_offsets[p];
-
-      num_nodes = _added_side_node_offsets[n_proc-1];
-
-      dof_id_type n_local_nodes = cast_int<dof_id_type>
-        (std::distance(mesh.local_nodes_begin(),
-                       mesh.local_nodes_end()));
-      dof_id_type n_total_nodes = n_local_nodes;
-      mesh.comm().sum(n_total_nodes);
-
-      const dof_id_type max_nn   = mesh.max_node_id();
-      const dof_id_type n_gaps = max_nn - n_total_nodes;
-      const dof_id_type gaps_per_processor = n_gaps / n_proc;
-      const dof_id_type remainder_gaps = n_gaps % n_proc;
-
-      n_local_nodes = n_local_nodes +      // Actual nodes
-                      gaps_per_processor + // Our even share of gaps
-                      (mesh.processor_id() < remainder_gaps); // Leftovers
-
-      mesh.comm().allgather(n_local_nodes, _true_node_offsets);
-      for (auto p : make_range(n_proc-1))
-        _true_node_offsets[p+1] += _true_node_offsets[p];
-      libmesh_assert_equal_to(_true_node_offsets[n_proc-1], mesh.max_node_id());
-    }
+  // If we're adding face elements they'll need copies of their nodes,
+  // and we'll need to manage the extra copies.
+  this->calculate_added_side_node_offsets(mesh);
 
   // If _write_as_dimension is nonzero, use it to set num_dim in the Exodus file.
   if (_write_as_dimension)
@@ -4945,6 +4894,67 @@ void ExodusII_IO_Helper::build_subdomain_map(const MeshBase & mesh, bool local)
 
   if (!this->_add_sides && !this->_subdomain_map.empty())
     this->_subdomain_id_end = this->_subdomain_map.rbegin()->first + 1;
+}
+
+
+
+void ExodusII_IO_Helper::calculate_added_side_node_offsets(const MeshBase & mesh)
+{
+
+  // If we're adding face elements they'll need copies of their nodes.
+  // We also have to count of how many nodes (and gaps between nodes!)
+  // are on each processor, to calculate offsets for any nodal data
+  // writing later.
+  _added_side_node_offsets.clear();
+  if (!_add_sides)
+    return;
+
+  dof_id_type num_side_elem = 0;
+  dof_id_type num_local_side_nodes = 0;
+
+  for (const auto & elem : mesh.active_local_element_ptr_range())
+    {
+      for (auto s : elem->side_index_range())
+        {
+          if (EquationSystems::redundant_added_side(*elem,s))
+            continue;
+
+          num_side_elem++;
+          num_local_side_nodes += elem->nodes_on_side(s).size();
+        }
+    }
+
+  mesh.comm().sum(num_side_elem);
+  num_elem += num_side_elem;
+
+  mesh.comm().allgather(num_local_side_nodes, _added_side_node_offsets);
+  const processor_id_type n_proc = mesh.n_processors();
+  libmesh_assert_equal_to(n_proc, _added_side_node_offsets.size());
+
+  for (auto p : make_range(n_proc-1))
+    _added_side_node_offsets[p+1] += _added_side_node_offsets[p];
+
+  num_nodes = _added_side_node_offsets[n_proc-1];
+
+  dof_id_type n_local_nodes = cast_int<dof_id_type>
+    (std::distance(mesh.local_nodes_begin(),
+                   mesh.local_nodes_end()));
+  dof_id_type n_total_nodes = n_local_nodes;
+  mesh.comm().sum(n_total_nodes);
+
+  const dof_id_type max_nn   = mesh.max_node_id();
+  const dof_id_type n_gaps = max_nn - n_total_nodes;
+  const dof_id_type gaps_per_processor = n_gaps / n_proc;
+  const dof_id_type remainder_gaps = n_gaps % n_proc;
+
+  n_local_nodes = n_local_nodes +      // Actual nodes
+                  gaps_per_processor + // Our even share of gaps
+                  (mesh.processor_id() < remainder_gaps); // Leftovers
+
+  mesh.comm().allgather(n_local_nodes, _true_node_offsets);
+  for (auto p : make_range(n_proc-1))
+    _true_node_offsets[p+1] += _true_node_offsets[p];
+  libmesh_assert_equal_to(_true_node_offsets[n_proc-1], mesh.max_node_id());
 }
 
 
