@@ -200,13 +200,20 @@ public:
 #ifndef LIBMESH_ENABLE_INFINITE_ELEMENTS
 
   /**
-   * Constructor.  Optionally takes the approximation \p Order
-   * and the finite element family \p FEFamily
+   * Constructor.  Optionally takes the approximation \p Order,
+   * the finite element family \p FEFamily.
+   *
+   * We can't set p_refinement in this argument list without
+   * conflicting with the \p ro parameter in the InfFE-compatible
+   * constructor version below, so we use the with_p_refinement API
+   * below to potentially convert an FEType with p-refinement (the
+   * default) to one without.
    */
   FEType(const int      o = 1,
          const FEFamily f = LAGRANGE) :
     order(o),
-    family(f)
+    family(f),
+    p_refinement(true)
   {}
 
   /**
@@ -220,6 +227,12 @@ public:
    */
   FEFamily family;
 
+  /**
+   * Whether or not the finite elements for this type increase their p
+   * refinement level on geometric elements of increased p level.
+   */
+  bool p_refinement;
+
 #else
 
   /**
@@ -230,17 +243,24 @@ public:
    * are the same, as with the \p family and \p base_family.  It must
    * be so, otherwise what we switch on would change when infinite
    * elements are not compiled in.
+   *
+   * We can't set p_refinement in this argument list in a way
+   * that matches the non-InfFE-enabled constructor version above, so
+   * we use the with_p_refinement API below to potentially convert an
+   * FEType with p-refinement (the default) to one without.
    */
   FEType(const int        o  = 1,
          const FEFamily   f  = LAGRANGE,
          const int        ro = THIRD,
          const FEFamily   rf = JACOBI_20_00,
-         const InfMapType im = CARTESIAN) :
+         const InfMapType im = CARTESIAN
+         ) :
     order(o),
     radial_order(ro),
     family(f),
     radial_family(rf),
-    inf_map(im)
+    inf_map(im),
+    p_refinement(true)
   {}
 
   /**
@@ -274,7 +294,24 @@ public:
    */
   InfMapType inf_map;
 
+  /**
+   * Whether or not the finite elements for this type increase their p
+   * refinement level on geometric elements of increased p level.
+   */
+  bool p_refinement;
+
 #endif // ifndef LIBMESH_ENABLE_INFINITE_ELEMENTS
+
+  /**
+   * "Fluent API" for constructing a non-default p_refinement, for
+   * easier compatibility between non-InfFE and InfFE code
+   */
+  FEType with_p_refinement(bool p)
+  {
+    FEType returnval = *this;
+    returnval.p_refinement = p;
+    return returnval;
+  }
 
   /**
    * Tests equality
@@ -283,6 +320,7 @@ public:
   {
     return (order == f2.order
             && family == f2.family
+            && p_refinement == f2.p_refinement
 #ifdef LIBMESH_ENABLE_INFINITE_ELEMENTS
             && radial_order == f2.radial_order
             && radial_family == f2.radial_family
@@ -308,7 +346,8 @@ public:
       return (order < f2.order);
     if (family != f2.family)
       return (family < f2.family);
-
+    if (p_refinement != f2.p_refinement)
+      return (p_refinement < f2.p_refinement);
 #ifdef LIBMESH_ENABLE_INFINITE_ELEMENTS
     if (radial_order != f2.radial_order)
       return (radial_order < f2.radial_order);
