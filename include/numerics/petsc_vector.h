@@ -613,6 +613,24 @@ PetscVector<T>::PetscVector (Vec v,
   VecType ptype;
   LibmeshPetscCall(VecGetType(_vec, &ptype));
 
+  // PETSc supports some exotic types nowadays.  Just use Vec sizes to
+  // determine whether we're SERIAL vs PARALLEL-or-GHOSTED.
+  PetscInt petsc_global_size = 0;
+  LibmeshPetscCall(VecGetSize(_vec, &petsc_global_size));
+
+  // If we have a parallel Vec with all its DoFs on one processor, we
+  // might be unable to tell on that processor that it's not a serial
+  // vector unless we communicate.
+  bool is_serial = (petsc_local_size == petsc_global_size);
+  comm_in.min(is_serial);
+
+#ifdef DEBUG
+  dof_id_type sum_of_local_sizes = petsc_local_size;
+  comm_in.sum(sum_of_local_sizes);
+  libmesh_assert_equal_to(sum_of_local_sizes,
+                          cast_int<dof_id_type>(petsc_global_size));
+#endif
+
 #if PETSC_RELEASE_GREATER_EQUALS(3, 21, 0)
   // Fande only implemented VecGhostGetGhostIS for VECMPI
   if (std::strcmp(ptype, VECMPI) == 0)
@@ -642,9 +660,9 @@ PetscVector<T>::PetscVector (Vec v,
       else
         this->_type = PARALLEL;
     }
-  else if (std::strcmp(ptype,VECSHARED) == 0)
+  else if (!is_serial)
 #else // PETSc < 3.21.0
-  if ((std::strcmp(ptype,VECSHARED) == 0) || (std::strcmp(ptype,VECMPI) == 0))
+  if (!is_serial)
 #endif
     {
       ISLocalToGlobalMapping mapping;
