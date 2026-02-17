@@ -1488,8 +1488,9 @@ void FEMContext::elem_fe_reinit(const std::vector<Point> * const pts)
     {
       if (this->has_elem())
         pr.second->reinit(&(this->get_elem()), pts);
-      else
-        // If !this->has_elem(), then we assume we are dealing with a SCALAR variable
+        // If !this->has_elem(), then still might need to reinit for a
+        // SCALAR variable; everything else will depend on an elem
+      else if (pr.first.family == SCALAR)
         pr.second->reinit(nullptr);
     }
 }
