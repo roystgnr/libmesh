@@ -665,11 +665,17 @@ PetscVector<T>::PetscVector (Vec v,
   if (!is_serial)
 #endif
     {
-      ISLocalToGlobalMapping mapping;
-      LibmeshPetscCall(VecGetLocalToGlobalMapping(_vec, &mapping));
+      ISLocalToGlobalMapping mapping = nullptr;
+      Vec localrep = nullptr;
 
-      Vec localrep;
-      LibmeshPetscCall(VecGhostGetLocalForm(_vec,&localrep));
+      // Non-VECMPI types won't even let us call VecGetLocalToGlobalMapping;
+      // we'll just assume for now that no such type is ghosted
+      if (std::strcmp(ptype, VECMPI) == 0)
+        {
+          LibmeshPetscCall(VecGetLocalToGlobalMapping(_vec, &mapping));
+          LibmeshPetscCall(VecGhostGetLocalForm(_vec,&localrep));
+        }
+
       // If is a sparsely stored vector, set up our new mapping
       // Only checking mapping is not enough to determine if a vec is ghosted
       // We need to check if vec has a local representation
