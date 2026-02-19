@@ -1353,7 +1353,7 @@ unsigned int System::add_variable (std::string_view var,
                                    const bool p_refinement)
 {
   return this->add_variable(var,
-                            FEType(order, family).with_p_refinement(p_refinement),
+                            FEType(order, family).set_p_refinement(p_refinement),
                             active_subdomains);
 }
 
@@ -1375,7 +1375,7 @@ unsigned int System::add_variables (const std::vector<std::string> & vars,
                                     const bool p_refinement)
 {
   return this->add_variables(vars,
-                             FEType(order, family).with_p_refinement(p_refinement),
+                             FEType(order, family).set_p_refinement(p_refinement),
                              active_subdomains);
 }
 

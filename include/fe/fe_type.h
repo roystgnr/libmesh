@@ -205,7 +205,7 @@ public:
    *
    * We can't set p_refinement in this argument list without
    * conflicting with the \p ro parameter in the InfFE-compatible
-   * constructor version below, so we use the with_p_refinement API
+   * constructor version below, so we use the set_p_refinement API
    * below to potentially convert an FEType with p-refinement (the
    * default) to one without.
    */
@@ -246,7 +246,7 @@ public:
    *
    * We can't set p_refinement in this argument list in a way
    * that matches the non-InfFE-enabled constructor version above, so
-   * we use the with_p_refinement API below to potentially convert an
+   * we use the set_p_refinement API below to potentially convert an
    * FEType with p-refinement (the default) to one without.
    */
   FEType(const int        o  = 1,
@@ -306,11 +306,20 @@ public:
    * "Fluent API" for constructing a non-default p_refinement, for
    * easier compatibility between non-InfFE and InfFE code
    */
-  FEType with_p_refinement(bool p)
+  FEType set_p_refinement(bool p) &
   {
-    FEType returnval = *this;
-    returnval.p_refinement = p;
-    return returnval;
+    this->p_refinement = p;
+    return *this;
+  }
+
+  /**
+   * Specialization for rvalues so we don't return a dangling
+   * reference to a temporary.
+   */
+  FEType set_p_refinement(bool p) &&
+  {
+    this->p_refinement = p;
+    return std::move(*this);
   }
 
   /**
