@@ -197,6 +197,11 @@ class FEType
 {
 public:
 
+  /**
+   * The approximation order of the element (at 0 p-refinement level).
+   */
+  OrderWrapper order;
+
 #ifndef LIBMESH_ENABLE_INFINITE_ELEMENTS
 
   /**
@@ -217,21 +222,10 @@ public:
   {}
 
   /**
-   * The approximation order of the element (at 0 p-refinement level).
-   */
-  OrderWrapper order;
-
-  /**
    * The type of finite element.  Valid types are \p LAGRANGE,
    * \p HIERARCHIC, etc...
    */
   FEFamily family;
-
-  /**
-   * Whether or not the finite elements for this type increase their p
-   * refinement level on geometric elements of increased p level.
-   */
-  bool p_refinement;
 
 #else
 
@@ -264,11 +258,6 @@ public:
   {}
 
   /**
-   * The approximation order in the base of the infinite element.
-   */
-  OrderWrapper order;
-
-  /**
    * The approximation order in radial direction of the infinite element.
    */
   OrderWrapper radial_order;
@@ -294,13 +283,13 @@ public:
    */
   InfMapType inf_map;
 
+#endif // ifndef LIBMESH_ENABLE_INFINITE_ELEMENTS
+
   /**
    * Whether or not the finite elements for this type increase their p
    * refinement level on geometric elements of increased p level.
    */
   bool p_refinement;
-
-#endif // ifndef LIBMESH_ENABLE_INFINITE_ELEMENTS
 
   /**
    * "Fluent API" for constructing a non-default p_refinement, for
