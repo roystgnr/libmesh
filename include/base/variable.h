@@ -145,13 +145,6 @@ public:
   { return _type; }
 
   /**
-   * \returns The \p FEType for this variable.  Altering this while
-   * this Variable is already in use may be dangerous!
-   */
-  FEType & type()
-  { return _type; }
-
-  /**
    * \returns The number of components of this variable if the \p FEFamily is \p SCALAR or if the
    * associated \p FEFieldType is \p TYPE_SCALAR. Otherwise this will error because determination of
    * the number of components for a \p TYPE_VECTOR requires the mesh
@@ -195,6 +188,18 @@ protected:
   unsigned int            _number;
   unsigned int            _first_scalar_number;
   FEType                  _type;
+
+private:
+  /**
+   * \returns The \p FEType for this variable.  Altering this while
+   * this Variable is already in use may be dangerous!
+   */
+  FEType & type()
+  { return _type; }
+
+  // DofMap can change a VariableGroup type() to disable/enable
+  // p-refinement post-variable-addition.
+  friend class DofMap;
 };
 
 
