@@ -4472,7 +4472,11 @@ void ExodusII_IO_Helper::write_element_values
   ex_err = exII::ex_get_variable_param(ex_id, exII::EX_ELEM_BLOCK, &num_elem_vars);
   EX_CHECK_ERR(ex_err, "Error reading number of elemental variables.");
 
-  this->build_subdomain_map(mesh, false);
+  // We might be appending values to an existing file, in which case
+  // we haven't done an initialize() and we need to build the
+  // subdomain map here.
+  if (this->_subdomain_map.empty())
+    this->build_subdomain_map(mesh, false);
 
   // Use mesh.n_elem() to access into the values vector rather than
   // the number of elements the Exodus writer thinks the mesh has,
