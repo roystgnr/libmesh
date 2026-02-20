@@ -117,6 +117,10 @@ protected:
    * - 1 if a non-TRI3 element is found
    * - 2 if an element with a nullptr-neighbor is found
    * - 3 if the mesh is empty
+   * - 4 if an element neighbor isn't linked back to it
+   * - 5 if an element neighbor isn't linked to expected nodes
+   * - 6 if an element neighbor has inconsistent orientation
+   * - 7 if an element neighbor has other inconsistent links
    */
   [[nodiscard]] unsigned int check_hull_integrity();
 
