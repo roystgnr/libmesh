@@ -833,8 +833,7 @@ EquationSystems::build_parallel_solution_vector(const std::set<std::string> * sy
           const FEType & fe_type           = system.variable_type(var);
           const Variable & var_description = system.variable(var);
           unsigned int n_vec_dim = FEInterface::n_vec_dim( sys_ptr->get_mesh(), fe_type );
-          const auto vg = dof_map.var_group_from_var_number(var);
-          const bool add_p_level = dof_map.should_p_refine(vg);
+          const bool add_p_level = fe_type.p_refinement;
 
           for (const auto & elem : _mesh.active_local_element_ptr_range())
             {
@@ -1374,8 +1373,7 @@ EquationSystems::build_discontinuous_solution_vector
 
               const FEType & fe_type = system->variable_type(var);
               const Variable & var_description = system->variable(var);
-              const auto vg = dof_map.var_group_from_var_number(var);
-              const bool add_p_level = dof_map.should_p_refine(vg);
+              const bool add_p_level = fe_type.p_refinement;
 
               unsigned int nn=0;
 
@@ -1383,7 +1381,7 @@ EquationSystems::build_discontinuous_solution_vector
                 {
                   if (var_description.active_on_subdomain(elem->subdomain_id()))
                     {
-                      system->get_dof_map().dof_indices (elem, dof_indices, var);
+                      dof_map.dof_indices (elem, dof_indices, var);
 
                       soln_coeffs.resize(dof_indices.size());
 
@@ -1442,7 +1440,7 @@ EquationSystems::build_discontinuous_solution_vector
                       {
                         if (var_description.active_on_subdomain(elem->subdomain_id()))
                           {
-                            system->get_dof_map().dof_indices (elem, dof_indices, var);
+                            dof_map.dof_indices (elem, dof_indices, var);
 
                             soln_coeffs.resize(dof_indices.size());
 
@@ -1486,7 +1484,7 @@ EquationSystems::build_discontinuous_solution_vector
                                     var_description.active_on_subdomain(neigh->subdomain_id()))
                                   {
                                     std::vector<dof_id_type> neigh_indices;
-                                    system->get_dof_map().dof_indices (neigh, neigh_indices, var);
+                                    dof_map.dof_indices (neigh, neigh_indices, var);
                                     std::vector<Number> neigh_coeffs(neigh_indices.size());
 
                                     for (auto i : index_range(neigh_indices))

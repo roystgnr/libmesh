@@ -197,22 +197,29 @@ class FEType
 {
 public:
 
+  /**
+   * The approximation order of the element (at 0 p-refinement level).
+   */
+  OrderWrapper order;
+
 #ifndef LIBMESH_ENABLE_INFINITE_ELEMENTS
 
   /**
-   * Constructor.  Optionally takes the approximation \p Order
-   * and the finite element family \p FEFamily
+   * Constructor.  Optionally takes the approximation \p Order,
+   * the finite element family \p FEFamily.
+   *
+   * We can't set p_refinement in this argument list without
+   * conflicting with the \p ro parameter in the InfFE-compatible
+   * constructor version below, so we use the set_p_refinement API
+   * below to potentially convert an FEType with p-refinement (the
+   * default) to one without.
    */
   FEType(const int      o = 1,
          const FEFamily f = LAGRANGE) :
     order(o),
-    family(f)
+    family(f),
+    p_refinement(true)
   {}
-
-  /**
-   * The approximation order of the element.
-   */
-  OrderWrapper order;
 
   /**
    * The type of finite element.  Valid types are \p LAGRANGE,
@@ -230,23 +237,25 @@ public:
    * are the same, as with the \p family and \p base_family.  It must
    * be so, otherwise what we switch on would change when infinite
    * elements are not compiled in.
+   *
+   * We can't set p_refinement in this argument list in a way
+   * that matches the non-InfFE-enabled constructor version above, so
+   * we use the set_p_refinement API below to potentially convert an
+   * FEType with p-refinement (the default) to one without.
    */
   FEType(const int        o  = 1,
          const FEFamily   f  = LAGRANGE,
          const int        ro = THIRD,
          const FEFamily   rf = JACOBI_20_00,
-         const InfMapType im = CARTESIAN) :
+         const InfMapType im = CARTESIAN
+         ) :
     order(o),
     radial_order(ro),
     family(f),
     radial_family(rf),
-    inf_map(im)
+    inf_map(im),
+    p_refinement(true)
   {}
-
-  /**
-   * The approximation order in the base of the infinite element.
-   */
-  OrderWrapper order;
 
   /**
    * The approximation order in radial direction of the infinite element.
@@ -277,12 +286,39 @@ public:
 #endif // ifndef LIBMESH_ENABLE_INFINITE_ELEMENTS
 
   /**
+   * Whether or not the finite elements for this type increase their p
+   * refinement level on geometric elements of increased p level.
+   */
+  bool p_refinement;
+
+  /**
+   * "Fluent API" for constructing a non-default p_refinement, for
+   * easier compatibility between non-InfFE and InfFE code
+   */
+  FEType set_p_refinement(bool p) &
+  {
+    this->p_refinement = p;
+    return *this;
+  }
+
+  /**
+   * Specialization for rvalues so we don't return a dangling
+   * reference to a temporary.
+   */
+  FEType set_p_refinement(bool p) &&
+  {
+    this->p_refinement = p;
+    return std::move(*this);
+  }
+
+  /**
    * Tests equality
    */
   bool operator== (const FEType & f2) const
   {
     return (order == f2.order
             && family == f2.family
+            && p_refinement == f2.p_refinement
 #ifdef LIBMESH_ENABLE_INFINITE_ELEMENTS
             && radial_order == f2.radial_order
             && radial_family == f2.radial_family
@@ -308,7 +344,8 @@ public:
       return (order < f2.order);
     if (family != f2.family)
       return (family < f2.family);
-
+    if (p_refinement != f2.p_refinement)
+      return (p_refinement < f2.p_refinement);
 #ifdef LIBMESH_ENABLE_INFINITE_ELEMENTS
     if (radial_order != f2.radial_order)
       return (radial_order < f2.radial_order);
@@ -321,16 +358,19 @@ public:
   }
 
   /**
-   * \returns The default quadrature order for this \p FEType.  The
-   * default quadrature order is calculated assuming a polynomial of
-   * degree \p order and is based on integrating the mass matrix for
-   * such an element exactly on affine elements.
+   * \returns The default quadrature order for this \p FEType, on an
+   * element without p refinement.  The default quadrature order is
+   * calculated assuming a polynomial of degree \p order and is based
+   * on integrating the mass matrix for such an element exactly on
+   * affine elements.
    */
   Order default_quadrature_order () const;
 
   /**
    * \returns A quadrature rule of appropriate type and order for this \p
-   * FEType.  The default quadrature rule is based on integrating the mass
+   * FEType, on an element without p refinement.
+   *
+   * The default quadrature rule is based on integrating the mass
    * matrix for such an element exactly, with an additional power on
    * the basis order to help account for nonlinearities and/or
    * nonuniform coefficients.  Higher or lower degree rules can be
@@ -341,7 +381,9 @@ public:
 
   /**
    * \returns The default quadrature order for integrating unweighted
-   * basis functions of this \p FEType.
+   * basis functions of this \p FEType, on an element without p
+   * refinement.
+   *
    * The unweighted quadrature order is calculated assuming a
    * polynomial of degree \p order and is based on integrating the
    * shape functions for such an element exactly on affine elements.
@@ -350,10 +392,12 @@ public:
 
   /**
    * \returns A quadrature rule of appropriate type and order for
-   * unweighted integration of this \p FEType.  The default quadrature
-   * rule is based on integrating the shape functions on an affine
-   * element exactly.  Higher or lower degree rules can be chosen by
-   * changing the extraorder parameter.
+   * unweighted integration of this \p FEType, on an element without p
+   * refinement
+   *
+   * The default quadrature rule is based on integrating the shape
+   * functions on an affine element exactly.  Higher or lower degree
+   * rules can be chosen by changing the extraorder parameter.
    */
   std::unique_ptr<QBase> unweighted_quadrature_rule (const unsigned int dim,
                                                      const int extraorder=0) const;
@@ -392,7 +436,13 @@ struct hash<libMesh::FEType>
       // Old compiler versions seem to need the static_cast
       libMesh::boostcopy::hash_combine(seed, static_cast<int>(fe_type.family));
       libMesh::boostcopy::hash_combine(seed, fe_type.order._order);
-      return seed;
+      libMesh::boostcopy::hash_combine(seed, static_cast<int>(fe_type.p_refinement));
+#ifdef LIBMESH_ENABLE_INFINITE_ELEMENTS
+      libMesh::boostcopy::hash_combine(seed, static_cast<int>(fe_type.radial_family));
+      libMesh::boostcopy::hash_combine(seed, fe_type.radial_order._order);
+      libMesh::boostcopy::hash_combine(seed, static_cast<int>(fe_type.inf_map));
+#endif // ifdef LIBMESH_ENABLE_INFINITE_ELEMENTS
+     return seed;
     }
 };
 }
