@@ -105,25 +105,28 @@ protected:
 
   /**
    * This function checks the integrity of the current set of
-   * elements in the Mesh to see if they comprise a hull,
-   * that is:
+   * elements in the Mesh to see if they comprise a topological
+   * manifold that (if it's also geometrically valid) would define
+   * valid hull for a tetrahedralized volume.
+   * That is:
    * - If they are all TRI3 elements
    * - They all have non-nullptr neighbors
    *
    * \returns
-   * - 0 if the mesh forms a valid hull
+   * - 0 if the mesh forms a topologically valid hull
    * - 1 if a non-TRI3 element is found
    * - 2 if an element with a nullptr-neighbor is found
+   * - 3 if the mesh is empty
    */
-  unsigned check_hull_integrity();
+  [[nodiscard]] unsigned int check_hull_integrity();
 
   /**
-   * This function prints an informative message and
-   * crashes based on the output of the check_hull_integrity()
-   * function.  It is a separate function so that you
-   * can check hull integrity without crashing if you desire.
+   * This function prints an informative message and throws an
+   * exception based on the output of the check_hull_integrity()
+   * function.  It is a separate function so that you can check hull
+   * integrity without exiting or catching an exception if desired.
    */
-  void process_hull_integrity_result(unsigned result);
+  void process_hull_integrity_result(unsigned int result);
 
   /**
    * Delete original convex hull elements from the Mesh

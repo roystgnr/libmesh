@@ -127,7 +127,8 @@ void NetGenMeshInterface::triangulate ()
       return;
     }
 
-  this->check_hull_integrity();
+  auto integrity = this->check_hull_integrity();
+  this->process_hull_integrity_result(integrity);
 
   Ng_Meshing_Parameters params;
 
