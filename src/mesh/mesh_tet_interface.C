@@ -335,7 +335,7 @@ BoundingBox MeshTetInterface::volume_to_surface_mesh(UnstructuredMesh & mesh)
 }
 
 
-unsigned MeshTetInterface::check_hull_integrity()
+unsigned int MeshTetInterface::check_hull_integrity()
 {
   // Check for easy return: if the Mesh is empty (i.e. if
   // somebody called triangulate_conformingDelaunayMesh on
@@ -371,17 +371,28 @@ unsigned MeshTetInterface::check_hull_integrity()
 
 void MeshTetInterface::process_hull_integrity_result(unsigned result)
 {
+  std::ostringstream err_msg;
+
   if (result != 0)
     {
-      libMesh::err << "Error! Conforming Delaunay mesh tetrahedralization requires a convex hull." << std::endl;
+      err_msg << "Error! Conforming Delaunay mesh tetrahedralization requires a convex hull." << std::endl;
 
       if (result==1)
         {
-          libMesh::err << "Non-TRI3 elements were found in the input Mesh.  ";
-          libMesh::err << "A constrained Delaunay triangulation requires a convex hull of TRI3 elements." << std::endl;
+          err_msg << "Non-TRI3 elements were found in the input Mesh.  ";
+          err_msg << "A constrained Delaunay tetrahedralization requires a convex hull of TRI3 elements." << std::endl;
         }
 
-      libmesh_error_msg("Consider calling TetGenMeshInterface::pointset_convexhull() followed by Mesh::find_neighbors() first.");
+      if (result==2)
+        {
+          err_msg << "At least one triangle without three neighbors was found in the input Mesh.  ";
+          err_msg << "A constrained Delaunay tetrahedralization must be a triangular manifold without boundary." << std::endl;
+        }
+
+      if (result==3)
+        err_msg << "The input Mesh was empty!" << std::endl;
+
+      libmesh_error_msg(err_msg.str());
     }
 }
 
