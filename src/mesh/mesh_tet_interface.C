@@ -519,7 +519,7 @@ std::set<MeshTetInterface::SurfaceIntegrity> MeshTetInterface::improve_hull_inte
 
           const bool frontier_neigh = frontier_elements.count(neigh_id);
           const bool finished_neigh = finished_elements.count(neigh_id);
-          
+
           // Are we flipped?
           if ((i2 + 1)%3 != i1)
             {
