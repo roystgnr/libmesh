@@ -232,7 +232,7 @@ public:
    * \returns the master-space points of a subelement of the
    * polyhedron
    */
-  virtual std::array<Point, 4> master_subelement (unsigned int i) const override;
+  virtual std::array<Point, 4> master_subelement (unsigned int i) const;
 
   /**
    * Maybe we have non-identity permutations, but trying to figure out
@@ -297,12 +297,6 @@ public:
     libmesh_assert_less(i, this->_triangulation.size());
     return this->_triangulation[i];
   }
-
-  /**
-   * \returns the master-space points of a subelement of the
-   * polyhedron
-   */
-  virtual std::array<Point, 4> master_subelement (unsigned int i) const = 0;
 
   /**
    * \returns the index of a subelement containing the master-space

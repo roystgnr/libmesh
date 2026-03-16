@@ -24,6 +24,7 @@
 #include "libmesh/libmesh_common.h"
 #include "libmesh/cell_polyhedron.h"
 #include "libmesh/enum_order.h"
+#include "libmesh/node.h"
 
 namespace libMesh
 {
@@ -55,9 +56,15 @@ public:
    * We'll set up a simple default tetrahedralization here, but if users
    * want to adjust node positions later they'll want to retriangulate()
    * after.
+   * @param mid_elem_node a reference to the unique pointer set to the mid-element node,
+   *        only if the default (optimal) tetrahedralization algorithm fails, and the backup
+   *        trivial algorithm is used to tetrahedralize the element.
+   *        It's the caller's job to add this node to the mesh after!
+   * @param p pointer to the parent element of this one (useful for h-refinement)
    */
   explicit
   C0Polyhedron (const std::vector<std::shared_ptr<Polygon>> & sides,
+                std::unique_ptr<Node> & mid_elem_node,
                 Elem * p=nullptr);
 
   C0Polyhedron (C0Polyhedron &&) = delete;
@@ -95,8 +102,6 @@ public:
    */
   virtual unsigned int n_sub_elem() const override
   { return this->n_subelements(); }
-
-  virtual Point master_point (const unsigned int i) const override;
 
   /**
    * \returns \p true if the specified (local) node number is a vertex.
@@ -184,7 +189,7 @@ public:
    * Create a triangulation (tetrahedralization) based on the current
    * sides' triangulations.
    */
-  virtual void retriangulate() override final;
+  virtual void retriangulate() override;
 
 protected:
 
@@ -202,6 +207,9 @@ protected:
                                  const unsigned int /*j*/,
                                  const unsigned int /*k*/) const override
   { libmesh_not_implemented(); return 0; }
+
+  /// Whether we have a mid element node
+  bool _has_mid_elem_node;
 
 #endif // LIBMESH_ENABLE_AMR
 

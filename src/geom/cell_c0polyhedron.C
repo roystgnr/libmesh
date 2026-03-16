@@ -23,6 +23,7 @@
 #include "libmesh/mesh_tools.h"
 #include "libmesh/replicated_mesh.h"
 #include "libmesh/tensor_value.h"
+#include "libmesh/node.h"
 
 // C++ headers
 #include <numeric> // std::iota
@@ -34,10 +35,14 @@ namespace libMesh
 // C0Polyhedron class member functions
 
 C0Polyhedron::C0Polyhedron
-  (const std::vector<std::shared_ptr<Polygon>> & sides, Elem * p) :
+  (const std::vector<std::shared_ptr<Polygon>> & sides, std::unique_ptr<Node> & mid_elem_node, Elem * p) :
   Polyhedron(sides, p)
 {
   this->retriangulate();
+
+  // Grab the last node
+  if (_has_mid_elem_node)
+    mid_elem_node.reset(this->_nodelinks_data.back());
 }
 
 
@@ -50,8 +55,11 @@ std::unique_ptr<Elem> C0Polyhedron::disconnected_clone() const
 {
   auto sides = this->side_clones();
 
-  std::unique_ptr<Elem> returnval =
-    std::make_unique<C0Polyhedron>(sides);
+  std::unique_ptr<Node> mid_elem_node;
+  std::unique_ptr<Elem> returnval = std::make_unique<C0Polyhedron>(sides, mid_elem_node);
+  // Swap out the new mid elem node with the previous one
+  if (mid_elem_node)
+    returnval->set_node(returnval->n_nodes(), this->_nodelinks_data.back());
 
   returnval->set_id() = this->id();
 #ifdef LIBMESH_ENABLE_UNIQUE_ID
@@ -67,16 +75,6 @@ std::unique_ptr<Elem> C0Polyhedron::disconnected_clone() const
   returnval->inherit_data_from(*this);
 
   return returnval;
-}
-
-
-
-virtual Point C0Polyhedron::master_point (const unsigned int i) const
-{
-  if (i >= 0)
-    return this->point(i);
-  else
-    return this->vertex_average();
 }
 
 
@@ -401,6 +399,7 @@ void C0Polyhedron::retriangulate()
   // First heuristic: try with no interior point
   // This might not succeed, not every surface triangulation gives a tetrahedralization
   // with no additional interior point
+  // But if it succeeds, it uses less tetrahedra to cut the polyhedron
   try
   {
   // We'll have to edit this as we change the surface elements, but we
@@ -845,6 +844,7 @@ void C0Polyhedron::retriangulate()
     }
     // At this point our surface should just have two triangles left.
     libmesh_assert_equal_to(surface.n_elem(), 2);
+    _has_mid_elem_node = false;
   }
   // Failed without an interior point.
   // Use a single vertex-average interior point and tetrahedralize around it
@@ -855,7 +855,20 @@ void C0Polyhedron::retriangulate()
 
     // Get the vertex-average, no need to triangulate for this
     const auto v_avg = this->vertex_average();
-    _nodelinks_data.push_back(v_avg);
+
+    if (!_has_mid_elem_node)
+    {
+      // Create the mid element node. Add it to nodelinks
+      // We'll attach a unique ptr to it later
+      Node * mid_elem_node = new Node(v_avg);
+      _nodelinks_data.push_back(mid_elem_node);
+      _has_mid_elem_node = true;
+    }
+    else
+    {
+      // We are triangulating for a second time, we have already added this mid-element node
+      libmesh_assert(n_vertices() == n_nodes() - 1);
+    }
 
     // Build the tetrahedralization with each of the triangles on each side
     for (unsigned int s : make_range(this->n_sides()))
@@ -869,11 +882,11 @@ void C0Polyhedron::retriangulate()
         const auto & n2 = node_map[side->subtriangle(t)[1]];
         const auto & n3 = node_map[side->subtriangle(t)[2]];
 
-        // add_tet knows to use the vertex average for -1
+        // The mid node is the last node in the _nodes array
         if (!inward_normal)
-          this->add_tet((int)n1, (int)n2, (int)n3, -1);
+          this->add_tet((int)n1, (int)n2, (int)n3, this->n_nodes() - 1);
         else
-          this->add_tet((int)n1, (int)n3, (int)n2, -1);
+          this->add_tet((int)n1, (int)n3, (int)n2, this->n_nodes() - 1);
       }
     }
   }
@@ -894,7 +907,7 @@ void C0Polyhedron::add_tet(int n1,
 
   const Point v12 = this->point(n2) - this->point(n1);
   const Point v13 = this->point(n3) - this->point(n1);
-  const Point v14 = (n4 > 0 ? this->point(n4) : this->vertex_average()) - this->point(n1);
+  const Point v14 = this->point(n4) - this->point(n1);
   const Real six_vol = triple_product(v12, v13, v14);
   libmesh_assert_greater(six_vol, Real(0));
 #endif
