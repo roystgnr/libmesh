@@ -262,11 +262,17 @@ Gradient rational_test_grad (const Point& p,
      elem_type != PYRAMID18)) && order > 2)
 
 
-template <Order order, FEFamily family, ElemType elem_type, unsigned int build_nx>
+// Note: type name is used to name the test
+struct Default { };
+
+template <Order order, FEFamily family, ElemType elem_type, unsigned int build_nx, typename CaseName = Default>
 class FETestBase : public CppUnit::TestCase {
 
 protected:
   std::string libmesh_suite_name;
+
+  /// Name of the case, can be used in the test to switch cases
+  std::string _case_name;
 
   unsigned int _dim, _nx, _ny, _nz;
   Elem *_elem;
@@ -413,13 +419,22 @@ public:
         _mesh->add_point(Point(1, 1, 1), 6);
         _mesh->add_point(Point(0, 1, 1), 7);
 
+        // Pick case
+        std::vector<unsigned int> top_face_node_ordering;
+        if (_case_name == "Default")
+          top_face_node_ordering = {5, 6, 7, 4};
+        else if (_case_name == "MidNode")
+          top_face_node_ordering = {4, 5, 6, 7};
+        else
+          libmesh_error_msg("Unknown case info: " + _case_name);
+
         const std::vector<std::vector<unsigned int>> nodes_on_side =
           { {0, 1, 2, 3},   // min z
             {0, 1, 5, 4},   // min y
             {2, 6, 5, 1},   // max x
             {2, 3, 7, 6},   // max y
             {0, 4, 7, 3},   // min x
-            {5, 6, 7, 4} }; // max z
+            top_face_node_ordering }; // max z
 
         // Build all the sides.
         std::vector<std::shared_ptr<Polygon>> sides(nodes_on_side.size());
@@ -602,8 +617,8 @@ public:
 
 
 
-template <Order order, FEFamily family, ElemType elem_type>
-class FETest : public FETestBase<order, family, elem_type, 1> {
+template <Order order, FEFamily family, ElemType elem_type, typename CaseName>
+class FETest : public FETestBase<order, family, elem_type, 1, CaseName> {
 
 public:
 
@@ -1016,21 +1031,25 @@ public:
 };
 
 
-#define INSTANTIATE_FETEST(order, family, elemtype)                     \
-  class FETest_##order##_##family##_##elemtype : public FETest<order, family, elemtype> { \
+#define INSTANTIATE_FETEST_CASE(order, family, elemtype, case_name)  \
+  class FETest_##order##_##family##_##elemtype##_##case_name : public FETest<order, family, elemtype, case_name> { \
   public:                                                               \
-  FETest_##order##_##family##_##elemtype() :                            \
-    FETest<order,family,elemtype>() {                                   \
+  FETest_##order##_##family##_##elemtype##_##case_name() :               \
+    FETest<order,family,elemtype,case_name>() {                          \
     if (unitlog->summarized_logs_enabled())                             \
       this->libmesh_suite_name = "FETest";                              \
     else                                                                \
-      this->libmesh_suite_name = "FETest_" #order "_" #family "_" #elemtype; \
+      this->libmesh_suite_name = "FETest_" #order "_" #family "_" #elemtype "_" #case_name; \
+    this->_case_name = #case_name;                                       \
   }                                                                     \
-  CPPUNIT_TEST_SUITE( FETest_##order##_##family##_##elemtype );         \
+  CPPUNIT_TEST_SUITE( FETest_##order##_##family##_##elemtype##_##case_name ); \
   FETEST                                                                \
   CPPUNIT_TEST_SUITE_END();                                             \
   };                                                                    \
                                                                         \
-  CPPUNIT_TEST_SUITE_REGISTRATION( FETest_##order##_##family##_##elemtype );
+  CPPUNIT_TEST_SUITE_REGISTRATION( FETest_##order##_##family##_##elemtype##_##case_name );
+
+#define INSTANTIATE_FETEST(order, family, elemtype)       \
+  INSTANTIATE_FETEST_CASE(order, family, elemtype, Default)
 
 #endif
