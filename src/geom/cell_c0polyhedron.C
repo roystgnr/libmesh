@@ -398,6 +398,11 @@ void C0Polyhedron::retriangulate()
   verify_surface();
 #endif
 
+  // First heuristic: try with no interior point
+  // This might not succeed, not every surface triangulation gives a tetrahedralization
+  // with no additional interior point
+  try
+  {
   // We'll have to edit this as we change the surface elements, but we
   // have a method to initialize it easily.
   std::vector<std::vector<dof_id_type>> nodes_to_elem_vec_map;
@@ -509,11 +514,6 @@ void C0Polyhedron::retriangulate()
     node_index[node] =
       nodes_by_geometry.emplace(geometry_at(*node), node);
 
-  // First heuristic: try with no interior point
-  // This might not succeed, not every surface triangulation gives a tetrahedralization
-  // with no additional interior point
-  try
-  {
   // In 3D, this will require nested loops: an outer loop to remove
   // each vertex, and an inner loop to remove multiple tetrahedra in
   // cases where the vertex has more than 3 neighboring triangles.
@@ -855,7 +855,7 @@ void C0Polyhedron::retriangulate()
 
     // Get the vertex-average, no need to triangulate for this
     const auto v_avg = this->vertex_average();
-    std::cout << "Tetrahedralizing new way around " << v_avg << std::endl;
+    _nodelinks_data.push_back(v_avg);
 
     // Build the tetrahedralization with each of the triangles on each side
     for (unsigned int s : make_range(this->n_sides()))
