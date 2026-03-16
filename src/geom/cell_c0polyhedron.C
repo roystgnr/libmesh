@@ -850,7 +850,7 @@ void C0Polyhedron::retriangulate()
   }
   // Failed without an interior point.
   // Use a single vertex-average interior point and tetrahedralize around it
-  catch (libMesh::LogicError)
+  catch (libMesh::LogicError &)
   {
     // Clear the triangulation we started building
     this->_triangulation.clear();
