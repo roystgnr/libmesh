@@ -474,8 +474,10 @@ int main (int argc, char ** argv)
 
       mesh.write("saved_mesh.xda");
       equation_systems.write("saved_solution.xda", WRITE);
+#ifdef LIBMESH_HAVE_EXODUS_API
       ExodusII_IO(mesh).write_equation_systems ("saved_solution.e",
                                                 equation_systems);
+#endif // LIBMESH_HAVE_EXODUS_API
     }
 #endif // #ifndef LIBMESH_ENABLE_AMR
 
