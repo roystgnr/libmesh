@@ -50,6 +50,7 @@ public:
   CPPUNIT_TEST( testC0PolygonPentagon );
   CPPUNIT_TEST( testC0PolygonHexagon );
   CPPUNIT_TEST( testC0PolyhedronCube );
+  CPPUNIT_TEST( testC0PolyhedronCubeWithMidNode );
   CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -1133,8 +1134,10 @@ protected:
   {
     Mesh mesh(*TestCommWorld);
 
-    std::unique_ptr<Elem> polyhedron = std::make_unique<C0Polyhedron>(sides);
-
+    std::unique_ptr<libMesh::Node> mid_elem_node;
+    std::unique_ptr<Elem> polyhedron = std::make_unique<C0Polyhedron>(sides, mid_elem_node);
+    if (mid_elem_node)
+      mesh.add_node(std::move(mid_elem_node));
     polyhedron->set_id() = 0;
     Elem * elem = mesh.add_elem(std::move(polyhedron));
 
@@ -1169,6 +1172,46 @@ protected:
         {2, 3, 7, 6},   // max y
         {0, 4, 7, 3},   // min x
         {5, 6, 7, 4} }; // max z
+
+    // Build all the sides.
+    std::vector<std::shared_ptr<Polygon>> sides(nodes_on_side.size());
+
+    for (auto s : index_range(nodes_on_side))
+      {
+        const auto & nodes_on_s = nodes_on_side[s];
+        sides[s] = std::make_shared<C0Polygon>(nodes_on_s.size());
+        for (auto i : index_range(nodes_on_s))
+          sides[s]->set_node(i, mesh.node_ptr(nodes_on_s[i]));
+      }
+
+    testC0Polyhedron(sides, 1);
+  }
+
+
+
+
+  void testC0PolyhedronCubeWithMidNode()
+  {
+    ReplicatedMesh mesh(*TestCommWorld);
+
+    mesh.add_point(Point(0, 0, 0), 0);
+    mesh.add_point(Point(1, 0, 0), 1);
+    mesh.add_point(Point(1, 1, 0), 2);
+    mesh.add_point(Point(0, 1, 0), 3);
+    mesh.add_point(Point(0, 0, 1), 4);
+    mesh.add_point(Point(1, 0, 1), 5);
+    mesh.add_point(Point(1, 1, 1), 6);
+    mesh.add_point(Point(0, 1, 1), 7);
+
+    // See notes in elem_test.h
+    // With this ordering, we'll need to use a mid-node to tetrahedralize it
+    const std::vector<std::vector<unsigned int>> nodes_on_side =
+      { {0, 1, 2, 3},   // min z
+        {0, 1, 5, 4},   // min y
+        {1, 2, 6, 5},   // max x
+        {2, 3, 7, 6},   // max y
+        {3, 0, 4, 7},   // min x
+        {4, 5, 6, 7} }; // max z
 
     // Build all the sides.
     std::vector<std::shared_ptr<Polygon>> sides(nodes_on_side.size());

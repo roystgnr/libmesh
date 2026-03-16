@@ -432,8 +432,11 @@ public:
               sides[s]->set_node(i, _mesh->node_ptr(nodes_on_s[i]));
           }
 
-        std::unique_ptr<Elem> polyhedron = std::make_unique<C0Polyhedron>(sides);
+        std::unique_ptr<libMesh::Node> mid_elem_node;
+        std::unique_ptr<Elem> polyhedron = std::make_unique<C0Polyhedron>(sides, mid_elem_node);
         _mesh->add_elem(std::move(polyhedron));
+        if (mid_elem_node)
+          _mesh->add_node(std::move(mid_elem_node));
         _mesh->prepare_for_use();
       }
     else

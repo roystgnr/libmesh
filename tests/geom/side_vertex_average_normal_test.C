@@ -476,6 +476,8 @@ public:
           {2, 3, 7, 6},   // max y
           {0, 4, 7, 3},   // min x
           {5, 6, 7, 4} }; // max z
+      // Note: we don't test the alternative triangulation for side vertex average normal
+      // as we don't expect any difference, the sides are triangulated polygons in both cases
 
       // Create Nodes
       std::vector<std::unique_ptr<Node>> nodes(points.size());
@@ -493,7 +495,8 @@ public:
           sides[s]->set_node(i, nodes[nodes_on_s[i]].get());
       }
 
-      std::unique_ptr<Elem> polyhedron = std::make_unique<C0Polyhedron>(sides);
+      std::unique_ptr<libMesh::Node> mid_elem_node;
+      std::unique_ptr<Elem> polyhedron = std::make_unique<C0Polyhedron>(sides, mid_elem_node);
       const Point n1 = polyhedron->side_vertex_average_normal(0);
       LIBMESH_ASSERT_FP_EQUAL(0, n1(0), TOLERANCE*TOLERANCE);
       LIBMESH_ASSERT_FP_EQUAL(0, n1(1), TOLERANCE*TOLERANCE);
@@ -550,7 +553,8 @@ public:
           sides[s]->set_node(i, nodes[nodes_on_s[i]].get());
       }
 
-      std::unique_ptr<Elem> polyhedron = std::make_unique<C0Polyhedron>(sides);
+      std::unique_ptr<libMesh::Node> mid_elem_node;
+      std::unique_ptr<Elem> polyhedron = std::make_unique<C0Polyhedron>(sides, mid_elem_node);
 
       // Get a hex8 for normal comparisons
       auto [hex8, nodes2] = this->construct_elem(pts, HEX8);
