@@ -513,7 +513,7 @@ std::set<MeshTetInterface::SurfaceIntegrity> MeshTetInterface::improve_hull_inte
     }
 
   Elem * best_elem = nullptr;
-  Real best_abs_normal_0;
+  Real best_abs_normal_0 = 0;
 
   for (dof_id_type id : attached_elements)
     {
