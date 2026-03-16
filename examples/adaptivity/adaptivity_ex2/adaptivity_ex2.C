@@ -288,12 +288,15 @@ int main (int argc, char ** argv)
   equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 250;
   equation_systems.parameters.set<Real>("linear solver tolerance") = TOLERANCE;
 
+  // Get some output to visualize
+#ifdef LIBMESH_HAVE_EXODUS_API
   if (!read_solution)
     // Write out the initial condition
     ExodusII_IO(mesh).write_equation_systems ("out.e.000", equation_systems);
   else
     // Write out the solution that was read in
     ExodusII_IO(mesh).write_equation_systems ("solution_read_in.e", equation_systems);
+#endif // LIBMESH_HAVE_EXODUS_API
 
   // The Convection-Diffusion system requires that we specify
   // the flow velocity.  We will specify it as a RealVectorValue
@@ -454,8 +457,11 @@ int main (int argc, char ** argv)
                     << std::right
                     << t_step+1;
 
+          // Get some output to visualize
+#ifdef LIBMESH_HAVE_EXODUS_API
           ExodusII_IO(mesh).write_equation_systems (file_name.str(),
                                               equation_systems);
+#endif // LIBMESH_HAVE_EXODUS_API
         }
     }
 
