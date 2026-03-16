@@ -229,6 +229,12 @@ public:
                                const unsigned int s) const override final;
 
   /**
+   * \returns the master-space points of a subelement of the
+   * polyhedron
+   */
+  virtual std::array<Point, 4> master_subelement (unsigned int i) const override;
+
+  /**
    * Maybe we have non-identity permutations, but trying to figure out
    * how many is an exercise in applied group theory, which is a bit
    * much for just expanded unit test coverage.

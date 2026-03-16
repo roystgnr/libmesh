@@ -71,6 +71,16 @@ std::unique_ptr<Elem> C0Polyhedron::disconnected_clone() const
 
 
 
+virtual Point C0Polyhedron::master_point (const unsigned int i) const
+{
+  if (i >= 0)
+    return this->point(i);
+  else
+    return this->vertex_average();
+}
+
+
+
 bool C0Polyhedron::is_vertex(const unsigned int libmesh_dbg_var(i)) const
 {
   libmesh_assert (i < this->n_nodes());
@@ -162,18 +172,6 @@ void C0Polyhedron::connectivity(const unsigned int /*sf*/,
   libmesh_not_implemented();
 }
 
-
-std::array<Point, 4> C0Polyhedron::master_subelement (unsigned int i) const
-{
-  libmesh_assert_less(i, this->_triangulation.size());
-
-  const auto & tet = this->_triangulation[i];
-
-  return { this->master_point(tet[0]),
-           this->master_point(tet[1]),
-           this->master_point(tet[2]),
-           tet[3] >= 0 ? this->master_point(tet[3]) : this->vertex_average() };
-}
 
 
 Real C0Polyhedron::volume () const

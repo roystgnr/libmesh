@@ -671,6 +671,20 @@ bool Polyhedron::is_edge_on_side(const unsigned int e,
 
 
 
+std::array<Point, 4> Polyhedron::master_subelement (unsigned int i) const
+{
+  libmesh_assert_less(i, this->_triangulation.size());
+
+  const auto & tet = this->_triangulation[i];
+
+  return { this->master_point(tet[0]),
+           this->master_point(tet[1]),
+           this->master_point(tet[2]),
+           this->master_point(tet[3]) };
+}
+
+
+
 std::tuple<unsigned int, Real, Real, Real>
 Polyhedron::subelement_coordinates (const Point & p, Real tol) const
 {

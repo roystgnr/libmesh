@@ -96,6 +96,8 @@ public:
   virtual unsigned int n_sub_elem() const override
   { return this->n_subelements(); }
 
+  virtual Point master_point (const unsigned int i) const override;
+
   /**
    * \returns \p true if the specified (local) node number is a vertex.
    */
@@ -149,12 +151,6 @@ public:
   virtual void connectivity(const unsigned int sf,
                             const IOPackage iop,
                             std::vector<dof_id_type> & conn) const override;
-
-  /**
-   * \returns the master-space points of a subelement of the
-   * polyhedron
-   */
-  virtual std::array<Point, 4> master_subelement (unsigned int i) const override;
 
   /**
    * Element refinement is not implemented for polyhedra.
