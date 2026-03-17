@@ -189,7 +189,7 @@ public:
    * Create a triangulation (tetrahedralization) based on the current
    * sides' triangulations.
    */
-  virtual void retriangulate() override;
+  virtual void retriangulate() override final;
 
 protected:
 

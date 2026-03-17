@@ -186,7 +186,6 @@ Real C0Polyhedron::volume () const
   Real six_vol = 0;
   for (const auto & subtet : this->_triangulation)
     {
-
       const Point p0 = this->point(subtet[0]);
       const Point p1 = this->point(subtet[1]);
       const Point p2 = this->point(subtet[2]);
