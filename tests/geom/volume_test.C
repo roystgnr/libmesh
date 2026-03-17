@@ -1221,11 +1221,11 @@ protected:
     // See notes in elem_test.h
     // With this ordering, we'll need to use a mid-node to tetrahedralize it
     const std::vector<std::vector<unsigned int>> nodes_on_side =
-      { {0, 1, 2, 3},   // min z
-        {0, 1, 5, 4},   // min y
-        {1, 2, 6, 5},   // max x
+      { {1, 0, 3, 2},   // min z
+        {4, 5, 1, 0},   // min y
+        {2, 6, 5, 1},   // max x
         {2, 3, 7, 6},   // max y
-        {3, 0, 4, 7},   // min x
+        {0, 4, 7, 3},   // min x
         {4, 5, 6, 7}};  // max z
 
     // Build all the sides.
