@@ -94,7 +94,7 @@ public:
    * \returns the number of vertices.  For the simple C0Polyhedron
    * every node is a vertex.
    */
-  virtual unsigned int n_vertices() const override final { return this->_nodelinks_data.size(); }
+  virtual unsigned int n_vertices() const override final { return this->_nodelinks_data.size() - _has_mid_elem_node; }
 
   /**
    * \returns the number of tetrahedra to break this into for

@@ -79,11 +79,14 @@ std::unique_ptr<Elem> C0Polyhedron::disconnected_clone() const
 
 
 
-bool C0Polyhedron::is_vertex(const unsigned int libmesh_dbg_var(i)) const
+bool C0Polyhedron::is_vertex(const unsigned int i) const
 {
-  libmesh_assert (i < this->n_nodes());
+  libmesh_assert_less (i, this->n_vertices() + _has_mid_elem_node);
 
-  return true;
+  if (i < this->n_vertices())
+    return true;
+  else
+    return false;
 }
 
 
@@ -187,8 +190,7 @@ Real C0Polyhedron::volume () const
       const Point p0 = this->point(subtet[0]);
       const Point p1 = this->point(subtet[1]);
       const Point p2 = this->point(subtet[2]);
-      // Last tet node can be the mid-element node
-      const Point p3 = (subtet[3] >= 0) ? this->point(subtet[3]) : this->vertex_average();
+      const Point p3 = this->point(subtet[3]);
 
       const Point v01 = p1 - p0;
       const Point v02 = p2 - p0;
@@ -215,8 +217,7 @@ Point C0Polyhedron::true_centroid () const
       const Point p0 = this->point(subtet[0]);
       const Point p1 = this->point(subtet[1]);
       const Point p2 = this->point(subtet[2]);
-      // Last tet node can be the mid-element node
-      const Point p3 = (subtet[3] >= 0) ? this->point(subtet[3]) : this->vertex_average();
+      const Point p3 = this->point(subtet[3]);
 
       const Point v01 = p1 - p0;
       const Point v02 = p2 - p0;
@@ -855,7 +856,6 @@ void C0Polyhedron::retriangulate()
 
     // Get the vertex-average, no need to triangulate for this
     const auto v_avg = this->vertex_average();
-
     if (!_has_mid_elem_node)
     {
       // Create the mid element node. Add it to nodelinks
