@@ -1003,6 +1003,7 @@ protected:
     polyhedron->set_id() = 0;
     Elem * elem = mesh.add_elem(std::move(polyhedron));
     libmesh_assert(dynamic_cast<C0Polyhedron *>(elem));
+    mesh.prepare_for_use();
 
     return elem;
   }
