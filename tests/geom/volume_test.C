@@ -50,7 +50,7 @@ public:
   CPPUNIT_TEST( testC0PolygonPentagon );
   CPPUNIT_TEST( testC0PolygonHexagon );
   CPPUNIT_TEST( testC0PolyhedronCube );
-  CPPUNIT_TEST( testC0PolyhedronCubeWithMidNode );
+  CPPUNIT_TEST( testC0PolyhedronHexagonalPrism );
   CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -1205,28 +1205,34 @@ protected:
 
 
 
-  void testC0PolyhedronCubeWithMidNode()
+  void testC0PolyhedronHexagonalPrism()
   {
     ReplicatedMesh mesh(*TestCommWorld);
 
-    mesh.add_point(Point(0, 0, 0), 0);
-    mesh.add_point(Point(1, 0, 0), 1);
-    mesh.add_point(Point(1, 1, 0), 2);
-    mesh.add_point(Point(0, 1, 0), 3);
-    mesh.add_point(Point(0, 0, 1), 4);
-    mesh.add_point(Point(1, 0, 1), 5);
-    mesh.add_point(Point(1, 1, 1), 6);
-    mesh.add_point(Point(0, 1, 1), 7);
+    mesh.add_point(Point(0, -2, 0), 0);
+    mesh.add_point(Point(-1, -1, 0), 1);
+    mesh.add_point(Point(-1, 1, 0), 2);
+    mesh.add_point(Point(0, 2, 0), 3);
+    mesh.add_point(Point(1, 1, 0), 4);
+    mesh.add_point(Point(1, -1, 0), 5);
+    mesh.add_point(Point(0, -2, 1), 6);
+    mesh.add_point(Point(-1, -1, 1), 7);
+    mesh.add_point(Point(-1, 1, 1), 8);
+    mesh.add_point(Point(0, 2, 1), 9);
+    mesh.add_point(Point(1, 1, 1), 10);
+    mesh.add_point(Point(1, -1, 1), 11);
 
     // See notes in elem_test.h
     // With this ordering, we'll need to use a mid-node to tetrahedralize it
     const std::vector<std::vector<unsigned int>> nodes_on_side =
-      { {1, 0, 3, 2},   // min z
-        {4, 5, 1, 0},   // min y
-        {2, 6, 5, 1},   // max x
-        {2, 3, 7, 6},   // max y
-        {0, 4, 7, 3},   // min x
-        {4, 5, 6, 7}};  // max z
+      { {0, 1, 2, 3, 4, 5},
+        {0, 1, 7, 6},
+        {1, 2, 8, 7},
+        {2, 3, 9, 8},
+        {3, 4, 10, 9},
+        {4, 5, 11, 10},
+        {5, 0, 6, 11},
+        {6, 7, 8, 9, 10, 11} };
 
     // Build all the sides.
     std::vector<std::shared_ptr<Polygon>> sides(nodes_on_side.size());
@@ -1240,8 +1246,8 @@ protected:
       }
 
     const auto poly = dynamic_cast<C0Polyhedron *>(buildC0Polyhedron(sides, mesh));
-    CPPUNIT_ASSERT_EQUAL((unsigned int)9, poly->n_nodes());  // we should have a mid node
-    testElemVolume(poly, 1);
+    CPPUNIT_ASSERT_EQUAL((unsigned int)13, poly->n_nodes());  // we should have a mid node
+    testElemVolume(poly, 6);
     testC0PolyhedronMethods(mesh, /*midnode*/true);
 
     // Check routine for subtet side to poly side mapping
