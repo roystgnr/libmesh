@@ -59,7 +59,12 @@ std::unique_ptr<Elem> C0Polyhedron::disconnected_clone() const
   std::unique_ptr<Elem> returnval = std::make_unique<C0Polyhedron>(sides, mid_elem_node);
   // Swap out the new mid elem node with the previous one
   if (mid_elem_node)
-    returnval->set_node(returnval->n_nodes(), this->_nodelinks_data.back());
+  {
+    libmesh_assert(returnval->n_nodes() == this->n_nodes());
+    const auto old_midnode = returnval->node_ptr(returnval->n_nodes() - 1);
+    returnval->set_node(returnval->n_nodes() - 1, this->_nodelinks_data.back());
+    delete old_midnode;
+  }
 
   returnval->set_id() = this->id();
 #ifdef LIBMESH_ENABLE_UNIQUE_ID
@@ -848,7 +853,7 @@ void C0Polyhedron::retriangulate()
   }
   // Failed without an interior point.
   // Use a single vertex-average interior point and tetrahedralize around it
-  catch (libMesh::LogicError &)
+  catch ( libMesh::LogicError & )
   {
     // Clear the triangulation we started building
     this->_triangulation.clear();
@@ -860,7 +865,7 @@ void C0Polyhedron::retriangulate()
       // Create the mid element node. Add it to nodelinks
       // We'll attach a unique ptr to it later
       Node * mid_elem_node = new Node(v_avg);
-      _nodelinks_data.push_back(mid_elem_node);
+      this->_nodelinks_data.push_back(mid_elem_node);
       _has_mid_elem_node = true;
     }
     else
@@ -903,13 +908,15 @@ void C0Polyhedron::add_tet(int n1,
   libmesh_assert_less(n2, nn);
   libmesh_assert_less(n3, nn);
   libmesh_assert_less(n4, nn);
+#endif
 
   const Point v12 = this->point(n2) - this->point(n1);
   const Point v13 = this->point(n3) - this->point(n1);
   const Point v14 = this->point(n4) - this->point(n1);
   const Real six_vol = triple_product(v12, v13, v14);
-  libmesh_assert_greater(six_vol, Real(0));
-#endif
+  // We need to error on this in optimized modes to fall back onto the
+  // tetrahedralization with a mid node
+  libmesh_error_msg_if(six_vol <= 0, "Creating flat tet");
 
   this->_triangulation.push_back({n1, n2, n3, n4});
 }
