@@ -420,21 +420,23 @@ public:
         _mesh->add_point(Point(0, 1, 1), 7);
 
         // Pick case
-        std::vector<unsigned int> top_face_node_ordering;
+        std::vector<std::vector<unsigned int>> nodes_on_side;
         if (_case_name == "Default")
-          top_face_node_ordering = {5, 6, 7, 4};
+          nodes_on_side = { {0, 1, 2, 3},   // min z
+                            {0, 1, 5, 4},   // min y
+                            {2, 6, 5, 1},   // max x
+                            {2, 3, 7, 6},   // max y
+                            {0, 4, 7, 3},   // min x
+                            {5, 6, 7, 4} }; // max z
         else if (_case_name == "MidNode")
-          top_face_node_ordering = {4, 5, 6, 7};
+          nodes_on_side = { {0, 1, 2, 3},   // min z
+                            {0, 1, 5, 4},   // min y
+                            {1, 2, 6, 5},   // max x
+                            {2, 3, 7, 6},   // max y
+                            {3, 0, 4, 7},   // min x
+                            {4, 5, 6, 7} }; // max z
         else
-          libmesh_error_msg("Unknown case info: " + _case_name);
-
-        const std::vector<std::vector<unsigned int>> nodes_on_side =
-          { {0, 1, 2, 3},   // min z
-            {0, 1, 5, 4},   // min y
-            {2, 6, 5, 1},   // max x
-            {2, 3, 7, 6},   // max y
-            {0, 4, 7, 3},   // min x
-            top_face_node_ordering }; // max z
+          libmesh_error_msg("Unknown case name: " + _case_name);
 
         // Build all the sides.
         std::vector<std::shared_ptr<Polygon>> sides(nodes_on_side.size());
