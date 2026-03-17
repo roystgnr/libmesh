@@ -992,6 +992,20 @@ protected:
     return std::make_pair(std::move(elem), std::move(nodes));
   }
 
+  // Helper function to create the polyhedron element
+  Elem *
+  buildC0Polyhedron(std::vector<std::shared_ptr<Polygon>> sides, MeshBase & mesh)
+  {
+    std::unique_ptr<libMesh::Node> mid_elem_node;
+    std::unique_ptr<Elem> polyhedron = std::make_unique<C0Polyhedron>(sides, mid_elem_node);
+    if (mid_elem_node)
+      mesh.add_node(std::move(mid_elem_node));
+    polyhedron->set_id() = 0;
+    Elem * elem = mesh.add_elem(std::move(polyhedron));
+    libmesh_assert(dynamic_cast<C0Polyhedron *>(elem));
+
+    return elem;
+  }
 
   // Helper function to factor out common tests
   void testC0PolygonMethods(MeshBase & mesh,
@@ -1061,7 +1075,7 @@ protected:
 
 
   // Helper function to factor out common tests
-  void testC0PolyhedronMethods(MeshBase & mesh)
+  void testC0PolyhedronMethods(MeshBase & mesh, bool has_midnode)
   {
     Elem * elem = mesh.query_elem_ptr(0);
     bool found_elem = elem;
@@ -1077,7 +1091,10 @@ protected:
     const int E = elem->n_edges();
     const int F = elem->n_faces();
 
-    CPPUNIT_ASSERT_EQUAL(int(elem->n_nodes()), V);
+    if (!has_midnode)
+      CPPUNIT_ASSERT_EQUAL(int(elem->n_nodes()), V);
+    else
+      CPPUNIT_ASSERT_EQUAL(int(elem->n_nodes()), V + 1);
     CPPUNIT_ASSERT_EQUAL(int(elem->n_sides()), F);
 
     // Euler characteristic for polygons homeomorphic to spheres is 2
@@ -1129,24 +1146,13 @@ protected:
 
 
 
-  void testC0Polyhedron(const std::vector<std::shared_ptr<Polygon>> & sides,
-                        Real expected_volume)
+  void testElemVolume(const Elem * elem,
+                      Real expected_volume)
   {
-    Mesh mesh(*TestCommWorld);
-
-    std::unique_ptr<libMesh::Node> mid_elem_node;
-    std::unique_ptr<Elem> polyhedron = std::make_unique<C0Polyhedron>(sides, mid_elem_node);
-    if (mid_elem_node)
-      mesh.add_node(std::move(mid_elem_node));
-    polyhedron->set_id() = 0;
-    Elem * elem = mesh.add_elem(std::move(polyhedron));
-
     const Real derived_volume = elem->volume();
     const Real base_volume = elem->Elem::volume();
     LIBMESH_ASSERT_FP_EQUAL(base_volume, derived_volume, TOLERANCE*TOLERANCE);
     LIBMESH_ASSERT_FP_EQUAL(derived_volume, expected_volume, TOLERANCE*TOLERANCE);
-
-    this->testC0PolyhedronMethods(mesh);
   }
 
 
@@ -1184,9 +1190,18 @@ protected:
           sides[s]->set_node(i, mesh.node_ptr(nodes_on_s[i]));
       }
 
-    testC0Polyhedron(sides, 1);
-  }
+    const auto poly = dynamic_cast<C0Polyhedron *>(buildC0Polyhedron(sides, mesh));
+    testElemVolume(poly, 1);
+    testC0PolyhedronMethods(mesh, /*midnode*/false);
 
+    // Check routine for subtet side to poly side mapping
+    // NOTE: this test is hard coded to the elements used right now (to be reworked)
+    const auto subtet0_sides_to_poly_sides = poly->subelement_sides_to_poly_sides(0);
+    CPPUNIT_ASSERT_EQUAL(libMesh::invalid_int, subtet0_sides_to_poly_sides[0]);
+    CPPUNIT_ASSERT_EQUAL(1, subtet0_sides_to_poly_sides[1]);
+    CPPUNIT_ASSERT_EQUAL(0, subtet0_sides_to_poly_sides[2]);
+    CPPUNIT_ASSERT_EQUAL(2, subtet0_sides_to_poly_sides[3]);
+  }
 
 
 
@@ -1211,7 +1226,7 @@ protected:
         {1, 2, 6, 5},   // max x
         {2, 3, 7, 6},   // max y
         {3, 0, 4, 7},   // min x
-        {4, 5, 6, 7} }; // max z
+        {4, 5, 6, 7}};  // max z
 
     // Build all the sides.
     std::vector<std::shared_ptr<Polygon>> sides(nodes_on_side.size());
@@ -1224,7 +1239,17 @@ protected:
           sides[s]->set_node(i, mesh.node_ptr(nodes_on_s[i]));
       }
 
-    testC0Polyhedron(sides, 1);
+    const auto poly = dynamic_cast<C0Polyhedron *>(buildC0Polyhedron(sides, mesh));
+    CPPUNIT_ASSERT_EQUAL((unsigned int)9, poly->n_nodes());  // we should have a mid node
+    testElemVolume(poly, 1);
+    testC0PolyhedronMethods(mesh, /*midnode*/true);
+
+    // Check routine for subtet side to poly side mapping
+    const auto subtet0_sides_to_poly_sides = poly->subelement_sides_to_poly_sides(0);
+    CPPUNIT_ASSERT_EQUAL(0, subtet0_sides_to_poly_sides[0]);
+    CPPUNIT_ASSERT_EQUAL(libMesh::invalid_int, subtet0_sides_to_poly_sides[1]);
+    CPPUNIT_ASSERT_EQUAL(libMesh::invalid_int, subtet0_sides_to_poly_sides[2]);
+    CPPUNIT_ASSERT_EQUAL(libMesh::invalid_int, subtet0_sides_to_poly_sides[3]);
   }
 
 
