@@ -1621,7 +1621,7 @@ void GenericProjector<FFunctor, GFunctor, FValue, ProjectionAction>::SortAndCopy
       // We may be out of nodes at this point or we have interior
       // nodes which may have DoFs to project too
       const bool has_interior_nodes =
-        (n_nodes > n_vertices + ((dim > 2) * n_edges) + n_sides) || has_poly_midnode;
+        (n_nodes > n_vertices + ((dim > 2) * n_edges) + n_sides);
 
       for (auto v_num : this->projector.variables)
         {
@@ -1734,7 +1734,10 @@ void GenericProjector<FFunctor, GFunctor, FValue, ProjectionAction>::SortAndCopy
             }
         };
 
-      for (unsigned int v=0; v != n_vertices; ++v)
+      // Treat polyhedron midnode as a vertex
+      // NOTE: if we start having edge or side nodes on polyhedra, we need to use that +1 offset
+      // in the edge and side nodes code as well!
+      for (unsigned int v=0; v != n_vertices + has_poly_midnode; ++v)
         {
           const Node * node = elem->node_ptr(v);
 
