@@ -1611,7 +1611,8 @@ void GenericProjector<FFunctor, GFunctor, FValue, ProjectionAction>::SortAndCopy
 
       // If we have non-vertex nodes, the first is an edge node, but
       // if we're in 2D we'll call that a side node
-      const bool has_edge_nodes = (n_nodes > n_vertices && dim > 2);
+      const bool has_poly_midnode = (elem->type() == C0POLYHEDRON) && (n_nodes == n_vertices + 1);
+      const bool has_edge_nodes = (n_nodes > n_vertices + has_poly_midnode && dim > 2);
 
       // If we have even more nodes, the next is a side node.
       const bool has_side_nodes =
@@ -1620,7 +1621,7 @@ void GenericProjector<FFunctor, GFunctor, FValue, ProjectionAction>::SortAndCopy
       // We may be out of nodes at this point or we have interior
       // nodes which may have DoFs to project too
       const bool has_interior_nodes =
-        (n_nodes > n_vertices + ((dim > 2) * n_edges) + n_sides);
+        (n_nodes > n_vertices + ((dim > 2) * n_edges) + n_sides) || has_poly_midnode;
 
       for (auto v_num : this->projector.variables)
         {
