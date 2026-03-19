@@ -285,7 +285,18 @@ void System::read_header (Xdr & io,
           this->comm().broadcast(vec_type);
 
           if (read_additional_data)
-            this->add_vector(vec_name, bool(vec_projection), ParallelType(vec_type));
+            {
+              ParallelType evec_type = static_cast<ParallelType>(vec_type);
+
+              // If the vector was written (possibly from a serial job) as type SERIAL,
+              // but we are now running in parallel, then all the vectors on the System
+              // are type PARALLEL (or GHOSTED) so let's "upgrade" the type to PARALLEL
+              // in that case.
+              if (evec_type == SERIAL && this->comm().size() > 1)
+                evec_type = PARALLEL;
+
+              this->add_vector(vec_name, bool(vec_projection), evec_type);
+            }
         }
       else if (read_additional_data)
           // Systems now can handle adding post-initialization vectors
