@@ -1737,7 +1737,15 @@ void GenericProjector<FFunctor, GFunctor, FValue, ProjectionAction>::SortAndCopy
       // Treat polyhedron midnode as a vertex
       // NOTE: if we start having edge or side nodes on polyhedra, we need to use that +1 offset
       // in the edge and side nodes code as well!
-      for (unsigned int v=0; v != n_vertices + has_poly_midnode; ++v)
+#ifndef NDEBUG
+      for (auto v_num : this->projector.variables)
+        {
+          const auto & family = this->projector.system.variable(v_num).type().family;
+          // Add to the list once known to be correctly functioning with the midnode
+          libmesh_assert(!has_poly_midnode || (family == LAGRANGE || family == MONOMIAL || family == XYZ));
+        }
+#endif
+      for (const auto v : make_range(n_vertices + has_poly_midnode))
         {
           const Node * node = elem->node_ptr(v);
 

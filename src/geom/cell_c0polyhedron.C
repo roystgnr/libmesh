@@ -86,7 +86,7 @@ std::unique_ptr<Elem> C0Polyhedron::disconnected_clone() const
 
 bool C0Polyhedron::is_vertex(const unsigned int i) const
 {
-  libmesh_assert_less (i, this->n_vertices() + _has_mid_elem_node);
+  libmesh_assert_less (i, this->n_nodes());
 
   if (i < this->n_vertices())
     return true;
@@ -405,6 +405,7 @@ void C0Polyhedron::retriangulate()
   // This might not succeed, not every surface triangulation gives a tetrahedralization
   // with no additional interior point
   // But if it succeeds, it uses less tetrahedra to cut the polyhedron
+#ifdef LIBMESH_ENABLE_EXCEPTIONS
   try
   {
   // We'll have to edit this as we change the surface elements, but we
@@ -854,6 +855,7 @@ void C0Polyhedron::retriangulate()
   // Failed without an interior point.
   // Use a single vertex-average interior point and tetrahedralize around it
   catch ( libMesh::LogicError & )
+#endif
   {
     // Clear the triangulation we started building
     this->_triangulation.clear();

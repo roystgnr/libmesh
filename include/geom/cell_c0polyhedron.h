@@ -24,10 +24,11 @@
 #include "libmesh/libmesh_common.h"
 #include "libmesh/cell_polyhedron.h"
 #include "libmesh/enum_order.h"
-#include "libmesh/node.h"
 
 namespace libMesh
 {
+
+class Node;
 
 /**
  * The \p C0Polyhedron is an element in 3D with an arbitrary (but fixed)
@@ -180,8 +181,12 @@ public:
   /**
    * \returns the local side-indices of subelement sides of the
    * polyhedron
-   *
    * Each subelement here is a tetrahedron
+   * @param i the index of the sub-element
+   * The return array is indexed by sides of the subelement, and contains the
+   * index of the side of the polyhedron if the sub-element side is on that side,
+   * or libMesh::invalid_uint if the subelement side is internal to the polyhedron
+   * NOTE: this routine involves a loop over the sides of the polyhedron
    */
   virtual std::array<int, 4> subelement_sides_to_poly_sides(unsigned int i) const;
 
