@@ -1193,6 +1193,7 @@ protected:
 
     const auto poly = dynamic_cast<C0Polyhedron *>(buildC0Polyhedron(sides, mesh));
     testElemVolume(poly, 1);
+  #ifdef LIBMESH_ENABLE_EXCEPTIONS
     testC0PolyhedronMethods(mesh, /*midnode*/false);
 
     // Check routine for subtet side to poly side mapping
@@ -1202,6 +1203,9 @@ protected:
     CPPUNIT_ASSERT_EQUAL(1, subtet0_sides_to_poly_sides[1]);
     CPPUNIT_ASSERT_EQUAL(0, subtet0_sides_to_poly_sides[2]);
     CPPUNIT_ASSERT_EQUAL(2, subtet0_sides_to_poly_sides[3]);
+  #else
+    testC0PolyhedronMethods(mesh, /*midnode*/true);
+  #endif
   }
 
 
