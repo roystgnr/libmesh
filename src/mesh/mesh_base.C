@@ -272,6 +272,8 @@ bool MeshBase::operator== (const MeshBase & other_mesh) const
 
 bool MeshBase::locally_equals (const MeshBase & other_mesh) const
 {
+  libmesh_here();
+
   // Check whether (almost) everything in the base is equal
   //
   // We don't check _next_unique_id here, because it's expected to
@@ -288,11 +290,19 @@ bool MeshBase::locally_equals (const MeshBase & other_mesh) const
     return false;
   if (_default_mapping_data != other_mesh._default_mapping_data)
     return false;
+
+  libmesh_here(); // we make it here
+
   if (_preparation != other_mesh._preparation)
     return false;
+
+  libmesh_here(); // we don't make it here
+
   if (_count_lower_dim_elems_in_point_locator !=
         other_mesh._count_lower_dim_elems_in_point_locator)
     return false;
+
+  libmesh_here(); // we don't make it here
 
   // We should either both have our own interior parents or both not;
   // but if we both don't then we can't really assert anything else
@@ -301,6 +311,8 @@ bool MeshBase::locally_equals (const MeshBase & other_mesh) const
   if ((_interior_mesh == this) !=
       (other_mesh._interior_mesh == &other_mesh))
     return false;
+
+  libmesh_here();
 
   if (_skip_noncritical_partitioning != other_mesh._skip_noncritical_partitioning)
     return false;
@@ -324,6 +336,9 @@ bool MeshBase::locally_equals (const MeshBase & other_mesh) const
     return false;
   if (_elem_dims != other_mesh._elem_dims)
     return false;
+
+  libmesh_here();
+
   if (_elem_default_orders != other_mesh._elem_default_orders)
     return false;
   if (_supported_nodal_order != other_mesh._supported_nodal_order)
@@ -346,6 +361,8 @@ bool MeshBase::locally_equals (const MeshBase & other_mesh) const
     return false;
   if (*boundary_info != *other_mesh.boundary_info)
     return false;
+
+  libmesh_here();
 
   // First check whether the "existence" of the two pointers differs (one present, one absent)
   if (static_cast<bool>(_disjoint_neighbor_boundary_pairs) !=
@@ -388,6 +405,8 @@ bool MeshBase::locally_equals (const MeshBase & other_mesh) const
         }
     }
 
+  libmesh_here();
+
   for (const auto & [elemset_code, elemset_ptr] : this->_elemset_codes)
     if (const auto it = other_mesh._elemset_codes.find(elemset_code);
         it == other_mesh._elemset_codes.end() || *elemset_ptr != *it->second)
@@ -404,6 +423,8 @@ bool MeshBase::locally_equals (const MeshBase & other_mesh) const
 
   // Same deal for partitioners.  We tested that we both have one or
   // both don't, but are they equivalent?  Let's guess "yes".
+
+  libmesh_here();
 
   // Now let the subclasses decide whether everything else is equal
   return this->subclass_locally_equals(other_mesh);
@@ -1030,6 +1051,10 @@ void MeshBase::clear ()
 }
 
 
+bool MeshBase::is_prepared() const
+{
+  return static_cast<bool>(_preparation);
+}
 
 void MeshBase::add_ghosting_functor(GhostingFunctor & ghosting_functor)
 {
@@ -2687,7 +2712,87 @@ std::string MeshBase::get_local_constraints(bool print_nonlocal) const
   return os.str();
 }
 
+MeshBase::Preparation::Preparation() :
+  is_partitioned(false),
+  has_synched_id_counts(false),
+  has_neighbor_ptrs(false),
+  has_cached_elem_data(false),
+  has_interior_parent_ptrs(false),
+  has_removed_remote_elements(false),
+  has_removed_orphaned_nodes(false),
+  has_boundary_id_sets(false),
+  has_reinit_ghosting_functors(false)
+{}
 
+MeshBase::Preparation::operator bool() const
+{
+  libmesh_here();
+
+  return is_partitioned &&
+         has_synched_id_counts &&
+         has_neighbor_ptrs &&
+         has_cached_elem_data &&
+         has_interior_parent_ptrs &&
+         has_removed_remote_elements &&
+         has_removed_orphaned_nodes &&
+         has_reinit_ghosting_functors &&
+         has_boundary_id_sets;
+}
+
+MeshBase::Preparation &
+MeshBase::Preparation::operator= (bool set_all)
+{
+  is_partitioned = set_all;
+  has_synched_id_counts = set_all;
+  has_neighbor_ptrs = set_all;
+  has_cached_elem_data = set_all;
+  has_interior_parent_ptrs = set_all;
+  has_removed_remote_elements = set_all;
+  has_removed_orphaned_nodes = set_all;
+  has_reinit_ghosting_functors = set_all;
+  has_boundary_id_sets = set_all;
+
+  return *this;
+}
+
+bool
+MeshBase::Preparation::operator== (const Preparation & other) const
+{
+  libmesh_here();
+
+  if (is_partitioned != other.is_partitioned)
+    return false;
+  if (has_synched_id_counts != other.has_synched_id_counts)
+    return false;
+  if (has_neighbor_ptrs != other.has_neighbor_ptrs)
+    return false;
+  if (has_cached_elem_data != other.has_cached_elem_data)
+    return false;
+
+  libmesh_here(); // we make it here
+
+  if (has_interior_parent_ptrs != other.has_interior_parent_ptrs)
+    return false;
+
+  libmesh_here(); // we don't make it here
+
+  if (has_removed_remote_elements != other.has_removed_remote_elements)
+    return false;
+  if (has_removed_orphaned_nodes != other.has_removed_orphaned_nodes)
+    return false;
+  if (has_reinit_ghosting_functors != other.has_reinit_ghosting_functors)
+    return false;
+  if (has_boundary_id_sets != other.has_boundary_id_sets)
+    return false;
+
+  return true;
+}
+
+bool
+MeshBase::Preparation::operator!= (const Preparation & other) const
+{
+  return !(*this == other);
+}
 
 
 // Explicit instantiations for our template function
