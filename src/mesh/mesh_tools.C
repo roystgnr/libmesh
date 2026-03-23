@@ -1247,9 +1247,9 @@ bool valid_is_prepared (const MeshBase & mesh)
   bool old_allow_remote_element_removal = mesh_clone->allow_remote_element_removal();
   mesh_clone->allow_remote_element_removal(false);
 
-  bool old_allow_detect_interior_parents = mesh_clone->allow_detect_interior_parents();
-  libMesh::out << "old_allow_detect_interior_parents = " << old_allow_detect_interior_parents << std::endl;
-  mesh_clone->allow_detect_interior_parents(false);
+  // bool old_allow_detect_interior_parents = mesh_clone->allow_detect_interior_parents();
+  // libMesh::out << "old_allow_detect_interior_parents = " << old_allow_detect_interior_parents << std::endl;
+  // mesh_clone->allow_detect_interior_parents(false);
 
   // Other debugging suggests these flags don't match on the clone vs. the original mesh.
   // Note: Calling MeshBase::preparation() returns a copy of the internal Preparation object, so it is logically const.
@@ -1263,7 +1263,7 @@ bool valid_is_prepared (const MeshBase & mesh)
   mesh_clone->allow_renumbering(old_allow_renumbering);
   mesh_clone->skip_partitioning(old_skip_partitioning);
   mesh_clone->allow_remote_element_removal(old_allow_remote_element_removal);
-  mesh_clone->allow_detect_interior_parents(old_allow_detect_interior_parents);
+  // mesh_clone->allow_detect_interior_parents(old_allow_detect_interior_parents);
 
   libmesh_here();
 

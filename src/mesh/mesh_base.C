@@ -1974,6 +1974,8 @@ void MeshBase::detect_interior_parents()
 {
   LOG_SCOPE("detect_interior_parents()", "MeshBase");
 
+  libmesh_here();
+
   // This requires an inspection on every processor
   parallel_object_only();
 
@@ -2028,9 +2030,18 @@ void MeshBase::detect_interior_parents()
         }
     }
 
-  // There is nothing to do if all dimensions should be skipped.
+  libmesh_here();
+  libMesh::out << "skip_all_dimensions = " << skip_all_dimensions << std::endl;
+
+  // There is nothing to do if all dimensions should be
+  // skipped. Before returning, we must also set the flag that says
+  // "interior parent pointers have been set up" even though we
+  // determined there was no work to be done.
   if (skip_all_dimensions)
-    return;
+    {
+      _preparation.has_interior_parent_ptrs = true;
+      return;
+    }
 
   // Do we have interior parent pointers going to a different mesh?
   // If so then we'll still check to make sure that's the only place
@@ -2138,6 +2149,9 @@ void MeshBase::detect_interior_parents()
         }
     }
 
+  // This flag doesn't necessarily mean any Elems actually have
+  // interior parent pointers, just that we did all the work to
+  // determine whether or not they do.
   _preparation.has_interior_parent_ptrs = true;
 }
 
