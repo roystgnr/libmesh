@@ -2038,47 +2038,45 @@ void MeshBase::detect_interior_parents()
       if (skip_dimension_for_interior_parents[element->dim()] || element->interior_parent())
         continue;
 
-      // Start by generating a SET of elements that are dim+1 to the current
-      // element at each vertex of the current element, thus ignoring interior nodes.
-      // If one of the SET of elements is empty, then we will not have an interior parent
-      // since an interior parent must be connected to all vertices of the current element
+      // Start by generating sets of dim+1 dimensional elements that
+      // touch each vertex of the current element.  If we encounter a
+      // vertex not connected to _any_ dim+1 dimensional elements,
+      // then we can exit the loop without checking the remaining
+      // vertices since an interior parent (if it exists) will be
+      // connected to all vertices of the current element.
       std::vector<std::set<dof_id_type>> neighbors( element->n_vertices() );
 
-      bool found_interior_parents = false;
+      bool found_interior_parents = true;
 
       for (auto n : make_range(element->n_vertices()))
         {
           auto it = node_to_elem.find(element->node_id(n));
+
           // Check at first that this node is not isolated.
           if (it == node_to_elem.end())
             {
               found_interior_parents = false;
-              break;
+              break; // out of n-loop
             }
 
-          std::vector<dof_id_type> & element_ids = it->second;
-          for (const auto & eid : element_ids)
-            if (this->elem_ref(eid).dim() == element->dim()+1)
-              neighbors[n].insert(eid);
+          for (const auto & vertex_neighbor_id : it->second)
+            if (this->elem_ref(vertex_neighbor_id).dim() == element->dim()+1)
+              neighbors[n].insert(vertex_neighbor_id);
 
-          if (neighbors[n].size()>0)
+          if (neighbors[n].empty())
             {
-              found_interior_parents = true;
-            }
-          else
-            {
-              // We have found an empty set, no reason to continue
-              // Ensure we set this flag to false before the break since it could have
-              // been set to true for previous vertex
+              // We have found an empty set for one vertex, no reason
+              // to continue.
               found_interior_parents = false;
-              break;
+              break; // out of n-loop
             }
         }
 
-      // If we have successfully generated a set of elements for each vertex, we will compare
-      // the set for vertex 0 will the sets for the vertices until we find a id that exists in
-      // all sets.  If found, this is our an interior parent id.  The interior parent id found
-      // will be the lowest element id if there is potential for multiple interior parents.
+      // If we have generated a non-empty set of elements for each
+      // vertex, we will now look for a vertex_neighbor_id that
+      // appears in _all_ of those sets.  If found, this is our interior
+      // parent id.  If multiple such common ids are found, we will
+      // take the lowest such id to be the interior parent id.
       if (found_interior_parents)
         {
           std::set<dof_id_type> & neighbors_0 = neighbors[0];
