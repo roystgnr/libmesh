@@ -36,7 +36,8 @@ namespace libMesh
 
 C0Polyhedron::C0Polyhedron
   (const std::vector<std::shared_ptr<Polygon>> & sides, std::unique_ptr<Node> & mid_elem_node, Elem * p) :
-  Polyhedron(sides, p), _has_mid_elem_node(false)
+  Polyhedron(sides, p),
+  _has_mid_elem_node(false)
 {
   this->retriangulate();
 
@@ -78,6 +79,14 @@ std::unique_ptr<Elem> C0Polyhedron::disconnected_clone() const
   returnval->inherit_data_from(*this);
 
   return returnval;
+}
+
+
+
+unsigned int
+C0Polyhedron::n_vertices() const
+{
+  return this->_nodelinks_data.size() - _has_mid_elem_node;
 }
 
 
