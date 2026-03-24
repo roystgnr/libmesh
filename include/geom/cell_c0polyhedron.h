@@ -28,6 +28,8 @@
 namespace libMesh
 {
 
+class Node;
+
 /**
  * The \p C0Polyhedron is an element in 3D with an arbitrary (but fixed)
  * number of polygonal first-order (C0Polygon) sides.
@@ -55,9 +57,15 @@ public:
    * We'll set up a simple default tetrahedralization here, but if users
    * want to adjust node positions later they'll want to retriangulate()
    * after.
+   * @param mid_elem_node a reference to the unique pointer set to the mid-element node,
+   *        only if the default (optimal) tetrahedralization algorithm fails, and the backup
+   *        trivial algorithm is used to tetrahedralize the element.
+   *        It's the caller's job to add this node to the mesh after!
+   * @param p pointer to the parent element of this one (useful for h-refinement)
    */
   explicit
   C0Polyhedron (const std::vector<std::shared_ptr<Polygon>> & sides,
+                std::unique_ptr<Node> & mid_elem_node,
                 Elem * p=nullptr);
 
   C0Polyhedron (C0Polyhedron &&) = delete;
@@ -87,7 +95,7 @@ public:
    * \returns the number of vertices.  For the simple C0Polyhedron
    * every node is a vertex.
    */
-  virtual unsigned int n_vertices() const override final { return this->_nodelinks_data.size(); }
+  virtual unsigned int n_vertices() const override final { return this->_nodelinks_data.size() - _has_mid_elem_node; }
 
   /**
    * \returns the number of tetrahedra to break this into for
@@ -128,6 +136,8 @@ public:
    */
   virtual bool is_node_on_edge(const unsigned int n,
                                const unsigned int e) const override;
+
+  virtual std::vector<unsigned int> edges_adjacent_to_node(const unsigned int n) const override;
 
   /**
    * \returns \p true if the element map is definitely affine within
@@ -171,6 +181,18 @@ public:
   Point side_vertex_average_normal(const unsigned int s) const override final;
 
   /**
+   * \returns the local side-indices of subelement sides of the
+   * polyhedron
+   * Each subelement here is a tetrahedron
+   * @param i the index of the sub-element
+   * The return array is indexed by sides of the subelement, and contains the
+   * index of the side of the polyhedron if the sub-element side is on that side,
+   * or libMesh::invalid_uint if the subelement side is internal to the polyhedron
+   * NOTE: this routine involves a loop over the sides of the polyhedron
+   */
+  virtual std::array<int, 4> subelement_sides_to_poly_sides(unsigned int i) const;
+
+  /**
    * Create a triangulation (tetrahedralization) based on the current
    * sides' triangulations.
    */
@@ -192,6 +214,9 @@ protected:
                                  const unsigned int /*j*/,
                                  const unsigned int /*k*/) const override
   { libmesh_not_implemented(); return 0; }
+
+  /// Whether we have a mid element node
+  bool _has_mid_elem_node;
 
 #endif // LIBMESH_ENABLE_AMR
 

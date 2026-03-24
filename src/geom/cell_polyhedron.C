@@ -93,6 +93,10 @@ Polyhedron::Polyhedron (const std::vector<std::shared_ptr<Polygon>> & sides,
           }
       }
 
+    // Plan room for an extra node so we don't invalidate this->_nodes when we add to
+    // nodelinks_data in the derived class
+    _nodelinks_data.reserve(_nodelinks_data.size() + 1);
+
     // Do the manual initialization that Elem::Elem and Cell::Cell
     // couldn't, now that we've resized both our vectors.  No need to
     // manually set nullptr, though, since std::vector does that.
@@ -682,6 +686,7 @@ std::array<Point, 4> Polyhedron::master_subelement (unsigned int i) const
            this->master_point(tet[2]),
            this->master_point(tet[3]) };
 }
+
 
 
 std::tuple<unsigned int, Real, Real, Real>
