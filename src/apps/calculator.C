@@ -361,7 +361,7 @@ int main(int argc, char ** argv)
                     new_sys.calculate_norm(*new_sys.solution, v, H1) <<
                     std::endl;
 
-                  libMesh::out << "L2 error in " << var_name << ": " <<
+                  libMesh::out << "H1 error in " << var_name << ": " <<
                       exact_sol.h1_error(current_sys_name, var_name) <<
                       std::endl;
                 }
