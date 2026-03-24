@@ -1959,13 +1959,16 @@ void MeshBase::detect_interior_parents()
   // This requires up-to-date mesh dimensions in cache
   libmesh_assert(_preparation.has_cached_elem_data);
 
-  // Check if the mesh contains mixed dimensions. If so, then we may
-  // have interior parents to set.  Otherwise return.
-  if (this->elem_dimensions().size() == 1)
+  // Early return if the mesh is empty or has elements of a single spatial dimension.
+  if (this->elem_dimensions().size() <= 1)
     {
       _preparation.has_interior_parent_ptrs = true;
       return;
     }
+
+  // Convenient elem_dimensions iterators
+  const auto dim_start = this->elem_dimensions().begin();
+  const auto dim_end = this->elem_dimensions().end();
 
   // In this function we find only +1 dimensional interior parents,
   // (so, for a given element el, the interior parent p must satisfy p.dim() == el.dim() + 1).
@@ -1973,7 +1976,7 @@ void MeshBase::detect_interior_parents()
   // for all those elements el such there there is no p with p.dim() == el.dim() + 1.
   // We store whether to skip any given dimension in the construction of interior parents
   // inside the vector in dimensions_to_skip_for_interior_parents.
-  std::vector<bool> skip_dimension_for_interior_parents(LIBMESH_DIM+1);  // all false by default
+  std::vector<bool> skip_dimension_for_interior_parents(/*count=*/LIBMESH_DIM+1, /*value=*/false);
   skip_dimension_for_interior_parents.back() = true;
 
   // Moreover, in the following, we will build a node-to-elem map.
@@ -1981,30 +1984,24 @@ void MeshBase::detect_interior_parents()
   // Therefore, we can skip all elems p such that there is no el with el.dim() == p.dim() - 1.
   // We store whether to skip any given dimension in the construction of the node-to-elem map
   // in the vector skip_dimensions_for_node_to_el_map.
-  std::vector<bool> skip_dimensions_for_node_to_el_map(LIBMESH_DIM+1);  // all false by default
-  skip_dimensions_for_node_to_el_map[*this->elem_dimensions().begin()] = true;
+  std::vector<bool> skip_dimensions_for_node_to_el_map(/*count=*/LIBMESH_DIM+1, /*value=*/false);
+  skip_dimensions_for_node_to_el_map[*dim_start] = true;
 
   // We also create a flag to know if all dimensions should be skipped,
   // and if we should therefore return early.
   bool skip_all_dimensions = true;
 
   // Fill dimensions_to_skip_for_interior_parents and dimensions_to_skip_for_node_to_el_map.
+  for (auto [it, next] = std::make_tuple(dim_start, std::next(dim_start));
+       next != dim_end; ++it, ++next)
     {
-      const std::set<unsigned char> & elem_dimensions = this->elem_dimensions();
-
-      auto it = elem_dimensions.begin();
-      auto next = std::next(it);
-
-      for (; next != elem_dimensions.end(); ++it, ++next)
+      if (*it + 1 != *next) // if sequential dimensions differ by exactly 1
         {
-          if (*it + 1 != *next) // note: elem_dimensions is already sorted
-            {
-              skip_dimension_for_interior_parents[*it] = true;
-              skip_dimensions_for_node_to_el_map[*next] = true;
-            }
-          else if (!skip_dimension_for_interior_parents[*it])
-            skip_all_dimensions = false;
+          skip_dimension_for_interior_parents[*it] = true;
+          skip_dimensions_for_node_to_el_map[*next] = true;
         }
+      else if (!skip_dimension_for_interior_parents[*it])
+        skip_all_dimensions = false;
     }
 
   // There is nothing to do if all dimensions should be
