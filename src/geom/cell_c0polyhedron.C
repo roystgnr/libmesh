@@ -171,6 +171,16 @@ bool C0Polyhedron::is_node_on_edge(const unsigned int n,
 
 
 
+std::vector<unsigned int>
+C0Polyhedron::edges_adjacent_to_node(const unsigned int n) const
+{
+  if (n == n_nodes() - 1)
+    return {};
+  return Polyhedron::edges_adjacent_to_node(n);
+}
+
+
+
 void C0Polyhedron::connectivity(const unsigned int /*sf*/,
                                 const IOPackage /*iop*/,
                                 std::vector<dof_id_type> & /*conn*/) const

@@ -137,6 +137,8 @@ public:
   virtual bool is_node_on_edge(const unsigned int n,
                                const unsigned int e) const override;
 
+  virtual std::vector<unsigned int> edges_adjacent_to_node(const unsigned int n) const override;
+
   /**
    * \returns \p true if the element map is definitely affine within
    * numerical tolerances.  We don't even share a master element from
