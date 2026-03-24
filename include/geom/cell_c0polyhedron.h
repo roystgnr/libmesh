@@ -95,7 +95,7 @@ public:
    * \returns the number of vertices.  For the simple C0Polyhedron
    * every node is a vertex.
    */
-  virtual unsigned int n_vertices() const override final { return this->_nodelinks_data.size() - _has_mid_elem_node; }
+  virtual unsigned int n_vertices() const override final;
 
   /**
    * \returns the number of tetrahedra to break this into for
@@ -215,11 +215,12 @@ protected:
                                  const unsigned int /*k*/) const override
   { libmesh_not_implemented(); return 0; }
 
-  /// Whether we have a mid element node
-  bool _has_mid_elem_node;
-
 #endif // LIBMESH_ENABLE_AMR
 
+  /**
+   * Whether we have a mid element node
+   */
+  bool _has_mid_elem_node;
 };
 
 
