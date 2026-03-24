@@ -1238,16 +1238,22 @@ bool valid_is_prepared (const MeshBase & mesh)
   // avoid false assertion failures)
   bool old_allow_renumbering = mesh_clone->allow_renumbering();
   mesh_clone->allow_renumbering(false);
-  bool old_allow_remote_element_removal =
-    mesh_clone->allow_remote_element_removal();
+
   bool old_skip_partitioning = mesh_clone->skip_partitioning();
   mesh_clone->skip_partitioning(true);
-  mesh_clone->allow_remote_element_removal(false);
-  mesh_clone->prepare_for_use();
-  mesh_clone->allow_renumbering(old_allow_renumbering);
-  mesh_clone->allow_remote_element_removal(old_allow_remote_element_removal);
-  mesh_clone->skip_partitioning(old_skip_partitioning);
 
+  bool old_allow_remote_element_removal = mesh_clone->allow_remote_element_removal();
+  mesh_clone->allow_remote_element_removal(false);
+
+  // Call prepare_for_use() on the clone
+  mesh_clone->prepare_for_use();
+
+  // Restore original flag values
+  mesh_clone->allow_renumbering(old_allow_renumbering);
+  mesh_clone->skip_partitioning(old_skip_partitioning);
+  mesh_clone->allow_remote_element_removal(old_allow_remote_element_removal);
+
+  // Check whether the original and clone compare equal
   return (mesh == *mesh_clone);
 }
 
