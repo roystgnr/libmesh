@@ -1995,7 +1995,7 @@ public:
    * being prepared
    */
   const std::set<subdomain_id_type> & get_mesh_subdomains() const
-  { libmesh_assert(this->is_prepared()); return _mesh_subdomains; }
+  { libmesh_assert(this->preparation().has_cached_elem_data); return _mesh_subdomains; }
 
 
   /**
@@ -2004,7 +2004,7 @@ public:
    * being prepared
    */
   const std::set<subdomain_id_type> & get_mesh_local_subdomains() const
-  { libmesh_assert(this->is_prepared()); return _mesh_local_subdomains; }
+  { libmesh_assert(this->preparation().has_cached_elem_data); return _mesh_local_subdomains; }
 
 #ifdef LIBMESH_ENABLE_PERIODIC
   /**
