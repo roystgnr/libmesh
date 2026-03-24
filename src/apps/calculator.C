@@ -416,7 +416,12 @@ int main(int argc, char ** argv)
               for (auto cell_error : error_per_cell)
                 total_error += cell_error;
 
-              libMesh::out << "H" << jump_error_hilbert << " error estimate for " << var_name << ": " <<
+              if (jump_error_hilbert == 0)
+                libMesh::out << "L2";
+              else
+                libMesh::out << "H" << jump_error_hilbert;
+
+              libMesh::out << " error estimate for " << var_name << ": " <<
                 total_error << std::endl;
             }
         }
