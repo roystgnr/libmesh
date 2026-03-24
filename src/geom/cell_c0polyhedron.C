@@ -61,9 +61,7 @@ std::unique_ptr<Elem> C0Polyhedron::disconnected_clone() const
   if (mid_elem_node)
   {
     libmesh_assert(returnval->n_nodes() == this->n_nodes());
-    const auto old_midnode = returnval->node_ptr(returnval->n_nodes() - 1);
     returnval->set_node(returnval->n_nodes() - 1, this->_nodelinks_data.back());
-    delete old_midnode;
   }
 
   returnval->set_id() = this->id();
