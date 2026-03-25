@@ -150,8 +150,23 @@ public:
 
   /**
    * \returns The type (SERIAL, PARALLEL, GHOSTED) of the vector.
+   *
+   * This is metadata reflecting what type of vector was requested,
+   * which should reflect what level of replication and ghosting is
+   * necessary in parallel.
    */
   ParallelType type() const { return _type; }
+
+  /**
+   * \returns Whether the vector is effectively serial, i.e. whether
+   * all vector data is accessible on every processor.
+   *
+   * This is true for explicitly SERIAL vectors, but also for vectors
+   * on serial (1-processor) communicators.
+   */
+
+  bool is_effectively_serial() const
+  { return (this->n_processors()==1) || (_type == SERIAL); }
 
   /**
    * \returns The type (SERIAL, PARALLEL, GHOSTED) of the vector.
