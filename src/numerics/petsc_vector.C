@@ -533,9 +533,9 @@ PetscVector<T>::operator = (const PetscVector<T> & v)
   libmesh_assert (v.closed());
 
   AssignmentType assign_type = Error;
-  if (this->type() == SERIAL && v.type() != SERIAL)
+  if (this->is_effectively_serial() && !v.is_effectively_serial())
     assign_type = ParallelToSerial;
-  else if (this->type() != SERIAL && v.type() == SERIAL)
+  else if (!this->is_effectively_serial() && v.is_effectively_serial())
     assign_type = SerialToParallel;
   else if (this->local_size() == v.local_size())
     assign_type = SameToSame;
@@ -1056,7 +1056,7 @@ void PetscVector<T>::create_subvector(NumericVector<T> & subvector,
   parallel_object_only();
 
   libmesh_error_msg_if(
-      subvector.type() == GHOSTED,
+      subvector.type() == GHOSTED && !subvector.is_effectively_serial(),
       "We do not support scattering parallel information to ghosts for subvectors");
 
   this->_restore_array();
@@ -1071,11 +1071,11 @@ void PetscVector<T>::create_subvector(NumericVector<T> & subvector,
   // If not, we use the appropriate PETSc routines to initialize it.
   if (!petsc_subvector->initialized())
     {
-      if (this->type() == SERIAL)
+      if (this->is_effectively_serial())
         {
           libmesh_assert(this->comm().verify(rows.size()));
           LibmeshPetscCall(VecCreateSeq(this->comm().get(), rows.size(), &(petsc_subvector->_vec)));
-          petsc_subvector->_type = SERIAL;
+          petsc_subvector->_type = this->type();
         }
       else
         {
