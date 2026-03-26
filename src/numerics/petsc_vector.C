@@ -1075,7 +1075,12 @@ void PetscVector<T>::create_subvector(NumericVector<T> & subvector,
         {
           libmesh_assert(this->comm().verify(rows.size()));
           LibmeshPetscCall(VecCreateSeq(this->comm().get(), rows.size(), &(petsc_subvector->_vec)));
-          petsc_subvector->_type = this->type();
+
+          // You'd think we would create GHOSTED from GHOSTED, but we
+          // never have, and now there'd be downstream compatibility
+          // issues if we started even marking an effectively-serial
+          // subvector as GHOSTED.
+          petsc_subvector->_type = (this->type() == SERIAL) ? SERIAL : PARALLEL;
         }
       else
         {
