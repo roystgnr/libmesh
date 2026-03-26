@@ -83,6 +83,8 @@ protected:
                 for (auto d : make_range(LIBMESH_DIM))
                   (*n1)(d) = double(n(d));
             }
+#else
+          libmesh_ignore(double_precision);
 #endif
           if (Point(*n1) == Point(n))
             n2 = other_mesh.node_ptr(n.id());
