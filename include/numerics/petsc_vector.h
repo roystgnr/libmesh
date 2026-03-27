@@ -731,11 +731,7 @@ void PetscVector<T>::init (const numeric_index_type n,
   if (this->initialized())
     this->clear();
 
-  if (this->comm().size() == 1)
-    // This can help with some branching decisions and is also consistent with what PETSc does... a
-    // single rank Vec is going to be a sequential vector
-    this->_type = SERIAL;
-  else if (ptype == AUTOMATIC)
+  if (ptype == AUTOMATIC)
     {
       if (n == n_local)
         this->_type = SERIAL;
@@ -745,17 +741,19 @@ void PetscVector<T>::init (const numeric_index_type n,
   else
     this->_type = ptype;
 
+  // We should have been given consistent settings
   libmesh_assert ((this->_type==SERIAL && n==n_local) ||
+                  (this->n_processors()==1 && n==n_local) ||
                   this->_type==PARALLEL);
 
-  // create a sequential vector if on only 1 processor
-  if (this->_type == SERIAL)
+  // create a sequential vector if on only 1 processor, or if asked
+  if (this->_type == SERIAL || (this->n_processors() == 1))
     {
       LibmeshPetscCallA(PETSC_COMM_SELF, VecCreate(PETSC_COMM_SELF, &_vec));
       LibmeshPetscCallA(PETSC_COMM_SELF, VecSetSizes(_vec, petsc_n, petsc_n));
       LibmeshPetscCallA(PETSC_COMM_SELF, VecSetFromOptions (_vec));
     }
-  // otherwise create an MPI-enabled vector
+  // or create an MPI-enabled PARALLEL vector w/o ghosting if asked
   else if (this->_type == PARALLEL)
     {
 #ifdef LIBMESH_HAVE_MPI
@@ -771,8 +769,11 @@ void PetscVector<T>::init (const numeric_index_type n,
 #endif
       LibmeshPetscCall(VecSetFromOptions(_vec));
     }
+  // or yell because we don't know what to do
   else
-    libmesh_error_msg("Unsupported type " << Utility::enum_to_string(this->_type));
+    libmesh_error_msg("Unsupported type " <<
+                      Utility::enum_to_string(this->_type) <<
+                      " for parallel init with no ghost indices supplied");
 
   this->_is_initialized = true;
   this->_is_closed = true;
@@ -801,14 +802,14 @@ void PetscVector<T>::init (const numeric_index_type n,
                            const numeric_index_type n_local,
                            const std::vector<numeric_index_type> & ghost,
                            const bool fast,
-                           const ParallelType libmesh_dbg_var(ptype))
+                           const ParallelType ptype)
 {
   parallel_object_only();
 
   if (this->comm().size() == 1)
     {
       libmesh_assert(ghost.empty());
-      this->init(n, n_local, fast, SERIAL);
+      this->init(n, n_local, fast, ptype);
       return;
     }
 
