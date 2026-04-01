@@ -362,7 +362,7 @@ ax1.plot(date_nums, n_files, color=u'#4878cf', marker=None, linestyle='--', mark
 ax1.set_ylabel('Files (blue dashed)')
 
 # Set up x-tick locations
-ticks_names = ['2003', '2007', '2011', '2015', '2019', '2023']
+ticks_names = ['2003', '2007', '2011', '2015', '2019', '2023', '2027']
 
 # Get numerical values for the names
 tick_nums = []
