@@ -338,7 +338,7 @@ void PetscVector<T>::add (const T a_in, const NumericVector<T> & v_in)
   libmesh_assert(this->comm().verify(
       static_cast<typename std::underlying_type<ParallelType>::type>(this->type())));
 
-  if (this->type() == GHOSTED)
+  if (this->is_effectively_ghosted())
     VecGhostUpdateBeginEnd(this->comm(), _vec, INSERT_VALUES, SCATTER_FORWARD);
 
   this->_is_closed = true;
@@ -379,7 +379,7 @@ void PetscVector<T>::scale (const T factor_in)
   libmesh_assert(this->comm().verify(
       static_cast<typename std::underlying_type<ParallelType>::type>(this->type())));
 
-  if (this->type() == GHOSTED)
+  if (this->is_effectively_ghosted())
     VecGhostUpdateBeginEnd(this->comm(), _vec, INSERT_VALUES, SCATTER_FORWARD);
 }
 
@@ -421,7 +421,7 @@ void PetscVector<T>::abs()
   libmesh_assert(this->comm().verify(
       static_cast<typename std::underlying_type<ParallelType>::type>(this->type())));
 
-  if (this->type() == GHOSTED)
+  if (this->is_effectively_ghosted())
     VecGhostUpdateBeginEnd(this->comm(), _vec, INSERT_VALUES, SCATTER_FORWARD);
 }
 
@@ -486,7 +486,7 @@ PetscVector<T>::operator = (const T s_in)
       libmesh_assert(this->comm().verify(
           static_cast<typename std::underlying_type<ParallelType>::type>(this->type())));
 
-      if (this->type() == GHOSTED)
+      if (this->is_effectively_ghosted())
         VecGhostUpdateBeginEnd(this->comm(), _vec, INSERT_VALUES, SCATTER_FORWARD);
     }
 
@@ -569,7 +569,7 @@ PetscVector<T>::operator = (const PetscVector<T> & v)
   libmesh_assert(this->comm().verify(
       static_cast<typename std::underlying_type<ParallelType>::type>(this->type())));
 
-  if (this->type() == GHOSTED)
+  if (this->is_effectively_ghosted())
     VecGhostUpdateBeginEnd(this->comm(), _vec, INSERT_VALUES, SCATTER_FORWARD);
 
   this->_is_closed = true;
@@ -610,7 +610,7 @@ PetscVector<T>::operator = (const std::vector<T> & v)
     }
 
   // Make sure ghost dofs are up to date
-  if (this->type() == GHOSTED)
+  if (this->is_effectively_ghosted())
     this->close();
 
   return *this;
@@ -969,7 +969,7 @@ void PetscVector<T>::pointwise_mult (const NumericVector<T> & vec1,
   libmesh_assert(this->comm().verify(
       static_cast<typename std::underlying_type<ParallelType>::type>(this->type())));
 
-  if (this->type() == GHOSTED)
+  if (this->is_effectively_ghosted())
     VecGhostUpdateBeginEnd(this->comm(), _vec, INSERT_VALUES, SCATTER_FORWARD);
 
   this->_is_closed = true;
@@ -993,7 +993,7 @@ void PetscVector<T>::pointwise_divide (const NumericVector<T> & vec1,
   libmesh_assert(this->comm().verify(
       static_cast<typename std::underlying_type<ParallelType>::type>(this->type())));
 
-  if (this->type() == GHOSTED)
+  if (this->is_effectively_ghosted())
     VecGhostUpdateBeginEnd(this->comm(), _vec, INSERT_VALUES, SCATTER_FORWARD);
 
   this->_is_closed = true;
@@ -1056,7 +1056,7 @@ void PetscVector<T>::create_subvector(NumericVector<T> & subvector,
   parallel_object_only();
 
   libmesh_error_msg_if(
-      subvector.type() == GHOSTED && !subvector.is_effectively_serial(),
+      subvector.is_effectively_ghosted(),
       "We do not support scattering parallel information to ghosts for subvectors");
 
   this->_restore_array();
@@ -1184,7 +1184,7 @@ void PetscVector<T>::_get_array(bool read_only) const
       std::scoped_lock lock(_petsc_get_restore_array_mutex);
       if (!_array_is_present.load(std::memory_order_relaxed))
         {
-                  if (this->type() != GHOSTED)
+          if (!this->is_effectively_ghosted())
             {
               if (read_only)
                 {
@@ -1243,7 +1243,7 @@ void PetscVector<T>::_restore_array() const
       std::scoped_lock lock(_petsc_get_restore_array_mutex);
       if (_array_is_present.load(std::memory_order_relaxed))
         {
-                  if (this->type() != GHOSTED)
+          if (!this->is_effectively_ghosted())
             {
               if (_values_read_only)
                 LibmeshPetscCall(VecRestoreArrayRead (_vec, &_read_only_values));
@@ -1307,7 +1307,7 @@ PetscVector<T>::restore_subvector(std::unique_ptr<NumericVector<T>> subvector,
   Vec subvec = petsc_subvector->vec();
   LibmeshPetscCall(VecRestoreSubVector(_vec, parent_is, &subvec));
 
-  if (this->type() == GHOSTED)
+  if (this->is_effectively_ghosted())
     VecGhostUpdateBeginEnd(this->comm(), _vec, INSERT_VALUES, SCATTER_FORWARD);
 
   this->_is_closed = true;
