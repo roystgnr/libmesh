@@ -169,6 +169,19 @@ public:
   { return (this->n_processors()==1) || (_type == SERIAL); }
 
   /**
+   * \returns Whether the vector is effectively ghosted, i.e. whether
+   * vector operations require handling of ghosted coefficients.
+   *
+   * This is true for GHOSTED vectors in parallel, but in serial
+   * subclasses may return false here for GHOSTED vectors since every
+   * ghosted vector is effectively serial and thus may be able to take
+   * advantage of serial-specific code paths.
+   */
+
+  bool is_effectively_ghosted() const
+  { return (this->n_processors()!=1) && (_type == GHOSTED); }
+
+  /**
    * \returns The type (SERIAL, PARALLEL, GHOSTED) of the vector.
    *
    * \deprecated because it is dangerous to change the ParallelType
