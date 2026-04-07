@@ -916,7 +916,7 @@ void PetscVector<T>::close ()
 
   VecAssemblyBeginEnd(this->comm(), _vec);
 
-  if (this->type() == GHOSTED)
+  if (this->is_effectively_ghosted())
     VecGhostUpdateBeginEnd(this->comm(), _vec, INSERT_VALUES, SCATTER_FORWARD);
 
   this->_is_closed = true;
@@ -961,7 +961,7 @@ void PetscVector<T>::zero ()
 
   PetscScalar z=0.;
 
-  if (this->type() != GHOSTED)
+  if (!this->is_effectively_ghosted())
     LibmeshPetscCall(VecSet (_vec, z));
   else
     {
@@ -1145,10 +1145,8 @@ T PetscVector<T>::operator() (const numeric_index_type i) const
   const numeric_index_type local_index = this->map_global_to_local_index(i);
 
 #ifndef NDEBUG
-  if (this->type() == GHOSTED)
-    {
-      libmesh_assert_less (local_index, _local_size);
-    }
+  if (this->is_effectively_ghosted())
+    libmesh_assert_less (local_index, _local_size);
 #endif
 
   return static_cast<T>(_read_only_values[local_index]);
@@ -1169,10 +1167,8 @@ void PetscVector<T>::get(const std::vector<numeric_index_type> & index,
     {
       const numeric_index_type local_index = this->map_global_to_local_index(index[i]);
 #ifndef NDEBUG
-      if (this->type() == GHOSTED)
-        {
-          libmesh_assert_less (local_index, _local_size);
-        }
+      if (this->is_effectively_ghosted())
+        libmesh_assert_less (local_index, _local_size);
 #endif
       values[i] = static_cast<T>(_read_only_values[local_index]);
     }
