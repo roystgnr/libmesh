@@ -54,7 +54,11 @@ public:
     SolverException(error_code_in)
   {
     const char * text;
+#if PETSC_VERSION_LESS_THAN(3,25,0)
     char * specific;
+#else
+    const char * specific;
+#endif
     auto ierr = PetscErrorMessage(cast_int<PetscErrorCode>(error_code), &text, &specific);
     // This is one scenario where we ignore the error code
     // returned by a PETSc function :)
