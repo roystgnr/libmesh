@@ -926,8 +926,17 @@ void MeshBase::complete_preparation()
 
   // Search the mesh for elements that have a neighboring element
   // of dim+1 and set that element as the interior parent
-  if (!_preparation.has_interior_parent_ptrs && !_skip_detect_interior_parents)
-    this->detect_interior_parents();
+  if (!_preparation.has_interior_parent_ptrs)
+    {
+      if (!_skip_detect_interior_parents)
+        this->detect_interior_parents();
+      else
+        {
+          // We must set the flag that says "interior parent pointers have been set up"
+          // even though we skip detect_interior_parents().
+          _preparation.has_interior_parent_ptrs = true;
+        }
+    }
 
   // Fix up node unique ids in case mesh generation code didn't take
   // exceptional care to do so.
