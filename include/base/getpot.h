@@ -1714,7 +1714,7 @@ GetPot::_internal_managed_copy(const std::string& Arg) const
   // Otherwise, create a new one
   const std::size_t bufsize = strlen(arg)+1;
   auto newcopy = std::make_unique<char[]>(bufsize);
-  strncpy(newcopy.get(), arg, bufsize);
+  strcpy(newcopy.get(), arg);
   auto pr = _internal_string_container.insert(std::move(newcopy));
   return pr.first->get();
 }

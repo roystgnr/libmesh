@@ -323,7 +323,7 @@ void System::read_parallel_data (Xdr & io,
    */
   // PerfLog pl("IO Performance",false);
   // pl.push("read_parallel_data");
-  dof_id_type total_read_size = 0;
+  [[maybe_unused]] dof_id_type total_read_size = 0;
 
   libmesh_assert (io.reading());
   libmesh_assert (io.is_open());

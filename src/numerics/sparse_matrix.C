@@ -828,7 +828,7 @@ void SparseMatrix<T>::read_coreform_hdf5(const std::string & filename,
 #else
   LOG_SCOPE("read_coreform_hdf5()", "SparseMatrix");
 
-  std::size_t num_rows, num_cols;
+  std::size_t num_rows = 0, num_cols = 0;
 
   // These are only used on pid 0, but avoid "uninitialized" warnings
   hid_t group = H5I_INVALID_HID;
