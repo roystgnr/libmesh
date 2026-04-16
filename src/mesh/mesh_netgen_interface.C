@@ -30,6 +30,7 @@
 #include "libmesh/face_tri3.h"
 #include "libmesh/libmesh_logging.h"
 #include "libmesh/mesh_communication.h"
+#include "libmesh/threads.h"
 #include "libmesh/unstructured_mesh.h"
 #include "libmesh/utility.h" // libmesh_map_find
 
@@ -139,6 +140,8 @@ void NetGenMeshInterface::triangulate ()
     }
 
   Ng_Meshing_Parameters params;
+
+  Ng_SetNumThreads(cast_int<int>(libMesh::n_threads()));
 
   // Override any default parameters we might need to, to avoid
   // inserting nodes we don't want.
