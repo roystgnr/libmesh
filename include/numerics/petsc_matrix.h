@@ -235,7 +235,7 @@ public:
 
   virtual Real l1_norm () const override;
 
-  virtual Real frobenius_norm () const;
+  Real frobenius_norm () const;
 
   virtual Real linfty_norm () const override;
 
