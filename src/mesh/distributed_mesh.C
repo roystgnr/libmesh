@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2025 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2026 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -195,6 +195,7 @@ DistributedMesh::DistributedMesh (const MeshBase & other_mesh) :
   this->copy_nodes_and_elements(other_mesh, true, 0, 0, 0, nullptr, true);
 
   this->allow_find_neighbors(other_mesh.allow_find_neighbors());
+  this->allow_detect_interior_parents(other_mesh.allow_detect_interior_parents());
   this->allow_renumbering(other_mesh.allow_renumbering());
   this->allow_remote_element_removal(other_mesh.allow_remote_element_removal());
   this->skip_partitioning(other_mesh.skip_partitioning());

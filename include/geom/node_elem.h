@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2025 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2026 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -270,6 +270,14 @@ public:
    * \returns \p MAXIMUM.
    */
   virtual Order supported_nodal_order() const override;
+
+  /**
+   * Elem::volume() returns the N-dimensional measure of an
+   * N-dimensional element. For N=2 "volume" is area; for N=1 "volume"
+   * is length, and for N=0 "volume" is cardinality. A set with 1
+   * point has 0-"volume" of 1.
+   */
+  virtual Real volume () const override { return Real(1); }
 
   virtual void connectivity(const unsigned int sc,
                             const IOPackage iop,

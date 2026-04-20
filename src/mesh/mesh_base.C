@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2025 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2026 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -78,6 +78,7 @@ MeshBase::MeshBase (const Parallel::Communicator & comm_in,
   _skip_all_partitioning(libMesh::on_command_line("--skip-partitioning")),
   _skip_renumber_nodes_and_elements(false),
   _skip_find_neighbors(false),
+  _skip_detect_interior_parents(false),
   _allow_remote_element_removal(true),
   _allow_node_and_elem_unique_id_overlap(false),
   _spatial_dimension(d),
@@ -114,6 +115,7 @@ MeshBase::MeshBase (const MeshBase & other_mesh) :
   _skip_all_partitioning(other_mesh._skip_all_partitioning),
   _skip_renumber_nodes_and_elements(other_mesh._skip_renumber_nodes_and_elements),
   _skip_find_neighbors(other_mesh._skip_find_neighbors),
+  _skip_detect_interior_parents(other_mesh._skip_detect_interior_parents),
   _allow_remote_element_removal(other_mesh._allow_remote_element_removal),
   _allow_node_and_elem_unique_id_overlap(other_mesh._allow_node_and_elem_unique_id_overlap),
   _elem_dims(other_mesh._elem_dims),
@@ -202,6 +204,7 @@ MeshBase& MeshBase::operator= (MeshBase && other_mesh)
   _skip_all_partitioning = other_mesh.skip_partitioning();
   _skip_renumber_nodes_and_elements = !(other_mesh.allow_renumbering());
   _skip_find_neighbors = !(other_mesh.allow_find_neighbors());
+  _skip_detect_interior_parents = !(other_mesh.allow_detect_interior_parents());
   _allow_remote_element_removal = other_mesh.allow_remote_element_removal();
   _allow_node_and_elem_unique_id_overlap = other_mesh.allow_node_and_elem_unique_id_overlap();
   _block_id_to_name = std::move(other_mesh._block_id_to_name);
@@ -306,6 +309,8 @@ bool MeshBase::locally_equals (const MeshBase & other_mesh) const
   if (_skip_renumber_nodes_and_elements != other_mesh._skip_renumber_nodes_and_elements)
     return false;
   if (_skip_find_neighbors != other_mesh._skip_find_neighbors)
+    return false;
+  if (_skip_detect_interior_parents != other_mesh._skip_detect_interior_parents)
     return false;
   if (_allow_remote_element_removal != other_mesh._allow_remote_element_removal)
     return false;
@@ -922,7 +927,16 @@ void MeshBase::complete_preparation()
   // Search the mesh for elements that have a neighboring element
   // of dim+1 and set that element as the interior parent
   if (!_preparation.has_interior_parent_ptrs)
-    this->detect_interior_parents();
+    {
+      if (!_skip_detect_interior_parents)
+        this->detect_interior_parents();
+      else
+        {
+          // We must set the flag that says "interior parent pointers have been set up"
+          // even though we skip detect_interior_parents().
+          _preparation.has_interior_parent_ptrs = true;
+        }
+    }
 
   // Fix up node unique ids in case mesh generation code didn't take
   // exceptional care to do so.
@@ -1025,6 +1039,10 @@ void MeshBase::clear ()
 }
 
 
+bool MeshBase::is_prepared() const
+{
+  return static_cast<bool>(_preparation);
+}
 
 void MeshBase::add_ghosting_functor(GhostingFunctor & ghosting_functor)
 {
@@ -1942,15 +1960,64 @@ void MeshBase::sync_subdomain_name_map()
 
 void MeshBase::detect_interior_parents()
 {
+  LOG_SCOPE("detect_interior_parents()", "MeshBase");
+
   // This requires an inspection on every processor
   parallel_object_only();
 
   // This requires up-to-date mesh dimensions in cache
   libmesh_assert(_preparation.has_cached_elem_data);
 
-  // Check if the mesh contains mixed dimensions. If so, then we may
-  // have interior parents to set.  Otherwise return.
-  if (this->elem_dimensions().size() == 1)
+  // Early return if the mesh is empty or has elements of a single spatial dimension.
+  if (this->elem_dimensions().size() <= 1)
+    {
+      _preparation.has_interior_parent_ptrs = true;
+      return;
+    }
+
+  // Convenient elem_dimensions iterators
+  const auto dim_start = this->elem_dimensions().begin();
+  const auto dim_end = this->elem_dimensions().end();
+
+  // In this function we find only +1 dimensional interior parents,
+  // (so, for a given element el, the interior parent p must satisfy p.dim() == el.dim() + 1).
+  // Therefore, we can avoid checking the existence of interior parents
+  // for all those elements el such there there is no p with p.dim() == el.dim() + 1.
+  // We store whether to skip any given dimension in the construction of interior parents
+  // inside the vector in dimensions_to_skip_for_interior_parents.
+  std::vector<bool> skip_dimension_for_interior_parents(/*count=*/LIBMESH_DIM+1, /*value=*/false);
+  skip_dimension_for_interior_parents.back() = true;
+
+  // Moreover, in the following, we will build a node-to-elem map.
+  // It is among the elems of this map that we will look for interior parents.
+  // Therefore, we can skip all elems p such that there is no el with el.dim() == p.dim() - 1.
+  // We store whether to skip any given dimension in the construction of the node-to-elem map
+  // in the vector skip_dimensions_for_node_to_el_map.
+  std::vector<bool> skip_dimensions_for_node_to_el_map(/*count=*/LIBMESH_DIM+1, /*value=*/false);
+  skip_dimensions_for_node_to_el_map[*dim_start] = true;
+
+  // We also create a flag to know if all dimensions should be skipped,
+  // and if we should therefore return early.
+  bool skip_all_dimensions = true;
+
+  // Fill dimensions_to_skip_for_interior_parents and dimensions_to_skip_for_node_to_el_map.
+  for (auto [it, next] = std::make_tuple(dim_start, std::next(dim_start));
+       next != dim_end; ++it, ++next)
+    {
+      if (*it + 1 != *next) // if sequential dimensions differ by exactly 1
+        {
+          skip_dimension_for_interior_parents[*it] = true;
+          skip_dimensions_for_node_to_el_map[*next] = true;
+        }
+      else if (!skip_dimension_for_interior_parents[*it])
+        skip_all_dimensions = false;
+    }
+
+  // There is nothing to do if all dimensions should be
+  // skipped. Before returning, we must also set the flag that says
+  // "interior parent pointers have been set up" even though we
+  // determined there was no work to be done.
+  if (skip_all_dimensions)
     {
       _preparation.has_interior_parent_ptrs = true;
       return;
@@ -1966,6 +2033,10 @@ void MeshBase::detect_interior_parents()
 
   for (const auto & elem : this->element_ptr_range())
     {
+      // Ignore element if it cannot be interior parent of any other elem.
+      if (skip_dimensions_for_node_to_el_map[elem->dim()])
+        continue;
+
       // Populating the node_to_elem map, same as MeshTools::build_nodes_to_elem_map
       for (auto n : make_range(elem->n_vertices()))
         {
@@ -1978,43 +2049,50 @@ void MeshBase::detect_interior_parents()
   // Automatically set interior parents
   for (const auto & element : this->element_ptr_range())
     {
-      // Ignore an 3D element or an element that already has an interior parent
-      if (element->dim()>=LIBMESH_DIM || element->interior_parent())
+      // Ignore elements with dimensions to skip
+      // or elements that already have an interior parent.
+      if (skip_dimension_for_interior_parents[element->dim()] || element->interior_parent())
         continue;
 
-      // Start by generating a SET of elements that are dim+1 to the current
-      // element at each vertex of the current element, thus ignoring interior nodes.
-      // If one of the SET of elements is empty, then we will not have an interior parent
-      // since an interior parent must be connected to all vertices of the current element
+      // Start by generating sets of dim+1 dimensional elements that
+      // touch each vertex of the current element.  If we encounter a
+      // vertex not connected to _any_ dim+1 dimensional elements,
+      // then we can exit the loop without checking the remaining
+      // vertices since an interior parent (if it exists) will be
+      // connected to all vertices of the current element.
       std::vector<std::set<dof_id_type>> neighbors( element->n_vertices() );
 
-      bool found_interior_parents = false;
+      bool found_interior_parents = true;
 
       for (auto n : make_range(element->n_vertices()))
         {
-          std::vector<dof_id_type> & element_ids = node_to_elem[element->node_id(n)];
-          for (const auto & eid : element_ids)
-            if (this->elem_ref(eid).dim() == element->dim()+1)
-              neighbors[n].insert(eid);
+          auto it = node_to_elem.find(element->node_id(n));
 
-          if (neighbors[n].size()>0)
+          // Check at first that this node is not isolated.
+          if (it == node_to_elem.end())
             {
-              found_interior_parents = true;
-            }
-          else
-            {
-              // We have found an empty set, no reason to continue
-              // Ensure we set this flag to false before the break since it could have
-              // been set to true for previous vertex
               found_interior_parents = false;
-              break;
+              break; // out of n-loop
+            }
+
+          for (const auto & vertex_neighbor_id : it->second)
+            if (this->elem_ref(vertex_neighbor_id).dim() == element->dim()+1)
+              neighbors[n].insert(vertex_neighbor_id);
+
+          if (neighbors[n].empty())
+            {
+              // We have found an empty set for one vertex, no reason
+              // to continue.
+              found_interior_parents = false;
+              break; // out of n-loop
             }
         }
 
-      // If we have successfully generated a set of elements for each vertex, we will compare
-      // the set for vertex 0 will the sets for the vertices until we find a id that exists in
-      // all sets.  If found, this is our an interior parent id.  The interior parent id found
-      // will be the lowest element id if there is potential for multiple interior parents.
+      // If we have generated a non-empty set of elements for each
+      // vertex, we will now look for a vertex_neighbor_id that
+      // appears in _all_ of those sets.  If found, this is our interior
+      // parent id.  If multiple such common ids are found, we will
+      // take the lowest such id to be the interior parent id.
       if (found_interior_parents)
         {
           std::set<dof_id_type> & neighbors_0 = neighbors[0];
@@ -2051,6 +2129,9 @@ void MeshBase::detect_interior_parents()
         }
     }
 
+  // This flag doesn't necessarily mean any Elems actually have
+  // interior parent pointers, just that we did all the work to
+  // determine whether or not they do.
   _preparation.has_interior_parent_ptrs = true;
 }
 
@@ -2625,7 +2706,77 @@ std::string MeshBase::get_local_constraints(bool print_nonlocal) const
   return os.str();
 }
 
+MeshBase::Preparation::Preparation() :
+  is_partitioned(false),
+  has_synched_id_counts(false),
+  has_neighbor_ptrs(false),
+  has_cached_elem_data(false),
+  has_interior_parent_ptrs(false),
+  has_removed_remote_elements(false),
+  has_removed_orphaned_nodes(false),
+  has_boundary_id_sets(false),
+  has_reinit_ghosting_functors(false)
+{}
 
+MeshBase::Preparation::operator bool() const
+{
+  return is_partitioned &&
+         has_synched_id_counts &&
+         has_neighbor_ptrs &&
+         has_cached_elem_data &&
+         has_interior_parent_ptrs &&
+         has_removed_remote_elements &&
+         has_removed_orphaned_nodes &&
+         has_reinit_ghosting_functors &&
+         has_boundary_id_sets;
+}
+
+MeshBase::Preparation &
+MeshBase::Preparation::operator= (bool set_all)
+{
+  is_partitioned = set_all;
+  has_synched_id_counts = set_all;
+  has_neighbor_ptrs = set_all;
+  has_cached_elem_data = set_all;
+  has_interior_parent_ptrs = set_all;
+  has_removed_remote_elements = set_all;
+  has_removed_orphaned_nodes = set_all;
+  has_reinit_ghosting_functors = set_all;
+  has_boundary_id_sets = set_all;
+
+  return *this;
+}
+
+bool
+MeshBase::Preparation::operator== (const Preparation & other) const
+{
+  if (is_partitioned != other.is_partitioned)
+    return false;
+  if (has_synched_id_counts != other.has_synched_id_counts)
+    return false;
+  if (has_neighbor_ptrs != other.has_neighbor_ptrs)
+    return false;
+  if (has_cached_elem_data != other.has_cached_elem_data)
+    return false;
+  if (has_interior_parent_ptrs != other.has_interior_parent_ptrs)
+    return false;
+  if (has_removed_remote_elements != other.has_removed_remote_elements)
+    return false;
+  if (has_removed_orphaned_nodes != other.has_removed_orphaned_nodes)
+    return false;
+  if (has_reinit_ghosting_functors != other.has_reinit_ghosting_functors)
+    return false;
+  if (has_boundary_id_sets != other.has_boundary_id_sets)
+    return false;
+
+  return true;
+}
+
+bool
+MeshBase::Preparation::operator!= (const Preparation & other) const
+{
+  return !(*this == other);
+}
 
 
 // Explicit instantiations for our template function

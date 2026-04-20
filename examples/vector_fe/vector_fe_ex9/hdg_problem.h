@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2025 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2026 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -19,8 +19,6 @@
 #define HDG_PROBLEM_H
 
 #include "libmesh/libmesh_config.h"
-
-#if defined(LIBMESH_HAVE_EIGEN_DENSE) && defined(LIBMESH_HAVE_PETSC)
 
 #include "libmesh/nonlinear_implicit_system.h"
 #include "libmesh/fe.h"
@@ -261,5 +259,4 @@ private:
 
 } // namespace libMesh
 
-#endif
 #endif // HDG_PROBLEM_H

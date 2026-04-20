@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2025 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2026 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -112,7 +112,7 @@ void EquationSystems::read (Xdr & io,
                             bool partition_agnostic)
 {
   /**
-   * This program implements the output of an
+   * This program implements the input of an
    * EquationSystems object.  This warrants some
    * documentation.  The output file essentially
    * consists of 11 sections:
@@ -235,7 +235,7 @@ void EquationSystems::read (Xdr & io,
     LOG_SCOPE("read()", "EquationSystems");
 
     // 2.)
-    // Read the number of equation systems
+    // Read the number of systems
     unsigned int n_sys=0;
     if (this->processor_id() == 0) io.data (n_sys);
     this->comm().broadcast(n_sys);

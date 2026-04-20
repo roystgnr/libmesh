@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2025 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2026 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -1764,8 +1764,9 @@ public:
                                                          bool use_condensed_system = false) const;
 
   /**
-   * Describe whether the given variable group should be p-refined. If this API is not called with
-   * \p false, the default is to p-refine
+   * Set whether the given variable group should be p-refined on a
+   * p-refined Elem.  This changes the FEType of the variable group to
+   * enable or disable p-refinement.
    */
   void should_p_refine(unsigned int g, bool p_refine);
 
@@ -1800,6 +1801,12 @@ public:
    * add_static_condensation()
    */
   StaticCondensationDofMap & get_static_condensation();
+
+  /**
+   * @returns the static condensation class. This should have been already added with a call to \p
+   * add_static_condensation()
+   */
+  const StaticCondensationDofMap & get_static_condensation() const;
 
   /**
    * Calls reinit on the static condensation map if it exists
@@ -2257,11 +2264,6 @@ private:
    * non-SCALAR variable v
    */
   std::vector<dof_id_type> _first_old_scalar_df;
-
-  /**
-   * A container of variable groups that we should not p-refine
-   */
-  std::unordered_set<unsigned int> _dont_p_refine;
 #endif
 
 #ifdef LIBMESH_ENABLE_CONSTRAINTS
@@ -2568,14 +2570,15 @@ inline
 void DofMap::should_p_refine(const unsigned int g, const bool p_refine)
 {
 #ifdef LIBMESH_ENABLE_AMR
-  if (p_refine)
-  {
-    auto it = _dont_p_refine.find(g);
-    if (it != _dont_p_refine.end())
-      _dont_p_refine.erase(it);
-  }
-  else
-    _dont_p_refine.insert(g);
+  VariableGroup & var = _variable_groups[g];
+  var.type().p_refinement = p_refine;
+
+  for (auto v : make_range(var.first_scalar_number(0),
+                           var.first_scalar_number(0) +
+                           var.n_variables()))
+    this->_variables[v].type().p_refinement = p_refine;
+
+
 #else
   libmesh_ignore(g, p_refine);
 #endif
@@ -2585,7 +2588,8 @@ inline
 bool DofMap::should_p_refine(const unsigned int g) const
 {
 #ifdef LIBMESH_ENABLE_AMR
-  return !_dont_p_refine.count(g);
+  const VariableGroup & var = this->variable_group(g);
+  return var.type().p_refinement;
 #else
   libmesh_ignore(g);
   return false;
@@ -2604,7 +2608,7 @@ bool DofMap::should_p_refine_var(const unsigned int var) const
 {
 #ifdef LIBMESH_ENABLE_AMR
   const auto vg = this->var_group_from_var_number(var);
-  return !_dont_p_refine.count(vg);
+  return this->should_p_refine(vg);
 #else
   libmesh_ignore(var);
   return false;
@@ -2640,12 +2644,7 @@ void DofMap::_dof_indices (const Elem & elem,
 
       FEType fe_type = var.type();
 
-      const bool add_p_level =
-#ifdef LIBMESH_ENABLE_AMR
-          !_dont_p_refine.count(vg);
-#else
-          false;
-#endif
+      const bool add_p_level = fe_type.p_refinement;
 
 #ifdef DEBUG
       // The number of dofs per element is non-static for subdivision FE
@@ -2858,6 +2857,13 @@ void DofMap::dof_indices (const Elem * const elem,
 
 inline
 StaticCondensationDofMap & DofMap::get_static_condensation()
+{
+  libmesh_assert(_sc);
+  return *_sc;
+}
+
+inline
+const StaticCondensationDofMap & DofMap::get_static_condensation() const
 {
   libmesh_assert(_sc);
   return *_sc;

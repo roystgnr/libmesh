@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2025 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2026 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -323,7 +323,7 @@ void System::read_parallel_data (Xdr & io,
    */
   // PerfLog pl("IO Performance",false);
   // pl.push("read_parallel_data");
-  dof_id_type total_read_size = 0;
+  [[maybe_unused]] dof_id_type total_read_size = 0;
 
   libmesh_assert (io.reading());
   libmesh_assert (io.is_open());

@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2025 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2026 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -2050,6 +2050,7 @@ void BoundaryInfo::remove_node_id (boundary_id_type id, const bool global)
       !_shellface_boundary_ids.count(id))
     _boundary_ids.erase(id);
 
+  _ns_id_to_name.erase(id);
   if (global)
     {
       bool someone_has_it = _boundary_ids.count(id);

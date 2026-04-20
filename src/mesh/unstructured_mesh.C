@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2025 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2026 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -888,9 +888,11 @@ void UnstructuredMesh::copy_nodes_and_elements(const MeshBase & other_mesh,
       const bool allowed_renumbering = this->allow_renumbering();
       const bool allowed_find_neighbors = this->allow_find_neighbors();
       const bool allowed_elem_removal = this->allow_remote_element_removal();
+      const bool allowed_detect_detect_interior_parents = this->allow_detect_interior_parents();
       this->allow_renumbering(false);
       this->allow_remote_element_removal(false);
       this->allow_find_neighbors(!skip_find_neighbors);
+      this->allow_detect_interior_parents(other_mesh.allow_detect_interior_parents());
 
       // We should generally be able to skip *all* partitioning here
       // because we're only adding one already-consistent mesh to
@@ -906,6 +908,7 @@ void UnstructuredMesh::copy_nodes_and_elements(const MeshBase & other_mesh,
       this->allow_renumbering(allowed_renumbering);
       this->allow_remote_element_removal(allowed_elem_removal);
       this->skip_partitioning(skipped_partitioning);
+      this->allow_detect_interior_parents(allowed_detect_detect_interior_parents);
 
       // That prepare_for_use() call marked us as prepared, but we
       // specifically avoided some important preparation, so we might not
@@ -1346,7 +1349,8 @@ void UnstructuredMesh::find_neighbors (const bool reset_remote_elements,
 void UnstructuredMesh::read (const std::string & name,
                              void *,
                              bool skip_renumber_nodes_and_elements,
-                             bool skip_find_neighbors)
+                             bool skip_find_neighbors,
+                             bool skip_detect_interior_parents)
 {
   // Set the skip_renumber_nodes_and_elements flag on all processors
   // if necessary.
@@ -1368,9 +1372,15 @@ void UnstructuredMesh::read (const std::string & name,
 
   // Done reading the mesh.  Now prepare it for use.
   const bool old_allow_find_neighbors = this->allow_find_neighbors();
+  const bool old_allow_detect_interior_parents = this->allow_detect_interior_parents();
+
   this->allow_find_neighbors(!skip_find_neighbors);
+  this->allow_detect_interior_parents(!skip_detect_interior_parents);
+
   this->prepare_for_use();
+
   this->allow_find_neighbors(old_allow_find_neighbors);
+  this->allow_detect_interior_parents(old_allow_detect_interior_parents);
 }
 
 

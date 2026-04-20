@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2025 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2026 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -109,7 +109,8 @@ public:
   virtual void read (const std::string & name,
                      void * mesh_data=nullptr,
                      bool skip_renumber_nodes_and_elements=false,
-                     bool skip_find_neighbors=false) override;
+                     bool skip_find_neighbors=false,
+                     bool skip_detect_interior_parents=false) override;
   /**
    * Write the file specified by \p name.  Attempts to figure out the
    * proper method by the file extension.

@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2025 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2026 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -231,9 +231,19 @@ public:
   virtual void pointwise_divide (const NumericVector<T> & vec1,
                                  const NumericVector<T> & vec2) override;
 
+  virtual void create_subvector(NumericVector<T> & subvector,
+                                const std::vector<numeric_index_type> & rows,
+                                bool supplying_global_rows = true) const override;
+
   virtual void swap (NumericVector<T> & v) override;
 
   virtual std::size_t max_allowed_id() const override;
+
+  virtual std::unique_ptr<NumericVector<T>>
+  get_subvector(const std::vector<numeric_index_type> & rows) override;
+
+  virtual void restore_subvector(std::unique_ptr<NumericVector<T>> subvector,
+                                 const std::vector<numeric_index_type> & rows) override;
 
   /**
    * References to the underlying Eigen data types.

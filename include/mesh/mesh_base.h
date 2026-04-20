@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2025 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2026 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -206,8 +206,7 @@ public:
    * the preparation done in a call to \p prepare_for_use, \p false
    * otherwise.
    */
-  bool is_prepared () const
-  { return _preparation; }
+  bool is_prepared () const;
 
   /**
    * \returns the \p Preparation structure with details about in what
@@ -1359,6 +1358,13 @@ public:
   bool allow_find_neighbors() const { return !_skip_find_neighbors; }
 
   /**
+   * If \p false is passed then this mesh will no longer work to detect
+   * interior parents when being prepared for use
+   */
+  void allow_detect_interior_parents(bool allow) { _skip_detect_interior_parents = !allow; }
+  bool allow_detect_interior_parents() const { return !_skip_detect_interior_parents; }
+
+  /**
    * If false is passed in then this mesh will no longer have remote
    * elements deleted when being prepared for use; i.e. even a
    * DistributedMesh will remain (if it is already) serialized.
@@ -1555,7 +1561,8 @@ public:
   virtual void read  (const std::string & name,
                       void * mesh_data=nullptr,
                       bool skip_renumber_nodes_and_elements=false,
-                      bool skip_find_neighbors=false) = 0;
+                      bool skip_find_neighbors=false,
+                      bool skip_detect_interior_parents=false) = 0;
   virtual void write (const std::string & name) const = 0;
 
   /**
@@ -2014,53 +2021,37 @@ public:
    */
   struct Preparation
   {
-    bool is_partitioned = false,
-         has_synched_id_counts = false,
-         has_neighbor_ptrs = false,
-         has_cached_elem_data = false,
-         has_interior_parent_ptrs = false,
-         has_removed_remote_elements = false,
-         has_removed_orphaned_nodes = false,
-         has_boundary_id_sets = false,
-         has_reinit_ghosting_functors = false;
+    /**
+     * Constructor. Initializes all flags to false.
+     */
+    Preparation();
 
-    operator bool() const {
-      return is_partitioned &&
-             has_synched_id_counts &&
-             has_neighbor_ptrs &&
-             has_cached_elem_data &&
-             has_interior_parent_ptrs &&
-             has_removed_remote_elements &&
-             has_removed_orphaned_nodes &&
-             has_reinit_ghosting_functors &&
-             has_boundary_id_sets;
-    }
+    /**
+     * Returns true iff all the flags are true.
+     */
+    explicit operator bool() const;
 
-    Preparation & operator= (bool set_all) {
-      is_partitioned = set_all;
-      has_synched_id_counts = set_all;
-      has_neighbor_ptrs = set_all;
-      has_cached_elem_data = set_all;
-      has_interior_parent_ptrs = set_all;
-      has_removed_remote_elements = set_all;
-      has_removed_orphaned_nodes = set_all;
-      has_reinit_ghosting_functors = set_all;
-      has_boundary_id_sets = set_all;
+    /**
+     * Set all flags to the "set_all" value.
+     */
+    Preparation & operator= (bool set_all);
 
-      return *this;
-    }
+    /**
+     * Two Preparation objects are equivalent iff all the flags match,
+     * regardless of the true/false status of any given flag.
+     */
+    bool operator== (const Preparation & other) const;
+    bool operator!= (const Preparation & other) const;
 
-    bool operator== (const Preparation & other) {
-      return is_partitioned == other.is_partitioned &&
-             has_synched_id_counts == other.has_synched_id_counts &&
-             has_neighbor_ptrs == other.has_neighbor_ptrs &&
-             has_cached_elem_data == other.has_cached_elem_data &&
-             has_interior_parent_ptrs == other.has_interior_parent_ptrs &&
-             has_removed_remote_elements == other.has_removed_remote_elements &&
-             has_removed_orphaned_nodes == other.has_removed_orphaned_nodes &&
-             has_reinit_ghosting_functors == other.has_reinit_ghosting_functors &&
-             has_boundary_id_sets == other.has_boundary_id_sets;
-    }
+    bool is_partitioned;
+    bool has_synched_id_counts;
+    bool has_neighbor_ptrs;
+    bool has_cached_elem_data;
+    bool has_interior_parent_ptrs;
+    bool has_removed_remote_elements;
+    bool has_removed_orphaned_nodes;
+    bool has_boundary_id_sets;
+    bool has_reinit_ghosting_functors;
   };
 
 protected:
@@ -2203,6 +2194,11 @@ protected:
    * If this is \p true then we will skip \p find_neighbors in \p prepare_for_use
    */
   bool _skip_find_neighbors;
+
+  /**
+   * If this is \p true then we will skip \p detect_interior_parents in \p prepare_for_use
+   */
+  bool _skip_detect_interior_parents;
 
   /**
    * If this is false then even on DistributedMesh remote elements

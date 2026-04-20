@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2025 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2026 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -83,6 +83,10 @@ void ImplicitSystem::clear ()
   // Restore us to a "basic" state
   matrix = nullptr;
   _sc_system_matrix = nullptr;
+
+  // But our "basic" state may still have a StaticCondensation
+  if (this->has_static_condensation())
+    this->create_static_condensation_system_matrix();
 }
 
 

@@ -50,6 +50,7 @@ public:
   CPPUNIT_TEST( testC0PolygonPentagon );
   CPPUNIT_TEST( testC0PolygonHexagon );
   CPPUNIT_TEST( testC0PolyhedronCube );
+  CPPUNIT_TEST( testC0PolyhedronHexagonalPrism );
   CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -991,6 +992,21 @@ protected:
     return std::make_pair(std::move(elem), std::move(nodes));
   }
 
+  // Helper function to create the polyhedron element
+  Elem *
+  buildC0Polyhedron(std::vector<std::shared_ptr<Polygon>> sides, MeshBase & mesh)
+  {
+    std::unique_ptr<libMesh::Node> mid_elem_node;
+    std::unique_ptr<Elem> polyhedron = std::make_unique<C0Polyhedron>(sides, mid_elem_node);
+    if (mid_elem_node)
+      mesh.add_node(std::move(mid_elem_node));
+    polyhedron->set_id() = 0;
+    Elem * elem = mesh.add_elem(std::move(polyhedron));
+    libmesh_assert(dynamic_cast<C0Polyhedron *>(elem));
+    mesh.prepare_for_use();
+
+    return elem;
+  }
 
   // Helper function to factor out common tests
   void testC0PolygonMethods(MeshBase & mesh,
@@ -1060,7 +1076,7 @@ protected:
 
 
   // Helper function to factor out common tests
-  void testC0PolyhedronMethods(MeshBase & mesh)
+  void testC0PolyhedronMethods(MeshBase & mesh, bool has_midnode)
   {
     Elem * elem = mesh.query_elem_ptr(0);
     bool found_elem = elem;
@@ -1076,7 +1092,10 @@ protected:
     const int E = elem->n_edges();
     const int F = elem->n_faces();
 
-    CPPUNIT_ASSERT_EQUAL(int(elem->n_nodes()), V);
+    if (!has_midnode)
+      CPPUNIT_ASSERT_EQUAL(int(elem->n_nodes()), V);
+    else
+      CPPUNIT_ASSERT_EQUAL(int(elem->n_nodes()), V + 1);
     CPPUNIT_ASSERT_EQUAL(int(elem->n_sides()), F);
 
     // Euler characteristic for polygons homeomorphic to spheres is 2
@@ -1128,22 +1147,13 @@ protected:
 
 
 
-  void testC0Polyhedron(const std::vector<std::shared_ptr<Polygon>> & sides,
-                        Real expected_volume)
+  void testElemVolume(const Elem * elem,
+                      Real expected_volume)
   {
-    Mesh mesh(*TestCommWorld);
-
-    std::unique_ptr<Elem> polyhedron = std::make_unique<C0Polyhedron>(sides);
-
-    polyhedron->set_id() = 0;
-    Elem * elem = mesh.add_elem(std::move(polyhedron));
-
     const Real derived_volume = elem->volume();
     const Real base_volume = elem->Elem::volume();
     LIBMESH_ASSERT_FP_EQUAL(base_volume, derived_volume, TOLERANCE*TOLERANCE);
     LIBMESH_ASSERT_FP_EQUAL(derived_volume, expected_volume, TOLERANCE*TOLERANCE);
-
-    this->testC0PolyhedronMethods(mesh);
   }
 
 
@@ -1181,7 +1191,76 @@ protected:
           sides[s]->set_node(i, mesh.node_ptr(nodes_on_s[i]));
       }
 
-    testC0Polyhedron(sides, 1);
+    const auto poly = dynamic_cast<C0Polyhedron *>(buildC0Polyhedron(sides, mesh));
+    testElemVolume(poly, 1);
+  #ifdef LIBMESH_ENABLE_EXCEPTIONS
+    testC0PolyhedronMethods(mesh, /*midnode*/false);
+
+    // Check routine for subtet side to poly side mapping
+    // NOTE: this test is hard coded to the elements used right now (to be reworked)
+    const auto subtet0_sides_to_poly_sides = poly->subelement_sides_to_poly_sides(0);
+    CPPUNIT_ASSERT_EQUAL(libMesh::invalid_int, subtet0_sides_to_poly_sides[0]);
+    CPPUNIT_ASSERT_EQUAL(1, subtet0_sides_to_poly_sides[1]);
+    CPPUNIT_ASSERT_EQUAL(0, subtet0_sides_to_poly_sides[2]);
+    CPPUNIT_ASSERT_EQUAL(2, subtet0_sides_to_poly_sides[3]);
+  #else
+    testC0PolyhedronMethods(mesh, /*midnode*/true);
+  #endif
+  }
+
+
+
+  void testC0PolyhedronHexagonalPrism()
+  {
+    ReplicatedMesh mesh(*TestCommWorld);
+
+    mesh.add_point(Point(0, -2, 0), 0);
+    mesh.add_point(Point(-1, -1, 0), 1);
+    mesh.add_point(Point(-1, 1, 0), 2);
+    mesh.add_point(Point(0, 2, 0), 3);
+    mesh.add_point(Point(1, 1, 0), 4);
+    mesh.add_point(Point(1, -1, 0), 5);
+    mesh.add_point(Point(0, -2, 1), 6);
+    mesh.add_point(Point(-1, -1, 1), 7);
+    mesh.add_point(Point(-1, 1, 1), 8);
+    mesh.add_point(Point(0, 2, 1), 9);
+    mesh.add_point(Point(1, 1, 1), 10);
+    mesh.add_point(Point(1, -1, 1), 11);
+
+    // See notes in elem_test.h
+    // With this ordering, we'll need to use a mid-node to tetrahedralize it
+    const std::vector<std::vector<unsigned int>> nodes_on_side =
+      { {0, 1, 2, 3, 4, 5},
+        {0, 1, 7, 6},
+        {1, 2, 8, 7},
+        {2, 3, 9, 8},
+        {3, 4, 10, 9},
+        {4, 5, 11, 10},
+        {5, 0, 6, 11},
+        {6, 7, 8, 9, 10, 11} };
+
+    // Build all the sides.
+    std::vector<std::shared_ptr<Polygon>> sides(nodes_on_side.size());
+
+    for (auto s : index_range(nodes_on_side))
+      {
+        const auto & nodes_on_s = nodes_on_side[s];
+        sides[s] = std::make_shared<C0Polygon>(nodes_on_s.size());
+        for (auto i : index_range(nodes_on_s))
+          sides[s]->set_node(i, mesh.node_ptr(nodes_on_s[i]));
+      }
+
+    const auto poly = dynamic_cast<C0Polyhedron *>(buildC0Polyhedron(sides, mesh));
+    CPPUNIT_ASSERT_EQUAL((unsigned int)13, poly->n_nodes());  // we should have a mid node
+    testElemVolume(poly, 6);
+    testC0PolyhedronMethods(mesh, /*midnode*/true);
+
+    // Check routine for subtet side to poly side mapping
+    const auto subtet0_sides_to_poly_sides = poly->subelement_sides_to_poly_sides(0);
+    CPPUNIT_ASSERT_EQUAL(0, subtet0_sides_to_poly_sides[0]);
+    CPPUNIT_ASSERT_EQUAL(libMesh::invalid_int, subtet0_sides_to_poly_sides[1]);
+    CPPUNIT_ASSERT_EQUAL(libMesh::invalid_int, subtet0_sides_to_poly_sides[2]);
+    CPPUNIT_ASSERT_EQUAL(libMesh::invalid_int, subtet0_sides_to_poly_sides[3]);
   }
 
 

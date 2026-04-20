@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2025 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2026 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -23,6 +23,7 @@
 #include "libmesh/mesh_tools.h"
 #include "libmesh/replicated_mesh.h"
 #include "libmesh/tensor_value.h"
+#include "libmesh/node.h"
 
 // C++ headers
 #include <numeric> // std::iota
@@ -34,10 +35,15 @@ namespace libMesh
 // C0Polyhedron class member functions
 
 C0Polyhedron::C0Polyhedron
-  (const std::vector<std::shared_ptr<Polygon>> & sides, Elem * p) :
-  Polyhedron(sides, p)
+  (const std::vector<std::shared_ptr<Polygon>> & sides, std::unique_ptr<Node> & mid_elem_node, Elem * p) :
+  Polyhedron(sides, p),
+  _has_mid_elem_node(false)
 {
   this->retriangulate();
+
+  // Grab the last node
+  if (_has_mid_elem_node)
+    mid_elem_node.reset(this->_nodelinks_data.back());
 }
 
 
@@ -50,8 +56,14 @@ std::unique_ptr<Elem> C0Polyhedron::disconnected_clone() const
 {
   auto sides = this->side_clones();
 
-  std::unique_ptr<Elem> returnval =
-    std::make_unique<C0Polyhedron>(sides);
+  std::unique_ptr<Node> mid_elem_node;
+  std::unique_ptr<Elem> returnval = std::make_unique<C0Polyhedron>(sides, mid_elem_node);
+  // Swap out the new mid elem node with the previous one
+  if (mid_elem_node)
+  {
+    libmesh_assert(returnval->n_nodes() == this->n_nodes());
+    returnval->set_node(returnval->n_nodes() - 1, this->_nodelinks_data.back());
+  }
 
   returnval->set_id() = this->id();
 #ifdef LIBMESH_ENABLE_UNIQUE_ID
@@ -71,11 +83,22 @@ std::unique_ptr<Elem> C0Polyhedron::disconnected_clone() const
 
 
 
-bool C0Polyhedron::is_vertex(const unsigned int libmesh_dbg_var(i)) const
+unsigned int
+C0Polyhedron::n_vertices() const
 {
-  libmesh_assert (i < this->n_nodes());
+  return this->_nodelinks_data.size() - _has_mid_elem_node;
+}
 
-  return true;
+
+
+bool C0Polyhedron::is_vertex(const unsigned int i) const
+{
+  libmesh_assert_less (i, this->n_nodes());
+
+  if (i < this->n_vertices())
+    return true;
+  else
+    return false;
 }
 
 
@@ -151,6 +174,16 @@ bool C0Polyhedron::is_node_on_edge(const unsigned int n,
       return true;
 
   return false;
+}
+
+
+
+std::vector<unsigned int>
+C0Polyhedron::edges_adjacent_to_node(const unsigned int n) const
+{
+  if (n == n_nodes() - 1)
+    return {};
+  return Polyhedron::edges_adjacent_to_node(n);
 }
 
 
@@ -270,6 +303,40 @@ C0Polyhedron::side_vertex_average_normal(const unsigned int s) const
 }
 
 
+std::array<int, 4>
+C0Polyhedron::subelement_sides_to_poly_sides(unsigned int tri_i) const
+{
+  std::array<int, 4> sides = {invalid_int, invalid_int, invalid_int, invalid_int};
+  libmesh_assert(tri_i < this->n_subelements());
+  const auto & tet_nodes = _triangulation[tri_i];
+  for (const auto poly_side : make_range(n_sides()))
+  {
+    const auto sd_nodes = nodes_on_side(poly_side);
+    bool zero_in = std::find(sd_nodes.begin(), sd_nodes.end(), tet_nodes[0]) != sd_nodes.end();
+    bool one_in = std::find(sd_nodes.begin(), sd_nodes.end(), tet_nodes[1]) != sd_nodes.end();
+    bool two_in = std::find(sd_nodes.begin(), sd_nodes.end(), tet_nodes[2]) != sd_nodes.end();
+    bool three_in = std::find(sd_nodes.begin(), sd_nodes.end(), tet_nodes[3]) != sd_nodes.end();
+
+    // Take advantage of the fact that the poly side can only contain one tet side
+    // Note: we could optimize by replacing the booleans with the searches above
+    if (zero_in)
+    {
+      if (one_in)
+      {
+        if (two_in)
+          sides[0] = poly_side;
+        else if (three_in)
+          sides[1] = poly_side;
+      }
+      else if (two_in && three_in)
+        sides[3] = poly_side;
+    }
+    else if (three_in && two_in && one_in)
+      sides[2] = poly_side;
+  }
+  return sides;
+}
+
 
 void C0Polyhedron::retriangulate()
 {
@@ -351,6 +418,13 @@ void C0Polyhedron::retriangulate()
   verify_surface();
 #endif
 
+  // First heuristic: try with no interior point
+  // This might not succeed, not every surface triangulation gives a tetrahedralization
+  // with no additional interior point
+  // But if it succeeds, it uses less tetrahedra to cut the polyhedron
+#ifdef LIBMESH_ENABLE_EXCEPTIONS
+  try
+  {
   // We'll have to edit this as we change the surface elements, but we
   // have a method to initialize it easily.
   std::vector<std::vector<dof_id_type>> nodes_to_elem_vec_map;
@@ -791,9 +865,54 @@ void C0Polyhedron::retriangulate()
       // eliminate again.
       nodes_by_geometry.erase(geometry_it);
     }
+    // At this point our surface should just have two triangles left.
+    libmesh_assert_equal_to(surface.n_elem(), 2);
+    _has_mid_elem_node = false;
+  }
+  // Failed without an interior point.
+  // Use a single vertex-average interior point and tetrahedralize around it
+  catch ( libMesh::LogicError & )
+#endif
+  {
+    // Clear the triangulation we started building
+    this->_triangulation.clear();
 
-  // At this point our surface should just have two triangles left.
-  libmesh_assert_equal_to(surface.n_elem(), 2);
+    // Get the vertex-average, no need to triangulate for this
+    const auto v_avg = this->vertex_average();
+    if (!_has_mid_elem_node)
+    {
+      // Create the mid element node. Add it to nodelinks
+      // We'll attach a unique ptr to it later
+      Node * mid_elem_node = new Node(v_avg);
+      this->_nodelinks_data.push_back(mid_elem_node);
+      _has_mid_elem_node = true;
+    }
+    else
+    {
+      // We are triangulating for a second time, we have already added this mid-element node
+      libmesh_assert(n_vertices() == n_nodes() - 1);
+    }
+
+    // Build the tetrahedralization with each of the triangles on each side
+    for (unsigned int s : make_range(this->n_sides()))
+    {
+      const auto & [side, inward_normal, node_map] = this->_sidelinks_data[s];
+
+      for (auto t : make_range(side->n_subtriangles()))
+      {
+        // Get all the nodes
+        const auto & n1 = node_map[side->subtriangle(t)[0]];
+        const auto & n2 = node_map[side->subtriangle(t)[1]];
+        const auto & n3 = node_map[side->subtriangle(t)[2]];
+
+        // The mid node is the last node in the _nodes array
+        if (!inward_normal)
+          this->add_tet((int)n1, (int)n2, (int)n3, this->n_nodes() - 1);
+        else
+          this->add_tet((int)n1, (int)n3, (int)n2, this->n_nodes() - 1);
+      }
+    }
+  }
 }
 
 
@@ -808,13 +927,15 @@ void C0Polyhedron::add_tet(int n1,
   libmesh_assert_less(n2, nn);
   libmesh_assert_less(n3, nn);
   libmesh_assert_less(n4, nn);
+#endif
 
   const Point v12 = this->point(n2) - this->point(n1);
   const Point v13 = this->point(n3) - this->point(n1);
   const Point v14 = this->point(n4) - this->point(n1);
   const Real six_vol = triple_product(v12, v13, v14);
-  libmesh_assert_greater(six_vol, Real(0));
-#endif
+  // We need to error on this in optimized modes to fall back onto the
+  // tetrahedralization with a mid node
+  libmesh_error_msg_if(six_vol <= 0, "Creating flat tet");
 
   this->_triangulation.push_back({n1, n2, n3, n4});
 }

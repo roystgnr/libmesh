@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2025 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2026 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -66,8 +66,6 @@
 // The HDGProblem application context
 #include "hdg_problem.h"
 
-#if defined(LIBMESH_HAVE_EIGEN_DENSE) && defined(LIBMESH_HAVE_PETSC)
-
 using namespace libMesh;
 
 int
@@ -76,9 +74,9 @@ main(int argc, char ** argv)
   // Initialize libMesh.
   LibMeshInit init(argc, argv);
 
-  // This example requires a linear solver package.
-  libmesh_example_requires(libMesh::default_solver_package() != INVALID_SOLVER_PACKAGE,
-                           "--enable-petsc, --enable-trilinos, or --enable-eigen");
+  // This example requires PETSc
+  libmesh_example_requires(libMesh::default_solver_package() == PETSC_SOLVERS,
+                           "--enable-petsc");
 
   // Parse the input file.
   GetPot infile("vector_fe_ex9.in");
@@ -218,13 +216,3 @@ main(int argc, char ** argv)
   // All done.
   return 0;
 }
-
-#else
-
-int
-main()
-{
-  return 0;
-}
-
-#endif

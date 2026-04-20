@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2025 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2026 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -361,7 +361,7 @@ int main(int argc, char ** argv)
                     new_sys.calculate_norm(*new_sys.solution, v, H1) <<
                     std::endl;
 
-                  libMesh::out << "L2 error in " << var_name << ": " <<
+                  libMesh::out << "H1 error in " << var_name << ": " <<
                       exact_sol.h1_error(current_sys_name, var_name) <<
                       std::endl;
                 }
@@ -416,7 +416,12 @@ int main(int argc, char ** argv)
               for (auto cell_error : error_per_cell)
                 total_error += cell_error;
 
-              libMesh::out << "H" << jump_error_hilbert << " error estimate for " << var_name << ": " <<
+              if (jump_error_hilbert == 0)
+                libMesh::out << "L2";
+              else
+                libMesh::out << "H" << jump_error_hilbert;
+
+              libMesh::out << " error estimate for " << var_name << ": " <<
                 total_error << std::endl;
             }
         }

@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2025 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2026 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -1550,7 +1550,7 @@ FEGenericBase<OutputType>::compute_proj_constraints (DofConstraints & constraint
 
   const Variable & var = dof_map.variable(variable_number);
   const FEType & base_fe_type = var.type();
-  const bool add_p_level = dof_map.should_p_refine_var(variable_number);
+  const bool add_p_level = base_fe_type.p_refinement;
 
   // Construct FE objects for this element and its neighbors.
   std::unique_ptr<FEGenericBase<OutputShape>> my_fe

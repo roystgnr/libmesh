@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2025 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2026 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -63,7 +63,7 @@ void QGrid::init_2D()
       {
         const unsigned int np = (_order + 1)*(_order + 2)/2;
         const Real weight = Real(0.5)/np;
-        const Real dx = Real(1)/(_order+1);
+        const Real dx = Real(1)/static_cast<int>(_order+1);
         _points.resize(np);
         _weights.resize(np);
 

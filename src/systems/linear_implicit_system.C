@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2025 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2026 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -77,6 +77,10 @@ void LinearImplicitSystem::clear ()
 
   // clear the parent data
   Parent::clear();
+
+  // And restore any StaticCondensation to defaults
+  if (this->has_static_condensation())
+    this->setup_static_condensation_preconditioner(*linear_solver);
 }
 
 

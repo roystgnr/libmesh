@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2023 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2026 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -92,7 +92,22 @@ public:
    */
   virtual void triangulate () = 0;
 
+  /**
+   * Sets a verbosity level, defaulting to 0 (print nothing), to be
+   * set as high as 100 (print everything).
+   *
+   * For verbosity >= 50, print all detected surface mesh integrity
+   * issues as they're found.  Subclasses may add other output at
+   * other verbosity levels.
+   */
+  void set_verbosity(unsigned int v);
+
 protected:
+
+  /**
+   * verbosity setting
+   */
+  unsigned int _verbosity;
 
   /**
    * Remove volume elements from the given mesh, after converting
@@ -104,26 +119,51 @@ protected:
   static BoundingBox volume_to_surface_mesh (UnstructuredMesh & mesh);
 
   /**
-   * This function checks the integrity of the current set of
-   * elements in the Mesh to see if they comprise a hull,
-   * that is:
-   * - If they are all TRI3 elements
-   * - They all have non-nullptr neighbors
-   *
-   * \returns
-   * - 0 if the mesh forms a valid hull
-   * - 1 if a non-TRI3 element is found
-   * - 2 if an element with a nullptr-neighbor is found
+   * Enumeration of possible surface mesh integrity issues.
    */
-  unsigned check_hull_integrity();
+  enum SurfaceIntegrity {
+    NON_TRI3 = 1,           // a non-TRI3 element is found
+    MISSING_NEIGHBOR = 2,   // an element with a nullptr-neighbor is found
+    EMPTY_MESH = 3,         // the mesh is empty
+    MISSING_BACKLINK = 4,   // an element neighbor isn't linked back to it
+    BAD_NEIGHBOR_NODES = 5, // an element neighbor isn't linked to expected nodes
+    NON_ORIENTED = 6,       // an element neighbor has inconsistent orientation
+    BAD_NEIGHBOR_LINKS = 7, // an element neighbor has other inconsistent links
+    DEGENERATE_ELEMENT = 8, // an element has zero area
+    DEGENERATE_MESH = 9     // the mesh clearly bounds zero volume
+  };
 
   /**
-   * This function prints an informative message and
-   * crashes based on the output of the check_hull_integrity()
-   * function.  It is a separate function so that you
-   * can check hull integrity without crashing if you desire.
+   * This function checks the integrity of the current set of
+   * elements in the Mesh to see if they comprise a topological
+   * manifold that (if it's also geometrically valid) would define
+   * valid boundary for a tetrahedralized volume.
+   *
+   * Named \p check_hull_integrity() for backward compatibility, but
+   * now accepts non-convex manifolds.
+   *
+   * \returns a set of \p  enums describing problems
+   * found, or an empty set if no problems are found.
    */
-  void process_hull_integrity_result(unsigned result);
+  [[nodiscard]] std::set<SurfaceIntegrity> check_hull_integrity() const;
+
+  /**
+   * This function checks the integrity of the current set of
+   * elements in the Mesh, and corrects what it can.
+   *
+   * \returns A set of SurfaceIntegrity codes from \p
+   * check_hull_integrity() if there are problems it can't fix, or an
+   * empty set otherwise.
+   */
+  [[nodiscard]] std::set<SurfaceIntegrity> improve_hull_integrity();
+
+  /**
+   * This function prints an informative message and throws an
+   * exception based on the output of the check_hull_integrity()
+   * function.  It is a separate function so that you can check hull
+   * integrity without exiting or catching an exception if desired.
+   */
+  void process_hull_integrity_result(const std::set<SurfaceIntegrity> & result) const;
 
   /**
    * Delete original convex hull elements from the Mesh
@@ -159,6 +199,17 @@ protected:
    */
   std::unique_ptr<std::vector<std::unique_ptr<UnstructuredMesh>>> _holes;
 };
+
+
+// ------------------------------------------------------------
+// MeshTetInterface class member functions
+inline
+void
+MeshTetInterface::set_verbosity(unsigned int v)
+{
+  this->_verbosity = v;
+}
+
 
 } // namespace libMesh
 

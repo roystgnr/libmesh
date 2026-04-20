@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2025 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2026 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -150,8 +150,36 @@ public:
 
   /**
    * \returns The type (SERIAL, PARALLEL, GHOSTED) of the vector.
+   *
+   * This is metadata reflecting what type of vector was requested,
+   * which should reflect what level of replication and ghosting is
+   * necessary in parallel.
    */
   ParallelType type() const { return _type; }
+
+  /**
+   * \returns Whether the vector is effectively serial, i.e. whether
+   * all vector data is accessible on every processor.
+   *
+   * This is true for explicitly SERIAL vectors, but also for vectors
+   * on serial (1-processor) communicators.
+   */
+
+  bool is_effectively_serial() const
+  { return (this->n_processors()==1) || (_type == SERIAL); }
+
+  /**
+   * \returns Whether the vector is effectively ghosted, i.e. whether
+   * vector operations require handling of ghosted coefficients.
+   *
+   * This is true for GHOSTED vectors in parallel, but in serial
+   * subclasses may return false here for GHOSTED vectors since every
+   * ghosted vector is effectively serial and thus may be able to take
+   * advantage of serial-specific code paths.
+   */
+
+  bool is_effectively_ghosted() const
+  { return (this->n_processors()!=1) && (_type == GHOSTED); }
 
   /**
    * \returns The type (SERIAL, PARALLEL, GHOSTED) of the vector.
@@ -752,39 +780,48 @@ public:
 
   /**
    * Fills in \p subvector from this vector using the indices in \p rows.
-   * Similar to the \p create_submatrix() routine for the SparseMatrix class, it
-   * is currently only implemented for PetscVectors. The boolean parameter
-   * communicates whether the supplied vector of rows corresponds to all the
-   * rows that should be used in the subvector's index set, e.g. whether the
-   * rows correspond to the global collective. If the rows supplied are only the
-   * local indices, then the boolean parameter should be set to false
+   *
+   * \p supplying_global_rows communicates whether
+   * the supplied vector of rows corresponds to all the rows that
+   * should be used in the subvector's index set, e.g. whether the
+   * rows correspond to the global collective. If the rows supplied
+   * are only the local indices, then \p supplying_global_rows should
+   * be set to false
+   *
+   * This is currently only implemented for \p PetscVector and \p
+   * EigenSparseVector.
    */
-  virtual void create_subvector(NumericVector<T> & ,
-                                const std::vector<numeric_index_type> &,
-                                bool = true) const
+  virtual void create_subvector(NumericVector<T> & /* subvector */,
+                                const std::vector<numeric_index_type> & /* rows */,
+                                bool /* supplying_global_rows */ = true) const
   {
     libmesh_not_implemented();
   }
 
   /**
    * Creates a view into this vector using the indices in \p
-   * rows.  Similar to the \p create_submatrix() routine for the
-   * SparseMatrix class, it is currently only implemented for
-   * PetscVectors.
+   * rows. Calls to this API should always be paired with a call to \p restore_subvector,
+   * else any changes made in the subvector will not be reflected in (\p this) original vector.
+   *
+   * This is currently only implemented for \p PetscVector and \p
+   * EigenSparseVector.
    */
   virtual std::unique_ptr<NumericVector<T>>
-  get_subvector(const std::vector<numeric_index_type> &)
+  get_subvector(const std::vector<numeric_index_type> & /* rows */)
   {
     libmesh_not_implemented();
   }
 
   /**
    * Restores a view into this vector using the indices in \p
-   * rows.  This  is currently only implemented for
-   * PetscVectors.
+   * rows.  The \p subvector should have been acquired from \p
+   * get_subvector() with the same rows.
+   *
+   * This is currently only implemented for \p PetscVector and \p
+   * EigenSparseVector.
    */
-  virtual void restore_subvector(std::unique_ptr<NumericVector<T>>,
-                                 const std::vector<numeric_index_type> &)
+  virtual void restore_subvector(std::unique_ptr<NumericVector<T>> /* subvector */,
+                                 const std::vector<numeric_index_type> & /* rows */)
   {
     libmesh_not_implemented();
   }

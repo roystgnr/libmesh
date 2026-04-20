@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2025 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2026 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -54,7 +54,11 @@ public:
     SolverException(error_code_in)
   {
     const char * text;
+#if PETSC_VERSION_LESS_THAN(3,25,0)
     char * specific;
+#else
+    const char * specific;
+#endif
     auto ierr = PetscErrorMessage(cast_int<PetscErrorCode>(error_code), &text, &specific);
     // This is one scenario where we ignore the error code
     // returned by a PETSc function :)

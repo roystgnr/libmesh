@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2025 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2026 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -202,7 +202,7 @@ void TetGenMeshInterface::triangulate_conformingDelaunayMesh_carvehole  (const s
 {
   // Before calling this function, the Mesh must contain a convex hull
   // of TRI3 elements which define the boundary.
-  unsigned hull_integrity_check = check_hull_integrity();
+  auto hull_integrity_check = this->improve_hull_integrity();
 
   // Possibly die if hull integrity check failed
   this->process_hull_integrity_result(hull_integrity_check);

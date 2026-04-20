@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2025 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2026 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -482,10 +482,7 @@ void MeshFunction::gradient (const Point & p,
 
   const Elem * element = this->find_element(p,subdomain_ids);
 
-  if (!element)
-    output.resize(0);
-  else
-    this->_gradient_on_elem(p, element, output);
+  this->_gradient_on_elem(p, element, output);
 }
 
 
@@ -531,11 +528,21 @@ void MeshFunction::_gradient_on_elem (const Point & p,
                                       const Elem * element,
                                       std::vector<Gradient> & output)
 {
-  libmesh_assert(element);
-
   // resize the output vector to the number of output values
   // that the user told us
   output.resize (this->_system_vars.size());
+
+  if (!element)
+  {
+    libmesh_error_msg_if(!_out_of_mesh_mode,
+                         "MeshFunction couldn't find element at p=" <<
+                         p << ", but is not in out-of-mesh mode");
+    libmesh_assert_equal_to (_out_of_mesh_value.size(),
+                             this->_system_vars.size());
+    for (auto i : index_range(this->_system_vars))
+      output[i] = Gradient(_out_of_mesh_value[i]);
+    return;
+  }
 
   const unsigned int dim = element->dim();
 
@@ -632,11 +639,22 @@ void MeshFunction::hessian (const Point & p,
 {
   libmesh_assert (this->initialized());
 
+  // resize the output vector to the number of output values
+  // that the user told us
+  output.resize (this->_system_vars.size());
+
   const Elem * element = this->find_element(p,subdomain_ids);
 
   if (!element)
     {
-      output.resize(0);
+      libmesh_error_msg_if(!_out_of_mesh_mode,
+                           "MeshFunction couldn't find element at p=" <<
+                           p << ", but is not in out-of-mesh mode");
+      libmesh_assert_equal_to (_out_of_mesh_value.size(),
+                               this->_system_vars.size());
+      for (auto i : index_range(this->_system_vars))
+        output[i] = Tensor(_out_of_mesh_value[i]);
+      return;
     }
   else
     {
@@ -645,11 +663,6 @@ void MeshFunction::hessian (const Point & p,
                         << "Second derivatives for Infinite elements"
                         << " are not yet implemented!"
                         << std::endl);
-
-      // resize the output vector to the number of output values
-      // that the user told us
-      output.resize (this->_system_vars.size());
-
 
       {
         const unsigned int dim = element->dim();

@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2025 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2026 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -1611,7 +1611,8 @@ void GenericProjector<FFunctor, GFunctor, FValue, ProjectionAction>::SortAndCopy
 
       // If we have non-vertex nodes, the first is an edge node, but
       // if we're in 2D we'll call that a side node
-      const bool has_edge_nodes = (n_nodes > n_vertices && dim > 2);
+      const bool has_poly_midnode = (elem->type() == C0POLYHEDRON) && (n_nodes == n_vertices + 1);
+      const bool has_edge_nodes = (n_nodes > n_vertices + has_poly_midnode && dim > 2);
 
       // If we have even more nodes, the next is a side node.
       const bool has_side_nodes =
@@ -1628,9 +1629,7 @@ void GenericProjector<FFunctor, GFunctor, FValue, ProjectionAction>::SortAndCopy
           if (!var.active_on_subdomain(elem->subdomain_id()))
             continue;
           const FEType fe_type = var.type();
-          const auto & dof_map = this->projector.system.get_dof_map();
-          const auto vg = dof_map.var_group_from_var_number(v_num);
-          const bool add_p_level = dof_map.should_p_refine(vg);
+          const bool add_p_level = fe_type.p_refinement;
 
           // If we're trying to do projections on an isogeometric
           // analysis mesh, only the finite element nodes constrained
@@ -1735,7 +1734,18 @@ void GenericProjector<FFunctor, GFunctor, FValue, ProjectionAction>::SortAndCopy
             }
         };
 
-      for (unsigned int v=0; v != n_vertices; ++v)
+      // Treat polyhedron midnode as a vertex
+      // NOTE: if we start having edge or side nodes on polyhedra, we need to use that +1 offset
+      // in the edge and side nodes code as well!
+#ifndef NDEBUG
+      for (auto v_num : this->projector.variables)
+        {
+          const auto & family = this->projector.system.variable(v_num).type().family;
+          // Add to the list once known to be correctly functioning with the midnode
+          libmesh_assert(!has_poly_midnode || (family == LAGRANGE || family == MONOMIAL || family == XYZ));
+        }
+#endif
+      for (const auto v : make_range(n_vertices + has_poly_midnode))
         {
           const Node * node = elem->node_ptr(v);
 
@@ -2305,8 +2315,7 @@ void GenericProjector<FFunctor, GFunctor, FValue, ProjectionAction>::ProjectVert
                           base_fe_type,
                           &elem,
                           elem.get_node_index(&vertex),
-                          this->projector.system.get_dof_map().should_p_refine(
-                              this->projector.system.get_dof_map().var_group_from_var_number(var))),
+                          base_fe_type.p_refinement),
                       (unsigned int)(1 + dim));
 
                   const FValue val =
@@ -2561,8 +2570,7 @@ void GenericProjector<FFunctor, GFunctor, FValue, ProjectionAction>::ProjectSide
             continue;
 
           FEType fe_type = base_fe_type;
-          const auto & dof_map = system.get_dof_map();
-          const bool add_p_level = dof_map.should_p_refine_var(var);
+          const bool add_p_level = base_fe_type.p_refinement;
 
           // This may be a p refined element
           fe_type.order = fe_type.order + add_p_level*elem.p_level();
@@ -2721,9 +2729,7 @@ void GenericProjector<FFunctor, GFunctor, FValue, ProjectionAction>::ProjectInte
           context.get_element_fe( var, fe, dim );
 
           FEType fe_type = base_fe_type;
-          const auto & dof_map = system.get_dof_map();
-          const auto vg = dof_map.var_group_from_var_number(var);
-          const bool add_p_level = dof_map.should_p_refine(vg);
+          const bool add_p_level = fe_type.p_refinement;
 
           // This may be a p refined element
           fe_type.order = fe_type.order + add_p_level * elem->p_level();

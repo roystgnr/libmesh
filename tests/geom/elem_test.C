@@ -835,6 +835,9 @@ public:
             CPPUNIT_ASSERT(elem->is_internal(nd));
           else if (elem->type() == INFQUAD6 && nd == 5)
             CPPUNIT_ASSERT(elem->is_internal(nd));
+          // Accomodate for mid-element node of C0 polyhedron
+          else if (elem->type() == C0POLYHEDRON && nd == elem->n_vertices())
+            CPPUNIT_ASSERT(elem->is_internal(nd));
           else
             CPPUNIT_ASSERT(!elem->is_internal(nd));
         }
