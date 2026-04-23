@@ -1662,7 +1662,11 @@ void MeshTools::Modification::all_rbb (MeshBase & mesh)
 
       if (check_interior_points)
         {
-          if (elem->dim() == 2)
+          if (elem->type() == EDGE3)
+            {
+              make_edge_rbb(elem->node_ref(0), elem->node_ref(1), elem->node_ref(2));
+            }
+          else if (elem->dim() == 2)
             {
               make_face_rbb(*elem);
             }
@@ -1758,7 +1762,7 @@ void MeshTools::Modification::all_rbb (MeshBase & mesh)
             }
           else
             libmesh_not_implemented_msg
-              ("all_rbb() currently only supports cell-interior nodes on Hex27");
+              ("all_rbb() doesn't yet support " << elem->type());
         }
     }
 }
