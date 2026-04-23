@@ -1459,7 +1459,7 @@ void MeshTools::Modification::all_rbb (MeshBase & mesh)
   // mapped node
   const Real default_weight = 1.0;
 
-  weight_index = cast_int<unsigned char>
+  const auto weight_index =
     (mesh.add_node_datum<Real>("rational_weight", true,
                                &default_weight));
 
@@ -1467,7 +1467,12 @@ void MeshTools::Modification::all_rbb (MeshBase & mesh)
   mesh.set_default_mapping_data(weight_index);
 
   // Out of loop to reduce heap allocations
-  std::unique_ptr<Elem> edge, face;
+  std::unique_ptr<Elem> edge_ptr, face_ptr;
+
+  // Utility for checking extrusion directions later
+  auto almost_equal = [](Real a, Real b) {
+    return (std::abs(a-b) < TOLERANCE*TOLERANCE);
+  };
 
   for (auto & elem : mesh.element_ptr_range())
     {
@@ -1488,85 +1493,157 @@ void MeshTools::Modification::all_rbb (MeshBase & mesh)
       if (elem->default_order() == FIRST)
         continue;
 
-      // Check each edge for a curve, and adjust it if needed.
-      bool check_face_points = 
-        elem->n_nodes() > elem->n_edges() + elem->n_vertices();
+      // Modify the center node of an "edge" - possibly an actual
+      // edge, possibly a center node between edge points - to fit a
+      // circular curve.
+      auto make_edge_rbb = [default_weight, weight_index]
+        (const Node & n0, const Node & n1, Node & n_center)
+      {
+        // Skip edges we've already modified; the center node for
+        // these is no longer at the curve point we wish to
+        // interpolate, it should already be at the control point that
+        // accomplishes the interpolation.
+        const Real old_weight = n_center.get_extra_datum<Real>(weight_index);
+        if (old_weight != default_weight)
+          return;
 
+        const Point & p0 = n0;
+        const Point & p1 = n1;
+        Point & p2 = n_center;
+        const Point midchord = (p0+p1)/2;
+        const Real edge_chord_len = (p1-p0).norm_sq();
+
+        const Real w0 = n0.get_extra_datum<Real>(weight_index);
+        const Real w1 = n1.get_extra_datum<Real>(weight_index);
+
+        // If we see edges that are unevenly parameterized, not just
+        // curved, I'm not sure what we want to do with those.
+        // Presumably we want to maintain a somewhat similar uneven
+        // parameterization, for whatever boundary layer grading the
+        // mesh user wanted?  For now just scream and die.
+        const Point e20 = p0-p2,
+                    e21 = p1-p2;
+        const Real chord_20_len = e20.norm_sq(),
+                   chord_21_len = e21.norm_sq();
+        if (std::abs(chord_20_len-chord_21_len) > edge_chord_len * TOLERANCE)
+          libmesh_not_implemented_msg
+            ("all_rbb() currently doesn't support unevenly parameterized edges");
+
+        // For straight edges we'll just want the middle node weight
+        // to match the endpoint nodes
+        const Point displacement_vec = p2-midchord;
+        if (displacement_vec.norm_sq() <
+            edge_chord_len*edge_chord_len*TOLERANCE*TOLERANCE*TOLERANCE)
+        {
+          if (std::abs(w0 - w1) > TOLERANCE*TOLERANCE)
+            libmesh_not_implemented();
+
+          n_center.set_extra_datum<Real>(weight_index, w0);
+
+          return;
+        }
+
+        // Circularize the curve on curved edges
+        //
+        // First find the cosine of phi, the angle between our two
+        // subchords.  This is the same as half of the angle of our
+        // circular arc, which nicely enough is also the angle we take
+        // cos and sec of in NURBS formulae
+        const Real cos_phi = (e20*e21)/chord_20_len/chord_21_len;
+        n_center.set_extra_datum<Real>(weight_index, cos_phi);
+
+        // There's a way to do really large arcs using negative
+        // weights, but we're going to get lousy approximation quality
+        // from isoparametric elements if we go too low, as well as
+        // bad numerics here, so let's just disallow it.
+        if (cos_phi < 0.5)
+          libmesh_not_implemented_msg
+            ("all_rbb() is not recommended for extremely sharp curves on one edge");
+
+        // Next find the radius of the circle our arc is from
+        const Real r = edge_chord_len/2/std::sqrt(1-cos_phi*cos_phi);
+
+        // And perturb our center node so that it becomes a control
+        // point for that arc rather than a midpoint of that arc.
+        const Real R = r/cos_phi;
+
+        p2 += displacement_vec.unit() * (R-r);
+      };
+
+      auto make_face_rbb = [weight_index, almost_equal] (Elem & face)
+      {
+        // Prisms and pyramids may need to skip some faces while
+        // adjusting others
+        if (face.type() == TRI6)
+          return;
+
+        if (face.type() != QUAD9)
+          libmesh_not_implemented_msg
+            ("all_rbb() currently only supports mid-face nodes on Quad9 faces");
+
+        Real w[9];
+        for (unsigned int i : make_range(9u))
+          w[i] = face.node_ref(i).get_extra_datum<Real>(weight_index);
+
+        // For now we just support 2.5D (extrusions of 2D) meshes.
+        // Let's look for an extrusion direction.
+        int extrude_dir = -1;
+        if (almost_equal(w[0], w[1]) &&
+            almost_equal(w[0], w[4]) &&
+            almost_equal(w[2], w[3]) &&
+            almost_equal(w[2], w[6]) &&
+            almost_equal(w[5], w[7]))
+          extrude_dir = 0;
+
+        if (almost_equal(w[0], w[3]) &&
+            almost_equal(w[0], w[7]) &&
+            almost_equal(w[1], w[2]) &&
+            almost_equal(w[1], w[5]) &&
+            almost_equal(w[4], w[6]))
+          extrude_dir = 1;
+
+        // If we're extruding, then we can derive the center point
+        // values from the two perpendicular edges' centers.
+        Node & n_center = face.node_ref(8);
+        Point & p_center = n_center;
+        if (extrude_dir == 0)
+          {
+            n_center.set_extra_datum<Real>(weight_index, w[5]);
+            p_center = (face.point(5) + face.point(7))/2;
+          }
+        else if (extrude_dir == 1)
+          {
+            n_center.set_extra_datum<Real>(weight_index, w[4]);
+            p_center = (face.point(4) + face.point(6))/2;
+          }
+        else
+          libmesh_not_implemented_msg
+            ("all_rbb() currently only supports 2.5D (extrusions) meshes in 3D");
+      };
+
+      // Check each edge for a curve, and adjust it if needed.
       for (auto e : elem->edge_index_range())
         {
-          elem->build_edge_ptr(edge, e);
+          elem->build_edge_ptr(edge_ptr, e);
 
           // We should add EDGE4 once we have QUAD16/TRI10/HEX64 to
           // use it
-          if (edge->type() != EDGE3)
+          if (edge_ptr->type() != EDGE3)
             libmesh_not_implemented_msg
               ("all_rbb() currently only supports meshes with 2- and/or 3-node edges");
 
-          // Skip edges we've already modified; the center node for
-          // these is no longer at the curve point we wish to
-          // interpolate, it's already at the control point that
-          // accomplishes the interpolation.
-          Node & n2 = edge->node_ref(2);
-          const Real old_weight = n2.get_extra_datum<Real>(weight_index);
-          if (old_weight != default_weight)
-            continue;
+          make_edge_rbb(edge_ptr->node_ref(0), edge_ptr->node_ref(1),
+                        edge_ptr->node_ref(2));
 
-          const Point & p0 = edge->point(0);
-          const Point & p1 = edge->point(1);
-          Point & p2 = n2;
-
-          // Skip straight edges
-          const Point midchord = (p0+p1)/2;
-          const Real edge_chord_len = (p1-p0).norm_sq();
-          const Point displacement_vec = p2-midchord;
-          if (displacement_vec.norm_sq() <
-              edge_chord_len*edge_chord_len*TOLERANCE*TOLERANCE*TOLERANCE)
-            continue;
-
-          // If we see edges that are unevenly parameterized, not just
-          // curved, I'm not sure what we want to do with those.
-          // Presumably we want to maintain a somewhat similar uneven
-          // parameterization, for whatever boundary layer grading the
-          // mesh user wanted?  For now just scream and die.
-          const Point e20 = p0-p2, 
-                      e21 = p1-p2;
-          const Real chord_20_len = e20.norm_sq(),
-                     chord_21_len = e21.norm_sq();
-          if (std::abs(chord_20_len-chord_21_len) > edge_chord_len * TOLERANCE)
-            libmesh_not_implemented_msg
-              ("all_rbb() currently doesn't support unevenly parameterized edges");
-
-          // Circularize the curve on curved edges
-          //
-          // First find the cosine of phi, the angle between our two
-          // subchords.  This is the same as half of the angle of our
-          // circular arc, which nicely enough is also the angle we
-          // take cos and sec of in NURBS formulae
-          const Real cos_phi = (e20*e21)/chord_20_len/chord_21_len;
-          n2.set_extra_datum<Real>(weight_index, cos_phi);
-
-          // There's a way to do really large arcs using negative
-          // weights, but we're going to get lousy approximation
-          // quality from isoparametric elements if we go too low, as
-          // well as bad numerics here, so let's just disallow it.
-          if (cos_phi < 0.5)
-            libmesh_not_implemented_msg
-              ("all_rbb() is not recommended for extremely sharp curves on one edge");
-
-          // Next find the radius of the circle our arc is from
-          const Real r = edge_chord_len/2/std::sqrt(1-cos_phi*cos_phi);
-
-          // And perturb our center node so that it becomes a control
-          // point for that arc rather than a midpoint of that arc.
-          const Real R = r/cos_phi;
-
-          p2 += displacement_vec.unit() * (R-r);
         }
 
       // If we're in 3D, we may have face nodes that also need to be
       // adjusted to replace an interpolated curve with a spline
       // curve.  We know what to do with a quad face, but we'll have
       // to scream and die if we see a Tri7 face node.
+      bool check_face_points =
+        elem->n_nodes() > elem->n_edges() + elem->n_vertices();
+
       if (check_face_points)
         for (auto f : elem->side_index_range())
           {
@@ -1575,14 +1652,114 @@ void MeshTools::Modification::all_rbb (MeshBase & mesh)
             if (elem->side_type(f) == TRI6)
               continue;
 
-            elem->build_side_ptr(face, f);
+            elem->build_side_ptr(face_ptr, f);
 
-            if (face->type() != QUAD9)
-              libmesh_not_implemented_msg
-                ("all_rbb() currently only supports mid-face nodes on Quad9 faces");
-
-            libmesh_not_implemented(); // FIXME
+            make_face_rbb(*face_ptr);
           }
+
+      bool check_interior_points =
+        elem->n_nodes() > elem->n_edges() + elem->n_vertices() + elem->n_faces();
+
+      if (check_interior_points)
+        {
+          if (elem->dim() == 2)
+            {
+              make_face_rbb(*elem);
+            }
+          else if (elem->type() == HEX27)
+            {
+              // For now we just support 2.5D (extrusions of 2D)
+              // meshes.  Let's look for an extrusion direction.
+              int extrude_dir = -1;
+
+              Real w[27];
+              for (unsigned int i : make_range(27u))
+                w[i] = elem->node_ref(i).get_extra_datum<Real>(weight_index);
+
+              if (almost_equal(w[0], w[1]) &&
+                  almost_equal(w[0], w[8]) &&
+                  almost_equal(w[2], w[3]) &&
+                  almost_equal(w[2], w[10]) &&
+                  almost_equal(w[4], w[5]) &&
+                  almost_equal(w[4], w[16]) &&
+                  almost_equal(w[6], w[7]) &&
+                  almost_equal(w[6], w[18]) &&
+                  almost_equal(w[9], w[11]) &&
+                  almost_equal(w[9], w[20]) &&
+                  almost_equal(w[12], w[13]) &&
+                  almost_equal(w[12], w[21]) &&
+                  almost_equal(w[14], w[15]) &&
+                  almost_equal(w[14], w[23]) &&
+                  almost_equal(w[17], w[19]) &&
+                  almost_equal(w[17], w[25]) &&
+                  almost_equal(w[22], w[24]))
+                extrude_dir = 0;
+
+              if (almost_equal(w[0], w[3]) &&
+                  almost_equal(w[0], w[11]) &&
+                  almost_equal(w[1], w[2]) &&
+                  almost_equal(w[1], w[9]) &&
+                  almost_equal(w[4], w[7]) &&
+                  almost_equal(w[4], w[19]) &&
+                  almost_equal(w[5], w[6]) &&
+                  almost_equal(w[5], w[17]) &&
+                  almost_equal(w[8], w[10]) &&
+                  almost_equal(w[8], w[20]) &&
+                  almost_equal(w[12], w[15]) &&
+                  almost_equal(w[12], w[24]) &&
+                  almost_equal(w[13], w[14]) &&
+                  almost_equal(w[13], w[22]) &&
+                  almost_equal(w[16], w[18]) &&
+                  almost_equal(w[16], w[25]) &&
+                  almost_equal(w[21], w[23]))
+                extrude_dir = 1;
+
+              if (almost_equal(w[0], w[4]) &&
+                  almost_equal(w[0], w[12]) &&
+                  almost_equal(w[1], w[5]) &&
+                  almost_equal(w[1], w[13]) &&
+                  almost_equal(w[2], w[6]) &&
+                  almost_equal(w[2], w[14]) &&
+                  almost_equal(w[3], w[7]) &&
+                  almost_equal(w[3], w[15]) &&
+                  almost_equal(w[8], w[16]) &&
+                  almost_equal(w[8], w[21]) &&
+                  almost_equal(w[9], w[17]) &&
+                  almost_equal(w[9], w[22]) &&
+                  almost_equal(w[10], w[18]) &&
+                  almost_equal(w[10], w[23]) &&
+                  almost_equal(w[11], w[19]) &&
+                  almost_equal(w[11], w[24]) &&
+                  almost_equal(w[20], w[25]))
+                extrude_dir = 2;
+
+              // If we're extruding, then we can derive the center point
+              // values from the two perpendicular faces' centers.
+              Node & n_center = elem->node_ref(26);
+              Point & p_center = n_center;
+              if (extrude_dir == 0)
+                {
+                  n_center.set_extra_datum<Real>(weight_index, w[22]);
+                  p_center = (elem->point(22) + elem->point(24))/2;
+                }
+              else if (extrude_dir == 1)
+                {
+                  n_center.set_extra_datum<Real>(weight_index, w[21]);
+                  p_center = (elem->point(21) + elem->point(23))/2;
+                }
+              else if (extrude_dir == 2)
+                {
+                  n_center.set_extra_datum<Real>(weight_index, w[20]);
+                  p_center = (elem->point(20) + elem->point(25))/2;
+                }
+              else
+                libmesh_not_implemented_msg
+                  ("all_rbb() currently only supports 2.5D (extrusions) meshes in 3D");
+            }
+          else
+            libmesh_not_implemented_msg
+              ("all_rbb() currently only supports cell-interior nodes on Hex27");
+        }
     }
 }
 
