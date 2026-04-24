@@ -64,9 +64,11 @@ protected:
                                         0., 1.,
                                         elem_type);
 
+    const auto n_orig_elem = mesh.n_elem();
+
     MeshTools::Modification::all_rbb(mesh);
 
-    CPPUNIT_ASSERT_EQUAL(dof_id_type(2), mesh.n_elem());
+    CPPUNIT_ASSERT_EQUAL(n_orig_elem, mesh.n_elem());
 
     unsigned char weight_index = mesh.default_mapping_data();
 
