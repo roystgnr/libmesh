@@ -1641,8 +1641,8 @@ void MeshTools::Modification::all_rbb (MeshBase & mesh)
       // adjusted to replace an interpolated curve with a spline
       // curve.  We know what to do with a quad face, but we'll have
       // to scream and die if we see a Tri7 face node.
-      bool check_face_points =
-        elem->n_nodes() > elem->n_edges() + elem->n_vertices();
+      bool check_face_points = (elem->dim() > 2) &&
+        (elem->n_nodes() > elem->n_edges() + elem->n_vertices());
 
       if (check_face_points)
         for (auto f : elem->side_index_range())
