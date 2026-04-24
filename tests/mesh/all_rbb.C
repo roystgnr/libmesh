@@ -58,7 +58,7 @@ protected:
     auto dim = Elem::type_to_dim_map[elem_type];
 
     MeshTools::Generation::build_cube(mesh,
-                                        2, dim > 1 ? 1 : 0, dim > 2 ? 1 : 0,
+                                        dim > 0 ? 2 : 0, dim > 1 ? 1 : 0, dim > 2 ? 1 : 0,
                                         0., 1.,
                                         0., 1.,
                                         0., 1.,
