@@ -115,15 +115,17 @@ target_triplet = @target@
 @LIBMESH_PROF_MODE_TRUE@am__append_14 = libmesh_prof.la
 @LIBMESH_OPROF_MODE_TRUE@am__append_15 = libmesh_oprof.la
 @LIBMESH_ENABLE_CPPUNIT_TRUE@am__append_16 = tests
-bin_PROGRAMS = $(am__EXEEXT_2) $(am__EXEEXT_4) $(am__EXEEXT_6)
+bin_PROGRAMS = $(am__EXEEXT_2) $(am__EXEEXT_4) $(am__EXEEXT_6) \
+	$(am__EXEEXT_8)
 @LIBMESH_OPT_MODE_TRUE@am__append_17 = $(opt_programs)
 @LIBMESH_DEVEL_MODE_TRUE@am__append_18 = $(devel_programs)
 @LIBMESH_DBG_MODE_TRUE@am__append_19 = $(dbg_programs)
+@LIBMESH_OPROF_MODE_TRUE@am__append_20 = $(oprof_programs)
 
 ###########################################################
 # Examples
-@LIBMESH_ENABLE_EXAMPLES_TRUE@am__append_20 = examples
-@CODE_COVERAGE_ENABLED_TRUE@am__append_21 = src/apps/*.gcda src/apps/*.gcno
+@LIBMESH_ENABLE_EXAMPLES_TRUE@am__append_21 = examples
+@CODE_COVERAGE_ENABLED_TRUE@am__append_22 = src/apps/*.gcda src/apps/*.gcno
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps =  \
@@ -231,6 +233,18 @@ am__EXEEXT_5 = fparser_parse-dbg$(EXEEXT) getpot_parse-dbg$(EXEEXT) \
 	meshplot-dbg$(EXEEXT) solution_components-dbg$(EXEEXT) \
 	splitter-dbg$(EXEEXT) embedding-dbg$(EXEEXT)
 @LIBMESH_DBG_MODE_TRUE@am__EXEEXT_6 = $(am__EXEEXT_5)
+am__EXEEXT_7 = fparser_parse-oprof$(EXEEXT) \
+	getpot_parse-oprof$(EXEEXT) amr-oprof$(EXEEXT) \
+	matrixconvert-oprof$(EXEEXT) matrixsolve-oprof$(EXEEXT) \
+	meshtool-oprof$(EXEEXT) calculator-oprof$(EXEEXT) \
+	compare-oprof$(EXEEXT) meshbcid-oprof$(EXEEXT) \
+	meshid-oprof$(EXEEXT) meshavg-oprof$(EXEEXT) \
+	meshdiff-oprof$(EXEEXT) meshnorm-oprof$(EXEEXT) \
+	projection-oprof$(EXEEXT) \
+	output_libmesh_version-oprof$(EXEEXT) meshplot-oprof$(EXEEXT) \
+	solution_components-oprof$(EXEEXT) splitter-oprof$(EXEEXT) \
+	embedding-oprof$(EXEEXT)
+@LIBMESH_OPROF_MODE_TRUE@am__EXEEXT_8 = $(am__EXEEXT_7)
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(libdir)" \
 	"$(DESTDIR)$(bindir)" "$(DESTDIR)$(contribbindir)" \
 	"$(DESTDIR)$(libmesh_configdir)" "$(DESTDIR)$(configdir)" \
@@ -4334,6 +4348,12 @@ amr_devel_DEPENDENCIES = libmesh_devel.la
 amr_devel_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(amr_devel_CXXFLAGS) \
 	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+am_amr_oprof_OBJECTS = src/apps/amr_oprof-amr.$(OBJEXT)
+amr_oprof_OBJECTS = $(am_amr_oprof_OBJECTS)
+amr_oprof_DEPENDENCIES = libmesh_oprof.la
+amr_oprof_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(amr_oprof_CXXFLAGS) \
+	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_amr_opt_OBJECTS = src/apps/amr_opt-amr.$(OBJEXT)
 amr_opt_OBJECTS = $(am_amr_opt_OBJECTS)
 amr_opt_DEPENDENCIES = libmesh_opt.la
@@ -4358,6 +4378,15 @@ calculator_devel_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(calculator_devel_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
+am_calculator_oprof_OBJECTS =  \
+	src/apps/calculator_oprof-calculator.$(OBJEXT) \
+	src/apps/calculator_oprof-L2system.$(OBJEXT)
+calculator_oprof_OBJECTS = $(am_calculator_oprof_OBJECTS)
+calculator_oprof_DEPENDENCIES = libmesh_oprof.la
+calculator_oprof_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(calculator_oprof_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 am_calculator_opt_OBJECTS =  \
 	src/apps/calculator_opt-calculator.$(OBJEXT) \
 	src/apps/calculator_opt-L2system.$(OBJEXT)
@@ -4380,6 +4409,13 @@ compare_devel_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(compare_devel_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
+am_compare_oprof_OBJECTS = src/apps/compare_oprof-compare.$(OBJEXT)
+compare_oprof_OBJECTS = $(am_compare_oprof_OBJECTS)
+compare_oprof_DEPENDENCIES = libmesh_oprof.la
+compare_oprof_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(compare_oprof_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
+	-o $@
 am_compare_opt_OBJECTS = src/apps/compare_opt-compare.$(OBJEXT)
 compare_opt_OBJECTS = $(am_compare_opt_OBJECTS)
 compare_opt_DEPENDENCIES = libmesh_opt.la
@@ -4400,6 +4436,14 @@ embedding_devel_DEPENDENCIES = libmesh_devel.la
 embedding_devel_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(embedding_devel_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
+am_embedding_oprof_OBJECTS =  \
+	src/apps/embedding_oprof-embedding.$(OBJEXT)
+embedding_oprof_OBJECTS = $(am_embedding_oprof_OBJECTS)
+embedding_oprof_DEPENDENCIES = libmesh_oprof.la
+embedding_oprof_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(embedding_oprof_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 am_embedding_opt_OBJECTS = src/apps/embedding_opt-embedding.$(OBJEXT)
 embedding_opt_OBJECTS = $(am_embedding_opt_OBJECTS)
@@ -4423,6 +4467,14 @@ fparser_parse_devel_DEPENDENCIES = libmesh_devel.la
 fparser_parse_devel_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(fparser_parse_devel_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
+am_fparser_parse_oprof_OBJECTS =  \
+	src/apps/fparser_parse_oprof-fparser_parse.$(OBJEXT)
+fparser_parse_oprof_OBJECTS = $(am_fparser_parse_oprof_OBJECTS)
+fparser_parse_oprof_DEPENDENCIES = libmesh_oprof.la
+fparser_parse_oprof_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(fparser_parse_oprof_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 am_fparser_parse_opt_OBJECTS =  \
 	src/apps/fparser_parse_opt-fparser_parse.$(OBJEXT)
@@ -4448,6 +4500,14 @@ getpot_parse_devel_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(getpot_parse_devel_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
+am_getpot_parse_oprof_OBJECTS =  \
+	src/apps/getpot_parse_oprof-getpot_parse.$(OBJEXT)
+getpot_parse_oprof_OBJECTS = $(am_getpot_parse_oprof_OBJECTS)
+getpot_parse_oprof_DEPENDENCIES = libmesh_oprof.la
+getpot_parse_oprof_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(getpot_parse_oprof_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 am_getpot_parse_opt_OBJECTS =  \
 	src/apps/getpot_parse_opt-getpot_parse.$(OBJEXT)
 getpot_parse_opt_OBJECTS = $(am_getpot_parse_opt_OBJECTS)
@@ -4471,6 +4531,14 @@ matrixconvert_devel_DEPENDENCIES = libmesh_devel.la
 matrixconvert_devel_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(matrixconvert_devel_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
+am_matrixconvert_oprof_OBJECTS =  \
+	src/apps/matrixconvert_oprof-matrixconvert.$(OBJEXT)
+matrixconvert_oprof_OBJECTS = $(am_matrixconvert_oprof_OBJECTS)
+matrixconvert_oprof_DEPENDENCIES = libmesh_oprof.la
+matrixconvert_oprof_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(matrixconvert_oprof_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 am_matrixconvert_opt_OBJECTS =  \
 	src/apps/matrixconvert_opt-matrixconvert.$(OBJEXT)
@@ -4496,6 +4564,14 @@ matrixsolve_devel_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(matrixsolve_devel_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
+am_matrixsolve_oprof_OBJECTS =  \
+	src/apps/matrixsolve_oprof-matrixsolve.$(OBJEXT)
+matrixsolve_oprof_OBJECTS = $(am_matrixsolve_oprof_OBJECTS)
+matrixsolve_oprof_DEPENDENCIES = libmesh_oprof.la
+matrixsolve_oprof_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(matrixsolve_oprof_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 am_matrixsolve_opt_OBJECTS =  \
 	src/apps/matrixsolve_opt-matrixsolve.$(OBJEXT)
 matrixsolve_opt_OBJECTS = $(am_matrixsolve_opt_OBJECTS)
@@ -4517,6 +4593,13 @@ meshavg_devel_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(meshavg_devel_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
+am_meshavg_oprof_OBJECTS = src/apps/meshavg_oprof-meshavg.$(OBJEXT)
+meshavg_oprof_OBJECTS = $(am_meshavg_oprof_OBJECTS)
+meshavg_oprof_DEPENDENCIES = libmesh_oprof.la
+meshavg_oprof_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(meshavg_oprof_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
+	-o $@
 am_meshavg_opt_OBJECTS = src/apps/meshavg_opt-meshavg.$(OBJEXT)
 meshavg_opt_OBJECTS = $(am_meshavg_opt_OBJECTS)
 meshavg_opt_DEPENDENCIES = libmesh_opt.la
@@ -4536,6 +4619,14 @@ meshbcid_devel_DEPENDENCIES = libmesh_devel.la
 meshbcid_devel_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(meshbcid_devel_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
+am_meshbcid_oprof_OBJECTS =  \
+	src/apps/meshbcid_oprof-meshbcid.$(OBJEXT)
+meshbcid_oprof_OBJECTS = $(am_meshbcid_oprof_OBJECTS)
+meshbcid_oprof_DEPENDENCIES = libmesh_oprof.la
+meshbcid_oprof_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(meshbcid_oprof_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 am_meshbcid_opt_OBJECTS = src/apps/meshbcid_opt-meshbcid.$(OBJEXT)
 meshbcid_opt_OBJECTS = $(am_meshbcid_opt_OBJECTS)
@@ -4557,6 +4648,14 @@ meshdiff_devel_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(meshdiff_devel_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
+am_meshdiff_oprof_OBJECTS =  \
+	src/apps/meshdiff_oprof-meshdiff.$(OBJEXT)
+meshdiff_oprof_OBJECTS = $(am_meshdiff_oprof_OBJECTS)
+meshdiff_oprof_DEPENDENCIES = libmesh_oprof.la
+meshdiff_oprof_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(meshdiff_oprof_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 am_meshdiff_opt_OBJECTS = src/apps/meshdiff_opt-meshdiff.$(OBJEXT)
 meshdiff_opt_OBJECTS = $(am_meshdiff_opt_OBJECTS)
 meshdiff_opt_DEPENDENCIES = libmesh_opt.la
@@ -4574,6 +4673,12 @@ meshid_devel_OBJECTS = $(am_meshid_devel_OBJECTS)
 meshid_devel_DEPENDENCIES = libmesh_devel.la
 meshid_devel_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(meshid_devel_CXXFLAGS) \
+	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+am_meshid_oprof_OBJECTS = src/apps/meshid_oprof-meshid.$(OBJEXT)
+meshid_oprof_OBJECTS = $(am_meshid_oprof_OBJECTS)
+meshid_oprof_DEPENDENCIES = libmesh_oprof.la
+meshid_oprof_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(meshid_oprof_CXXFLAGS) \
 	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_meshid_opt_OBJECTS = src/apps/meshid_opt-meshid.$(OBJEXT)
 meshid_opt_OBJECTS = $(am_meshid_opt_OBJECTS)
@@ -4595,6 +4700,14 @@ meshnorm_devel_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(meshnorm_devel_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
+am_meshnorm_oprof_OBJECTS =  \
+	src/apps/meshnorm_oprof-meshnorm.$(OBJEXT)
+meshnorm_oprof_OBJECTS = $(am_meshnorm_oprof_OBJECTS)
+meshnorm_oprof_DEPENDENCIES = libmesh_oprof.la
+meshnorm_oprof_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(meshnorm_oprof_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 am_meshnorm_opt_OBJECTS = src/apps/meshnorm_opt-meshnorm.$(OBJEXT)
 meshnorm_opt_OBJECTS = $(am_meshnorm_opt_OBJECTS)
 meshnorm_opt_DEPENDENCIES = libmesh_opt.la
@@ -4615,6 +4728,14 @@ meshplot_devel_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(meshplot_devel_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
+am_meshplot_oprof_OBJECTS =  \
+	src/apps/meshplot_oprof-meshplot.$(OBJEXT)
+meshplot_oprof_OBJECTS = $(am_meshplot_oprof_OBJECTS)
+meshplot_oprof_DEPENDENCIES = libmesh_oprof.la
+meshplot_oprof_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(meshplot_oprof_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 am_meshplot_opt_OBJECTS = src/apps/meshplot_opt-meshplot.$(OBJEXT)
 meshplot_opt_OBJECTS = $(am_meshplot_opt_OBJECTS)
 meshplot_opt_DEPENDENCIES = libmesh_opt.la
@@ -4634,6 +4755,14 @@ meshtool_devel_DEPENDENCIES = libmesh_devel.la
 meshtool_devel_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(meshtool_devel_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
+am_meshtool_oprof_OBJECTS =  \
+	src/apps/meshtool_oprof-meshtool.$(OBJEXT)
+meshtool_oprof_OBJECTS = $(am_meshtool_oprof_OBJECTS)
+meshtool_oprof_DEPENDENCIES = libmesh_oprof.la
+meshtool_oprof_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(meshtool_oprof_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 am_meshtool_opt_OBJECTS = src/apps/meshtool_opt-meshtool.$(OBJEXT)
 meshtool_opt_OBJECTS = $(am_meshtool_opt_OBJECTS)
@@ -4656,6 +4785,14 @@ output_libmesh_version_devel_DEPENDENCIES = libmesh_devel.la
 output_libmesh_version_devel_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(output_libmesh_version_devel_CXXFLAGS) $(CXXFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+am_output_libmesh_version_oprof_OBJECTS = src/apps/output_libmesh_version_oprof-output_libmesh_version.$(OBJEXT)
+output_libmesh_version_oprof_OBJECTS =  \
+	$(am_output_libmesh_version_oprof_OBJECTS)
+output_libmesh_version_oprof_DEPENDENCIES = libmesh_oprof.la
+output_libmesh_version_oprof_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(output_libmesh_version_oprof_CXXFLAGS) $(CXXFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_output_libmesh_version_opt_OBJECTS = src/apps/output_libmesh_version_opt-output_libmesh_version.$(OBJEXT)
 output_libmesh_version_opt_OBJECTS =  \
@@ -4681,6 +4818,14 @@ projection_devel_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(projection_devel_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
+am_projection_oprof_OBJECTS =  \
+	src/apps/projection_oprof-projection.$(OBJEXT)
+projection_oprof_OBJECTS = $(am_projection_oprof_OBJECTS)
+projection_oprof_DEPENDENCIES = libmesh_oprof.la
+projection_oprof_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(projection_oprof_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 am_projection_opt_OBJECTS =  \
 	src/apps/projection_opt-projection.$(OBJEXT)
 projection_opt_OBJECTS = $(am_projection_opt_OBJECTS)
@@ -4705,6 +4850,14 @@ solution_components_devel_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(solution_components_devel_CXXFLAGS) $(CXXFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+am_solution_components_oprof_OBJECTS = src/apps/solution_components_oprof-solution_components.$(OBJEXT)
+solution_components_oprof_OBJECTS =  \
+	$(am_solution_components_oprof_OBJECTS)
+solution_components_oprof_DEPENDENCIES = libmesh_oprof.la
+solution_components_oprof_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(solution_components_oprof_CXXFLAGS) $(CXXFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_solution_components_opt_OBJECTS = src/apps/solution_components_opt-solution_components.$(OBJEXT)
 solution_components_opt_OBJECTS =  \
 	$(am_solution_components_opt_OBJECTS)
@@ -4726,6 +4879,14 @@ splitter_devel_DEPENDENCIES = libmesh_devel.la
 splitter_devel_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(splitter_devel_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
+am_splitter_oprof_OBJECTS =  \
+	src/apps/splitter_oprof-splitter.$(OBJEXT)
+splitter_oprof_OBJECTS = $(am_splitter_oprof_OBJECTS)
+splitter_oprof_DEPENDENCIES = libmesh_oprof.la
+splitter_oprof_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(splitter_oprof_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 am_splitter_opt_OBJECTS = src/apps/splitter_opt-splitter.$(OBJEXT)
 splitter_opt_OBJECTS = $(am_splitter_opt_OBJECTS)
@@ -4752,63 +4913,83 @@ depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = src/apps/$(DEPDIR)/amr_dbg-amr.Po \
 	src/apps/$(DEPDIR)/amr_devel-amr.Po \
+	src/apps/$(DEPDIR)/amr_oprof-amr.Po \
 	src/apps/$(DEPDIR)/amr_opt-amr.Po \
 	src/apps/$(DEPDIR)/calculator_dbg-L2system.Po \
 	src/apps/$(DEPDIR)/calculator_dbg-calculator.Po \
 	src/apps/$(DEPDIR)/calculator_devel-L2system.Po \
 	src/apps/$(DEPDIR)/calculator_devel-calculator.Po \
+	src/apps/$(DEPDIR)/calculator_oprof-L2system.Po \
+	src/apps/$(DEPDIR)/calculator_oprof-calculator.Po \
 	src/apps/$(DEPDIR)/calculator_opt-L2system.Po \
 	src/apps/$(DEPDIR)/calculator_opt-calculator.Po \
 	src/apps/$(DEPDIR)/compare_dbg-compare.Po \
 	src/apps/$(DEPDIR)/compare_devel-compare.Po \
+	src/apps/$(DEPDIR)/compare_oprof-compare.Po \
 	src/apps/$(DEPDIR)/compare_opt-compare.Po \
 	src/apps/$(DEPDIR)/embedding_dbg-embedding.Po \
 	src/apps/$(DEPDIR)/embedding_devel-embedding.Po \
+	src/apps/$(DEPDIR)/embedding_oprof-embedding.Po \
 	src/apps/$(DEPDIR)/embedding_opt-embedding.Po \
 	src/apps/$(DEPDIR)/fparser_parse_dbg-fparser_parse.Po \
 	src/apps/$(DEPDIR)/fparser_parse_devel-fparser_parse.Po \
+	src/apps/$(DEPDIR)/fparser_parse_oprof-fparser_parse.Po \
 	src/apps/$(DEPDIR)/fparser_parse_opt-fparser_parse.Po \
 	src/apps/$(DEPDIR)/getpot_parse_dbg-getpot_parse.Po \
 	src/apps/$(DEPDIR)/getpot_parse_devel-getpot_parse.Po \
+	src/apps/$(DEPDIR)/getpot_parse_oprof-getpot_parse.Po \
 	src/apps/$(DEPDIR)/getpot_parse_opt-getpot_parse.Po \
 	src/apps/$(DEPDIR)/matrixconvert_dbg-matrixconvert.Po \
 	src/apps/$(DEPDIR)/matrixconvert_devel-matrixconvert.Po \
+	src/apps/$(DEPDIR)/matrixconvert_oprof-matrixconvert.Po \
 	src/apps/$(DEPDIR)/matrixconvert_opt-matrixconvert.Po \
 	src/apps/$(DEPDIR)/matrixsolve_dbg-matrixsolve.Po \
 	src/apps/$(DEPDIR)/matrixsolve_devel-matrixsolve.Po \
+	src/apps/$(DEPDIR)/matrixsolve_oprof-matrixsolve.Po \
 	src/apps/$(DEPDIR)/matrixsolve_opt-matrixsolve.Po \
 	src/apps/$(DEPDIR)/meshavg_dbg-meshavg.Po \
 	src/apps/$(DEPDIR)/meshavg_devel-meshavg.Po \
+	src/apps/$(DEPDIR)/meshavg_oprof-meshavg.Po \
 	src/apps/$(DEPDIR)/meshavg_opt-meshavg.Po \
 	src/apps/$(DEPDIR)/meshbcid_dbg-meshbcid.Po \
 	src/apps/$(DEPDIR)/meshbcid_devel-meshbcid.Po \
+	src/apps/$(DEPDIR)/meshbcid_oprof-meshbcid.Po \
 	src/apps/$(DEPDIR)/meshbcid_opt-meshbcid.Po \
 	src/apps/$(DEPDIR)/meshdiff_dbg-meshdiff.Po \
 	src/apps/$(DEPDIR)/meshdiff_devel-meshdiff.Po \
+	src/apps/$(DEPDIR)/meshdiff_oprof-meshdiff.Po \
 	src/apps/$(DEPDIR)/meshdiff_opt-meshdiff.Po \
 	src/apps/$(DEPDIR)/meshid_dbg-meshid.Po \
 	src/apps/$(DEPDIR)/meshid_devel-meshid.Po \
+	src/apps/$(DEPDIR)/meshid_oprof-meshid.Po \
 	src/apps/$(DEPDIR)/meshid_opt-meshid.Po \
 	src/apps/$(DEPDIR)/meshnorm_dbg-meshnorm.Po \
 	src/apps/$(DEPDIR)/meshnorm_devel-meshnorm.Po \
+	src/apps/$(DEPDIR)/meshnorm_oprof-meshnorm.Po \
 	src/apps/$(DEPDIR)/meshnorm_opt-meshnorm.Po \
 	src/apps/$(DEPDIR)/meshplot_dbg-meshplot.Po \
 	src/apps/$(DEPDIR)/meshplot_devel-meshplot.Po \
+	src/apps/$(DEPDIR)/meshplot_oprof-meshplot.Po \
 	src/apps/$(DEPDIR)/meshplot_opt-meshplot.Po \
 	src/apps/$(DEPDIR)/meshtool_dbg-meshtool.Po \
 	src/apps/$(DEPDIR)/meshtool_devel-meshtool.Po \
+	src/apps/$(DEPDIR)/meshtool_oprof-meshtool.Po \
 	src/apps/$(DEPDIR)/meshtool_opt-meshtool.Po \
 	src/apps/$(DEPDIR)/output_libmesh_version_dbg-output_libmesh_version.Po \
 	src/apps/$(DEPDIR)/output_libmesh_version_devel-output_libmesh_version.Po \
+	src/apps/$(DEPDIR)/output_libmesh_version_oprof-output_libmesh_version.Po \
 	src/apps/$(DEPDIR)/output_libmesh_version_opt-output_libmesh_version.Po \
 	src/apps/$(DEPDIR)/projection_dbg-projection.Po \
 	src/apps/$(DEPDIR)/projection_devel-projection.Po \
+	src/apps/$(DEPDIR)/projection_oprof-projection.Po \
 	src/apps/$(DEPDIR)/projection_opt-projection.Po \
 	src/apps/$(DEPDIR)/solution_components_dbg-solution_components.Po \
 	src/apps/$(DEPDIR)/solution_components_devel-solution_components.Po \
+	src/apps/$(DEPDIR)/solution_components_oprof-solution_components.Po \
 	src/apps/$(DEPDIR)/solution_components_opt-solution_components.Po \
 	src/apps/$(DEPDIR)/splitter_dbg-splitter.Po \
 	src/apps/$(DEPDIR)/splitter_devel-splitter.Po \
+	src/apps/$(DEPDIR)/splitter_oprof-splitter.Po \
 	src/apps/$(DEPDIR)/splitter_opt-splitter.Po \
 	src/base/$(DEPDIR)/libmesh_dbg_la-dirichlet_boundary.Plo \
 	src/base/$(DEPDIR)/libmesh_dbg_la-dof_map.Plo \
@@ -7230,71 +7411,93 @@ am__v_CCLD_1 =
 SOURCES = $(libmesh_dbg_la_SOURCES) $(libmesh_devel_la_SOURCES) \
 	$(libmesh_oprof_la_SOURCES) $(libmesh_opt_la_SOURCES) \
 	$(libmesh_prof_la_SOURCES) $(amr_dbg_SOURCES) \
-	$(amr_devel_SOURCES) $(amr_opt_SOURCES) \
+	$(amr_devel_SOURCES) $(amr_oprof_SOURCES) $(amr_opt_SOURCES) \
 	$(calculator_dbg_SOURCES) $(calculator_devel_SOURCES) \
-	$(calculator_opt_SOURCES) $(compare_dbg_SOURCES) \
-	$(compare_devel_SOURCES) $(compare_opt_SOURCES) \
+	$(calculator_oprof_SOURCES) $(calculator_opt_SOURCES) \
+	$(compare_dbg_SOURCES) $(compare_devel_SOURCES) \
+	$(compare_oprof_SOURCES) $(compare_opt_SOURCES) \
 	$(embedding_dbg_SOURCES) $(embedding_devel_SOURCES) \
-	$(embedding_opt_SOURCES) $(fparser_parse_dbg_SOURCES) \
-	$(fparser_parse_devel_SOURCES) $(fparser_parse_opt_SOURCES) \
+	$(embedding_oprof_SOURCES) $(embedding_opt_SOURCES) \
+	$(fparser_parse_dbg_SOURCES) $(fparser_parse_devel_SOURCES) \
+	$(fparser_parse_oprof_SOURCES) $(fparser_parse_opt_SOURCES) \
 	$(getpot_parse_dbg_SOURCES) $(getpot_parse_devel_SOURCES) \
-	$(getpot_parse_opt_SOURCES) $(matrixconvert_dbg_SOURCES) \
-	$(matrixconvert_devel_SOURCES) $(matrixconvert_opt_SOURCES) \
+	$(getpot_parse_oprof_SOURCES) $(getpot_parse_opt_SOURCES) \
+	$(matrixconvert_dbg_SOURCES) $(matrixconvert_devel_SOURCES) \
+	$(matrixconvert_oprof_SOURCES) $(matrixconvert_opt_SOURCES) \
 	$(matrixsolve_dbg_SOURCES) $(matrixsolve_devel_SOURCES) \
-	$(matrixsolve_opt_SOURCES) $(meshavg_dbg_SOURCES) \
-	$(meshavg_devel_SOURCES) $(meshavg_opt_SOURCES) \
+	$(matrixsolve_oprof_SOURCES) $(matrixsolve_opt_SOURCES) \
+	$(meshavg_dbg_SOURCES) $(meshavg_devel_SOURCES) \
+	$(meshavg_oprof_SOURCES) $(meshavg_opt_SOURCES) \
 	$(meshbcid_dbg_SOURCES) $(meshbcid_devel_SOURCES) \
-	$(meshbcid_opt_SOURCES) $(meshdiff_dbg_SOURCES) \
-	$(meshdiff_devel_SOURCES) $(meshdiff_opt_SOURCES) \
+	$(meshbcid_oprof_SOURCES) $(meshbcid_opt_SOURCES) \
+	$(meshdiff_dbg_SOURCES) $(meshdiff_devel_SOURCES) \
+	$(meshdiff_oprof_SOURCES) $(meshdiff_opt_SOURCES) \
 	$(meshid_dbg_SOURCES) $(meshid_devel_SOURCES) \
-	$(meshid_opt_SOURCES) $(meshnorm_dbg_SOURCES) \
-	$(meshnorm_devel_SOURCES) $(meshnorm_opt_SOURCES) \
+	$(meshid_oprof_SOURCES) $(meshid_opt_SOURCES) \
+	$(meshnorm_dbg_SOURCES) $(meshnorm_devel_SOURCES) \
+	$(meshnorm_oprof_SOURCES) $(meshnorm_opt_SOURCES) \
 	$(meshplot_dbg_SOURCES) $(meshplot_devel_SOURCES) \
-	$(meshplot_opt_SOURCES) $(meshtool_dbg_SOURCES) \
-	$(meshtool_devel_SOURCES) $(meshtool_opt_SOURCES) \
+	$(meshplot_oprof_SOURCES) $(meshplot_opt_SOURCES) \
+	$(meshtool_dbg_SOURCES) $(meshtool_devel_SOURCES) \
+	$(meshtool_oprof_SOURCES) $(meshtool_opt_SOURCES) \
 	$(output_libmesh_version_dbg_SOURCES) \
 	$(output_libmesh_version_devel_SOURCES) \
+	$(output_libmesh_version_oprof_SOURCES) \
 	$(output_libmesh_version_opt_SOURCES) \
 	$(projection_dbg_SOURCES) $(projection_devel_SOURCES) \
-	$(projection_opt_SOURCES) $(solution_components_dbg_SOURCES) \
+	$(projection_oprof_SOURCES) $(projection_opt_SOURCES) \
+	$(solution_components_dbg_SOURCES) \
 	$(solution_components_devel_SOURCES) \
+	$(solution_components_oprof_SOURCES) \
 	$(solution_components_opt_SOURCES) $(splitter_dbg_SOURCES) \
-	$(splitter_devel_SOURCES) $(splitter_opt_SOURCES)
+	$(splitter_devel_SOURCES) $(splitter_oprof_SOURCES) \
+	$(splitter_opt_SOURCES)
 DIST_SOURCES = $(am__libmesh_dbg_la_SOURCES_DIST) \
 	$(am__libmesh_devel_la_SOURCES_DIST) \
 	$(am__libmesh_oprof_la_SOURCES_DIST) \
 	$(am__libmesh_opt_la_SOURCES_DIST) \
 	$(am__libmesh_prof_la_SOURCES_DIST) $(amr_dbg_SOURCES) \
-	$(amr_devel_SOURCES) $(amr_opt_SOURCES) \
+	$(amr_devel_SOURCES) $(amr_oprof_SOURCES) $(amr_opt_SOURCES) \
 	$(calculator_dbg_SOURCES) $(calculator_devel_SOURCES) \
-	$(calculator_opt_SOURCES) $(compare_dbg_SOURCES) \
-	$(compare_devel_SOURCES) $(compare_opt_SOURCES) \
+	$(calculator_oprof_SOURCES) $(calculator_opt_SOURCES) \
+	$(compare_dbg_SOURCES) $(compare_devel_SOURCES) \
+	$(compare_oprof_SOURCES) $(compare_opt_SOURCES) \
 	$(embedding_dbg_SOURCES) $(embedding_devel_SOURCES) \
-	$(embedding_opt_SOURCES) $(fparser_parse_dbg_SOURCES) \
-	$(fparser_parse_devel_SOURCES) $(fparser_parse_opt_SOURCES) \
+	$(embedding_oprof_SOURCES) $(embedding_opt_SOURCES) \
+	$(fparser_parse_dbg_SOURCES) $(fparser_parse_devel_SOURCES) \
+	$(fparser_parse_oprof_SOURCES) $(fparser_parse_opt_SOURCES) \
 	$(getpot_parse_dbg_SOURCES) $(getpot_parse_devel_SOURCES) \
-	$(getpot_parse_opt_SOURCES) $(matrixconvert_dbg_SOURCES) \
-	$(matrixconvert_devel_SOURCES) $(matrixconvert_opt_SOURCES) \
+	$(getpot_parse_oprof_SOURCES) $(getpot_parse_opt_SOURCES) \
+	$(matrixconvert_dbg_SOURCES) $(matrixconvert_devel_SOURCES) \
+	$(matrixconvert_oprof_SOURCES) $(matrixconvert_opt_SOURCES) \
 	$(matrixsolve_dbg_SOURCES) $(matrixsolve_devel_SOURCES) \
-	$(matrixsolve_opt_SOURCES) $(meshavg_dbg_SOURCES) \
-	$(meshavg_devel_SOURCES) $(meshavg_opt_SOURCES) \
+	$(matrixsolve_oprof_SOURCES) $(matrixsolve_opt_SOURCES) \
+	$(meshavg_dbg_SOURCES) $(meshavg_devel_SOURCES) \
+	$(meshavg_oprof_SOURCES) $(meshavg_opt_SOURCES) \
 	$(meshbcid_dbg_SOURCES) $(meshbcid_devel_SOURCES) \
-	$(meshbcid_opt_SOURCES) $(meshdiff_dbg_SOURCES) \
-	$(meshdiff_devel_SOURCES) $(meshdiff_opt_SOURCES) \
+	$(meshbcid_oprof_SOURCES) $(meshbcid_opt_SOURCES) \
+	$(meshdiff_dbg_SOURCES) $(meshdiff_devel_SOURCES) \
+	$(meshdiff_oprof_SOURCES) $(meshdiff_opt_SOURCES) \
 	$(meshid_dbg_SOURCES) $(meshid_devel_SOURCES) \
-	$(meshid_opt_SOURCES) $(meshnorm_dbg_SOURCES) \
-	$(meshnorm_devel_SOURCES) $(meshnorm_opt_SOURCES) \
+	$(meshid_oprof_SOURCES) $(meshid_opt_SOURCES) \
+	$(meshnorm_dbg_SOURCES) $(meshnorm_devel_SOURCES) \
+	$(meshnorm_oprof_SOURCES) $(meshnorm_opt_SOURCES) \
 	$(meshplot_dbg_SOURCES) $(meshplot_devel_SOURCES) \
-	$(meshplot_opt_SOURCES) $(meshtool_dbg_SOURCES) \
-	$(meshtool_devel_SOURCES) $(meshtool_opt_SOURCES) \
+	$(meshplot_oprof_SOURCES) $(meshplot_opt_SOURCES) \
+	$(meshtool_dbg_SOURCES) $(meshtool_devel_SOURCES) \
+	$(meshtool_oprof_SOURCES) $(meshtool_opt_SOURCES) \
 	$(output_libmesh_version_dbg_SOURCES) \
 	$(output_libmesh_version_devel_SOURCES) \
+	$(output_libmesh_version_oprof_SOURCES) \
 	$(output_libmesh_version_opt_SOURCES) \
 	$(projection_dbg_SOURCES) $(projection_devel_SOURCES) \
-	$(projection_opt_SOURCES) $(solution_components_dbg_SOURCES) \
+	$(projection_oprof_SOURCES) $(projection_opt_SOURCES) \
+	$(solution_components_dbg_SOURCES) \
 	$(solution_components_devel_SOURCES) \
+	$(solution_components_oprof_SOURCES) \
 	$(solution_components_opt_SOURCES) $(splitter_dbg_SOURCES) \
-	$(splitter_devel_SOURCES) $(splitter_opt_SOURCES)
+	$(splitter_devel_SOURCES) $(splitter_oprof_SOURCES) \
+	$(splitter_opt_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -7754,7 +7957,7 @@ vtkversion = @vtkversion@
 #          test/unit/Makefile.in
 
 # Make sure we build the library before we test it
-SUBDIRS = include contrib . $(am__append_16) $(am__append_20) doc
+SUBDIRS = include contrib . $(am__append_16) $(am__append_21) doc
 AUTOMAKE_OPTIONS = subdir-objects
 ACLOCAL_AMFLAGS = -I m4 -I m4/autoconf-submodule
 AM_CFLAGS = $(libmesh_CFLAGS)
@@ -8371,7 +8574,7 @@ lib_LTLIBRARIES = $(am__append_11) $(am__append_12) $(am__append_13) \
 @LIBMESH_OPROF_MODE_TRUE@libmesh_oprof_la_CFLAGS = $(CFLAGS_OPROF)
 @LIBMESH_OPROF_MODE_TRUE@libmesh_oprof_la_LIBADD = contrib/libcontrib_oprof.la $(LIBS)
 bin_SCRIPTS = # empty, append below
-CLEANFILES = $(am__append_21)
+CLEANFILES = $(am__append_22)
 
 ###########################################################
 # Utility programs
@@ -8432,7 +8635,12 @@ dbg_programs = fparser_parse-dbg getpot_parse-dbg amr-dbg \
 	meshplot-dbg solution_components-dbg splitter-dbg \
 	embedding-dbg
 prof_programs = # empty, append below
-oprof_programs = # empty, append below
+oprof_programs = fparser_parse-oprof getpot_parse-oprof amr-oprof \
+	matrixconvert-oprof matrixsolve-oprof meshtool-oprof \
+	calculator-oprof compare-oprof meshbcid-oprof meshid-oprof \
+	meshavg-oprof meshdiff-oprof meshnorm-oprof projection-oprof \
+	output_libmesh_version-oprof meshplot-oprof \
+	solution_components-oprof splitter-oprof embedding-oprof
 fparser_parse_opt_SOURCES = src/apps/fparser_parse.C
 fparser_parse_opt_CPPFLAGS = $(CPPFLAGS_OPT) $(AM_CPPFLAGS)
 fparser_parse_opt_CXXFLAGS = $(CXXFLAGS_OPT)
@@ -8445,6 +8653,10 @@ fparser_parse_dbg_SOURCES = src/apps/fparser_parse.C
 fparser_parse_dbg_CPPFLAGS = $(CPPFLAGS_DBG) $(AM_CPPFLAGS)
 fparser_parse_dbg_CXXFLAGS = $(CXXFLAGS_DBG)
 fparser_parse_dbg_LDADD = libmesh_dbg.la
+fparser_parse_oprof_SOURCES = src/apps/fparser_parse.C
+fparser_parse_oprof_CPPFLAGS = $(CPPFLAGS_OPROF) $(AM_CPPFLAGS)
+fparser_parse_oprof_CXXFLAGS = $(CXXFLAGS_OPROF)
+fparser_parse_oprof_LDADD = libmesh_oprof.la
 getpot_parse_opt_SOURCES = src/apps/getpot_parse.C
 getpot_parse_opt_CPPFLAGS = $(CPPFLAGS_OPT) $(AM_CPPFLAGS)
 getpot_parse_opt_CXXFLAGS = $(CXXFLAGS_OPT)
@@ -8457,6 +8669,10 @@ getpot_parse_dbg_SOURCES = src/apps/getpot_parse.C
 getpot_parse_dbg_CPPFLAGS = $(CPPFLAGS_DBG) $(AM_CPPFLAGS)
 getpot_parse_dbg_CXXFLAGS = $(CXXFLAGS_DBG)
 getpot_parse_dbg_LDADD = libmesh_dbg.la
+getpot_parse_oprof_SOURCES = src/apps/getpot_parse.C
+getpot_parse_oprof_CPPFLAGS = $(CPPFLAGS_OPROF) $(AM_CPPFLAGS)
+getpot_parse_oprof_CXXFLAGS = $(CXXFLAGS_OPROF)
+getpot_parse_oprof_LDADD = libmesh_oprof.la
 amr_opt_SOURCES = src/apps/amr.C
 amr_opt_CPPFLAGS = $(CPPFLAGS_OPT) $(AM_CPPFLAGS)
 amr_opt_CXXFLAGS = $(CXXFLAGS_OPT)
@@ -8469,6 +8685,10 @@ amr_dbg_SOURCES = src/apps/amr.C
 amr_dbg_CPPFLAGS = $(CPPFLAGS_DBG) $(AM_CPPFLAGS)
 amr_dbg_CXXFLAGS = $(CXXFLAGS_DBG)
 amr_dbg_LDADD = libmesh_dbg.la
+amr_oprof_SOURCES = src/apps/amr.C
+amr_oprof_CPPFLAGS = $(CPPFLAGS_OPROF) $(AM_CPPFLAGS)
+amr_oprof_CXXFLAGS = $(CXXFLAGS_OPROF)
+amr_oprof_LDADD = libmesh_oprof.la
 matrixconvert_opt_SOURCES = src/apps/matrixconvert.C
 matrixconvert_opt_CPPFLAGS = $(CPPFLAGS_OPT) $(AM_CPPFLAGS)
 matrixconvert_opt_CXXFLAGS = $(CXXFLAGS_OPT)
@@ -8481,6 +8701,10 @@ matrixconvert_dbg_SOURCES = src/apps/matrixconvert.C
 matrixconvert_dbg_CPPFLAGS = $(CPPFLAGS_DBG) $(AM_CPPFLAGS)
 matrixconvert_dbg_CXXFLAGS = $(CXXFLAGS_DBG)
 matrixconvert_dbg_LDADD = libmesh_dbg.la
+matrixconvert_oprof_SOURCES = src/apps/matrixconvert.C
+matrixconvert_oprof_CPPFLAGS = $(CPPFLAGS_OPROF) $(AM_CPPFLAGS)
+matrixconvert_oprof_CXXFLAGS = $(CXXFLAGS_OPROF)
+matrixconvert_oprof_LDADD = libmesh_oprof.la
 matrixsolve_opt_SOURCES = src/apps/matrixsolve.C
 matrixsolve_opt_CPPFLAGS = $(CPPFLAGS_OPT) $(AM_CPPFLAGS)
 matrixsolve_opt_CXXFLAGS = $(CXXFLAGS_OPT)
@@ -8493,6 +8717,10 @@ matrixsolve_dbg_SOURCES = src/apps/matrixsolve.C
 matrixsolve_dbg_CPPFLAGS = $(CPPFLAGS_DBG) $(AM_CPPFLAGS)
 matrixsolve_dbg_CXXFLAGS = $(CXXFLAGS_DBG)
 matrixsolve_dbg_LDADD = libmesh_dbg.la
+matrixsolve_oprof_SOURCES = src/apps/matrixsolve.C
+matrixsolve_oprof_CPPFLAGS = $(CPPFLAGS_OPROF) $(AM_CPPFLAGS)
+matrixsolve_oprof_CXXFLAGS = $(CXXFLAGS_OPROF)
+matrixsolve_oprof_LDADD = libmesh_oprof.la
 meshtool_opt_SOURCES = src/apps/meshtool.C
 meshtool_opt_CPPFLAGS = $(CPPFLAGS_OPT) $(AM_CPPFLAGS)
 meshtool_opt_CXXFLAGS = $(CXXFLAGS_OPT)
@@ -8505,6 +8733,10 @@ meshtool_dbg_SOURCES = src/apps/meshtool.C
 meshtool_dbg_CPPFLAGS = $(CPPFLAGS_DBG) $(AM_CPPFLAGS)
 meshtool_dbg_CXXFLAGS = $(CXXFLAGS_DBG)
 meshtool_dbg_LDADD = libmesh_dbg.la
+meshtool_oprof_SOURCES = src/apps/meshtool.C
+meshtool_oprof_CPPFLAGS = $(CPPFLAGS_OPROF) $(AM_CPPFLAGS)
+meshtool_oprof_CXXFLAGS = $(CXXFLAGS_OPROF)
+meshtool_oprof_LDADD = libmesh_oprof.la
 calculator_opt_SOURCES = src/apps/calculator.C src/apps/L2system.C \
 	src/apps/L2system.h
 calculator_opt_CPPFLAGS = $(CPPFLAGS_OPT) $(AM_CPPFLAGS)
@@ -8520,6 +8752,11 @@ calculator_dbg_SOURCES = src/apps/calculator.C src/apps/L2system.C \
 calculator_dbg_CPPFLAGS = $(CPPFLAGS_DBG) $(AM_CPPFLAGS)
 calculator_dbg_CXXFLAGS = $(CXXFLAGS_DBG)
 calculator_dbg_LDADD = libmesh_dbg.la
+calculator_oprof_SOURCES = src/apps/calculator.C src/apps/L2system.C \
+	src/apps/L2system.h
+calculator_oprof_CPPFLAGS = $(CPPFLAGS_OPROF) $(AM_CPPFLAGS)
+calculator_oprof_CXXFLAGS = $(CXXFLAGS_OPROF)
+calculator_oprof_LDADD = libmesh_oprof.la
 compare_opt_SOURCES = src/apps/compare.C
 compare_opt_CPPFLAGS = $(CPPFLAGS_OPT) $(AM_CPPFLAGS)
 compare_opt_CXXFLAGS = $(CXXFLAGS_OPT)
@@ -8532,6 +8769,10 @@ compare_dbg_SOURCES = src/apps/compare.C
 compare_dbg_CPPFLAGS = $(CPPFLAGS_DBG) $(AM_CPPFLAGS)
 compare_dbg_CXXFLAGS = $(CXXFLAGS_DBG)
 compare_dbg_LDADD = libmesh_dbg.la
+compare_oprof_SOURCES = src/apps/compare.C
+compare_oprof_CPPFLAGS = $(CPPFLAGS_OPROF) $(AM_CPPFLAGS)
+compare_oprof_CXXFLAGS = $(CXXFLAGS_OPROF)
+compare_oprof_LDADD = libmesh_oprof.la
 meshbcid_opt_SOURCES = src/apps/meshbcid.C
 meshbcid_opt_CPPFLAGS = $(CPPFLAGS_OPT) $(AM_CPPFLAGS)
 meshbcid_opt_CXXFLAGS = $(CXXFLAGS_OPT)
@@ -8544,6 +8785,10 @@ meshbcid_dbg_SOURCES = src/apps/meshbcid.C
 meshbcid_dbg_CPPFLAGS = $(CPPFLAGS_DBG) $(AM_CPPFLAGS)
 meshbcid_dbg_CXXFLAGS = $(CXXFLAGS_DBG)
 meshbcid_dbg_LDADD = libmesh_dbg.la
+meshbcid_oprof_SOURCES = src/apps/meshbcid.C
+meshbcid_oprof_CPPFLAGS = $(CPPFLAGS_OPROF) $(AM_CPPFLAGS)
+meshbcid_oprof_CXXFLAGS = $(CXXFLAGS_OPROF)
+meshbcid_oprof_LDADD = libmesh_oprof.la
 meshid_opt_SOURCES = src/apps/meshid.C
 meshid_opt_CPPFLAGS = $(CPPFLAGS_OPT) $(AM_CPPFLAGS)
 meshid_opt_CXXFLAGS = $(CXXFLAGS_OPT)
@@ -8556,6 +8801,10 @@ meshid_dbg_SOURCES = src/apps/meshid.C
 meshid_dbg_CPPFLAGS = $(CPPFLAGS_DBG) $(AM_CPPFLAGS)
 meshid_dbg_CXXFLAGS = $(CXXFLAGS_DBG)
 meshid_dbg_LDADD = libmesh_dbg.la
+meshid_oprof_SOURCES = src/apps/meshid.C
+meshid_oprof_CPPFLAGS = $(CPPFLAGS_OPROF) $(AM_CPPFLAGS)
+meshid_oprof_CXXFLAGS = $(CXXFLAGS_OPROF)
+meshid_oprof_LDADD = libmesh_oprof.la
 meshavg_opt_SOURCES = src/apps/meshavg.C
 meshavg_opt_CPPFLAGS = $(CPPFLAGS_OPT) $(AM_CPPFLAGS)
 meshavg_opt_CXXFLAGS = $(CXXFLAGS_OPT)
@@ -8568,6 +8817,10 @@ meshavg_dbg_SOURCES = src/apps/meshavg.C
 meshavg_dbg_CPPFLAGS = $(CPPFLAGS_DBG) $(AM_CPPFLAGS)
 meshavg_dbg_CXXFLAGS = $(CXXFLAGS_DBG)
 meshavg_dbg_LDADD = libmesh_dbg.la
+meshavg_oprof_SOURCES = src/apps/meshavg.C
+meshavg_oprof_CPPFLAGS = $(CPPFLAGS_OPROF) $(AM_CPPFLAGS)
+meshavg_oprof_CXXFLAGS = $(CXXFLAGS_OPROF)
+meshavg_oprof_LDADD = libmesh_oprof.la
 meshdiff_opt_SOURCES = src/apps/meshdiff.C
 meshdiff_opt_CPPFLAGS = $(CPPFLAGS_OPT) $(AM_CPPFLAGS)
 meshdiff_opt_CXXFLAGS = $(CXXFLAGS_OPT)
@@ -8580,6 +8833,10 @@ meshdiff_dbg_SOURCES = src/apps/meshdiff.C
 meshdiff_dbg_CPPFLAGS = $(CPPFLAGS_DBG) $(AM_CPPFLAGS)
 meshdiff_dbg_CXXFLAGS = $(CXXFLAGS_DBG)
 meshdiff_dbg_LDADD = libmesh_dbg.la
+meshdiff_oprof_SOURCES = src/apps/meshdiff.C
+meshdiff_oprof_CPPFLAGS = $(CPPFLAGS_OPROF) $(AM_CPPFLAGS)
+meshdiff_oprof_CXXFLAGS = $(CXXFLAGS_OPROF)
+meshdiff_oprof_LDADD = libmesh_oprof.la
 meshnorm_opt_SOURCES = src/apps/meshnorm.C
 meshnorm_opt_CPPFLAGS = $(CPPFLAGS_OPT) $(AM_CPPFLAGS)
 meshnorm_opt_CXXFLAGS = $(CXXFLAGS_OPT)
@@ -8592,6 +8849,10 @@ meshnorm_dbg_SOURCES = src/apps/meshnorm.C
 meshnorm_dbg_CPPFLAGS = $(CPPFLAGS_DBG) $(AM_CPPFLAGS)
 meshnorm_dbg_CXXFLAGS = $(CXXFLAGS_DBG)
 meshnorm_dbg_LDADD = libmesh_dbg.la
+meshnorm_oprof_SOURCES = src/apps/meshnorm.C
+meshnorm_oprof_CPPFLAGS = $(CPPFLAGS_OPROF) $(AM_CPPFLAGS)
+meshnorm_oprof_CXXFLAGS = $(CXXFLAGS_OPROF)
+meshnorm_oprof_LDADD = libmesh_oprof.la
 projection_opt_SOURCES = src/apps/projection.C
 projection_opt_CPPFLAGS = $(CPPFLAGS_OPT) $(AM_CPPFLAGS)
 projection_opt_CXXFLAGS = $(CXXFLAGS_OPT)
@@ -8604,6 +8865,10 @@ projection_dbg_SOURCES = src/apps/projection.C
 projection_dbg_CPPFLAGS = $(CPPFLAGS_DBG) $(AM_CPPFLAGS)
 projection_dbg_CXXFLAGS = $(CXXFLAGS_DBG)
 projection_dbg_LDADD = libmesh_dbg.la
+projection_oprof_SOURCES = src/apps/projection.C
+projection_oprof_CPPFLAGS = $(CPPFLAGS_OPROF) $(AM_CPPFLAGS)
+projection_oprof_CXXFLAGS = $(CXXFLAGS_OPROF)
+projection_oprof_LDADD = libmesh_oprof.la
 output_libmesh_version_opt_SOURCES = src/apps/output_libmesh_version.C
 output_libmesh_version_opt_CPPFLAGS = $(CPPFLAGS_OPT) $(AM_CPPFLAGS)
 output_libmesh_version_opt_CXXFLAGS = $(CXXFLAGS_OPT)
@@ -8616,6 +8881,10 @@ output_libmesh_version_dbg_SOURCES = src/apps/output_libmesh_version.C
 output_libmesh_version_dbg_CPPFLAGS = $(CPPFLAGS_DBG) $(AM_CPPFLAGS)
 output_libmesh_version_dbg_CXXFLAGS = $(CXXFLAGS_DBG)
 output_libmesh_version_dbg_LDADD = libmesh_dbg.la
+output_libmesh_version_oprof_SOURCES = src/apps/output_libmesh_version.C
+output_libmesh_version_oprof_CPPFLAGS = $(CPPFLAGS_OPROF) $(AM_CPPFLAGS)
+output_libmesh_version_oprof_CXXFLAGS = $(CXXFLAGS_OPROF)
+output_libmesh_version_oprof_LDADD = libmesh_oprof.la
 meshplot_opt_SOURCES = src/apps/meshplot.C
 meshplot_opt_CPPFLAGS = $(CPPFLAGS_OPT) $(AM_CPPFLAGS)
 meshplot_opt_CXXFLAGS = $(CXXFLAGS_OPT)
@@ -8628,6 +8897,10 @@ meshplot_dbg_SOURCES = src/apps/meshplot.C
 meshplot_dbg_CPPFLAGS = $(CPPFLAGS_DBG) $(AM_CPPFLAGS)
 meshplot_dbg_CXXFLAGS = $(CXXFLAGS_DBG)
 meshplot_dbg_LDADD = libmesh_dbg.la
+meshplot_oprof_SOURCES = src/apps/meshplot.C
+meshplot_oprof_CPPFLAGS = $(CPPFLAGS_OPROF) $(AM_CPPFLAGS)
+meshplot_oprof_CXXFLAGS = $(CXXFLAGS_OPROF)
+meshplot_oprof_LDADD = libmesh_oprof.la
 solution_components_opt_SOURCES = src/apps/solution_components.C
 solution_components_opt_CPPFLAGS = $(CPPFLAGS_OPT) $(AM_CPPFLAGS)
 solution_components_opt_CXXFLAGS = $(CXXFLAGS_OPT)
@@ -8640,6 +8913,10 @@ solution_components_dbg_SOURCES = src/apps/solution_components.C
 solution_components_dbg_CPPFLAGS = $(CPPFLAGS_DBG) $(AM_CPPFLAGS)
 solution_components_dbg_CXXFLAGS = $(CXXFLAGS_DBG)
 solution_components_dbg_LDADD = libmesh_dbg.la
+solution_components_oprof_SOURCES = src/apps/solution_components.C
+solution_components_oprof_CPPFLAGS = $(CPPFLAGS_OPROF) $(AM_CPPFLAGS)
+solution_components_oprof_CXXFLAGS = $(CXXFLAGS_OPROF)
+solution_components_oprof_LDADD = libmesh_oprof.la
 splitter_opt_SOURCES = src/apps/splitter.C
 splitter_opt_CPPFLAGS = $(CPPFLAGS_OPT) $(AM_CPPFLAGS)
 splitter_opt_CXXFLAGS = $(CXXFLAGS_OPT)
@@ -8652,6 +8929,10 @@ splitter_dbg_SOURCES = src/apps/splitter.C
 splitter_dbg_CPPFLAGS = $(CPPFLAGS_DBG) $(AM_CPPFLAGS)
 splitter_dbg_CXXFLAGS = $(CXXFLAGS_DBG)
 splitter_dbg_LDADD = libmesh_dbg.la
+splitter_oprof_SOURCES = src/apps/splitter.C
+splitter_oprof_CPPFLAGS = $(CPPFLAGS_OPROF) $(AM_CPPFLAGS)
+splitter_oprof_CXXFLAGS = $(CXXFLAGS_OPROF)
+splitter_oprof_LDADD = libmesh_oprof.la
 embedding_opt_SOURCES = src/apps/embedding.C
 embedding_opt_CPPFLAGS = $(CPPFLAGS_OPT) $(AM_CPPFLAGS)
 embedding_opt_CXXFLAGS = $(CXXFLAGS_OPT)
@@ -8664,6 +8945,10 @@ embedding_dbg_SOURCES = src/apps/embedding.C
 embedding_dbg_CPPFLAGS = $(CPPFLAGS_DBG) $(AM_CPPFLAGS)
 embedding_dbg_CXXFLAGS = $(CXXFLAGS_DBG)
 embedding_dbg_LDADD = libmesh_dbg.la
+embedding_oprof_SOURCES = src/apps/embedding.C
+embedding_oprof_CPPFLAGS = $(CPPFLAGS_OPROF) $(AM_CPPFLAGS)
+embedding_oprof_CXXFLAGS = $(CXXFLAGS_OPROF)
+embedding_oprof_LDADD = libmesh_oprof.la
 
 # -------------------------------------------
 # Optional support for code coverage analysis
@@ -14781,6 +15066,12 @@ src/apps/amr_devel-amr.$(OBJEXT): src/apps/$(am__dirstamp) \
 amr-devel$(EXEEXT): $(amr_devel_OBJECTS) $(amr_devel_DEPENDENCIES) $(EXTRA_amr_devel_DEPENDENCIES) 
 	@rm -f amr-devel$(EXEEXT)
 	$(AM_V_CXXLD)$(amr_devel_LINK) $(amr_devel_OBJECTS) $(amr_devel_LDADD) $(LIBS)
+src/apps/amr_oprof-amr.$(OBJEXT): src/apps/$(am__dirstamp) \
+	src/apps/$(DEPDIR)/$(am__dirstamp)
+
+amr-oprof$(EXEEXT): $(amr_oprof_OBJECTS) $(amr_oprof_DEPENDENCIES) $(EXTRA_amr_oprof_DEPENDENCIES) 
+	@rm -f amr-oprof$(EXEEXT)
+	$(AM_V_CXXLD)$(amr_oprof_LINK) $(amr_oprof_OBJECTS) $(amr_oprof_LDADD) $(LIBS)
 src/apps/amr_opt-amr.$(OBJEXT): src/apps/$(am__dirstamp) \
 	src/apps/$(DEPDIR)/$(am__dirstamp)
 
@@ -14803,6 +15094,14 @@ src/apps/calculator_devel-L2system.$(OBJEXT):  \
 calculator-devel$(EXEEXT): $(calculator_devel_OBJECTS) $(calculator_devel_DEPENDENCIES) $(EXTRA_calculator_devel_DEPENDENCIES) 
 	@rm -f calculator-devel$(EXEEXT)
 	$(AM_V_CXXLD)$(calculator_devel_LINK) $(calculator_devel_OBJECTS) $(calculator_devel_LDADD) $(LIBS)
+src/apps/calculator_oprof-calculator.$(OBJEXT):  \
+	src/apps/$(am__dirstamp) src/apps/$(DEPDIR)/$(am__dirstamp)
+src/apps/calculator_oprof-L2system.$(OBJEXT):  \
+	src/apps/$(am__dirstamp) src/apps/$(DEPDIR)/$(am__dirstamp)
+
+calculator-oprof$(EXEEXT): $(calculator_oprof_OBJECTS) $(calculator_oprof_DEPENDENCIES) $(EXTRA_calculator_oprof_DEPENDENCIES) 
+	@rm -f calculator-oprof$(EXEEXT)
+	$(AM_V_CXXLD)$(calculator_oprof_LINK) $(calculator_oprof_OBJECTS) $(calculator_oprof_LDADD) $(LIBS)
 src/apps/calculator_opt-calculator.$(OBJEXT):  \
 	src/apps/$(am__dirstamp) src/apps/$(DEPDIR)/$(am__dirstamp)
 src/apps/calculator_opt-L2system.$(OBJEXT): src/apps/$(am__dirstamp) \
@@ -14823,6 +15122,12 @@ src/apps/compare_devel-compare.$(OBJEXT): src/apps/$(am__dirstamp) \
 compare-devel$(EXEEXT): $(compare_devel_OBJECTS) $(compare_devel_DEPENDENCIES) $(EXTRA_compare_devel_DEPENDENCIES) 
 	@rm -f compare-devel$(EXEEXT)
 	$(AM_V_CXXLD)$(compare_devel_LINK) $(compare_devel_OBJECTS) $(compare_devel_LDADD) $(LIBS)
+src/apps/compare_oprof-compare.$(OBJEXT): src/apps/$(am__dirstamp) \
+	src/apps/$(DEPDIR)/$(am__dirstamp)
+
+compare-oprof$(EXEEXT): $(compare_oprof_OBJECTS) $(compare_oprof_DEPENDENCIES) $(EXTRA_compare_oprof_DEPENDENCIES) 
+	@rm -f compare-oprof$(EXEEXT)
+	$(AM_V_CXXLD)$(compare_oprof_LINK) $(compare_oprof_OBJECTS) $(compare_oprof_LDADD) $(LIBS)
 src/apps/compare_opt-compare.$(OBJEXT): src/apps/$(am__dirstamp) \
 	src/apps/$(DEPDIR)/$(am__dirstamp)
 
@@ -14841,6 +15146,12 @@ src/apps/embedding_devel-embedding.$(OBJEXT):  \
 embedding-devel$(EXEEXT): $(embedding_devel_OBJECTS) $(embedding_devel_DEPENDENCIES) $(EXTRA_embedding_devel_DEPENDENCIES) 
 	@rm -f embedding-devel$(EXEEXT)
 	$(AM_V_CXXLD)$(embedding_devel_LINK) $(embedding_devel_OBJECTS) $(embedding_devel_LDADD) $(LIBS)
+src/apps/embedding_oprof-embedding.$(OBJEXT):  \
+	src/apps/$(am__dirstamp) src/apps/$(DEPDIR)/$(am__dirstamp)
+
+embedding-oprof$(EXEEXT): $(embedding_oprof_OBJECTS) $(embedding_oprof_DEPENDENCIES) $(EXTRA_embedding_oprof_DEPENDENCIES) 
+	@rm -f embedding-oprof$(EXEEXT)
+	$(AM_V_CXXLD)$(embedding_oprof_LINK) $(embedding_oprof_OBJECTS) $(embedding_oprof_LDADD) $(LIBS)
 src/apps/embedding_opt-embedding.$(OBJEXT): src/apps/$(am__dirstamp) \
 	src/apps/$(DEPDIR)/$(am__dirstamp)
 
@@ -14859,6 +15170,12 @@ src/apps/fparser_parse_devel-fparser_parse.$(OBJEXT):  \
 fparser_parse-devel$(EXEEXT): $(fparser_parse_devel_OBJECTS) $(fparser_parse_devel_DEPENDENCIES) $(EXTRA_fparser_parse_devel_DEPENDENCIES) 
 	@rm -f fparser_parse-devel$(EXEEXT)
 	$(AM_V_CXXLD)$(fparser_parse_devel_LINK) $(fparser_parse_devel_OBJECTS) $(fparser_parse_devel_LDADD) $(LIBS)
+src/apps/fparser_parse_oprof-fparser_parse.$(OBJEXT):  \
+	src/apps/$(am__dirstamp) src/apps/$(DEPDIR)/$(am__dirstamp)
+
+fparser_parse-oprof$(EXEEXT): $(fparser_parse_oprof_OBJECTS) $(fparser_parse_oprof_DEPENDENCIES) $(EXTRA_fparser_parse_oprof_DEPENDENCIES) 
+	@rm -f fparser_parse-oprof$(EXEEXT)
+	$(AM_V_CXXLD)$(fparser_parse_oprof_LINK) $(fparser_parse_oprof_OBJECTS) $(fparser_parse_oprof_LDADD) $(LIBS)
 src/apps/fparser_parse_opt-fparser_parse.$(OBJEXT):  \
 	src/apps/$(am__dirstamp) src/apps/$(DEPDIR)/$(am__dirstamp)
 
@@ -14877,6 +15194,12 @@ src/apps/getpot_parse_devel-getpot_parse.$(OBJEXT):  \
 getpot_parse-devel$(EXEEXT): $(getpot_parse_devel_OBJECTS) $(getpot_parse_devel_DEPENDENCIES) $(EXTRA_getpot_parse_devel_DEPENDENCIES) 
 	@rm -f getpot_parse-devel$(EXEEXT)
 	$(AM_V_CXXLD)$(getpot_parse_devel_LINK) $(getpot_parse_devel_OBJECTS) $(getpot_parse_devel_LDADD) $(LIBS)
+src/apps/getpot_parse_oprof-getpot_parse.$(OBJEXT):  \
+	src/apps/$(am__dirstamp) src/apps/$(DEPDIR)/$(am__dirstamp)
+
+getpot_parse-oprof$(EXEEXT): $(getpot_parse_oprof_OBJECTS) $(getpot_parse_oprof_DEPENDENCIES) $(EXTRA_getpot_parse_oprof_DEPENDENCIES) 
+	@rm -f getpot_parse-oprof$(EXEEXT)
+	$(AM_V_CXXLD)$(getpot_parse_oprof_LINK) $(getpot_parse_oprof_OBJECTS) $(getpot_parse_oprof_LDADD) $(LIBS)
 src/apps/getpot_parse_opt-getpot_parse.$(OBJEXT):  \
 	src/apps/$(am__dirstamp) src/apps/$(DEPDIR)/$(am__dirstamp)
 
@@ -14895,6 +15218,12 @@ src/apps/matrixconvert_devel-matrixconvert.$(OBJEXT):  \
 matrixconvert-devel$(EXEEXT): $(matrixconvert_devel_OBJECTS) $(matrixconvert_devel_DEPENDENCIES) $(EXTRA_matrixconvert_devel_DEPENDENCIES) 
 	@rm -f matrixconvert-devel$(EXEEXT)
 	$(AM_V_CXXLD)$(matrixconvert_devel_LINK) $(matrixconvert_devel_OBJECTS) $(matrixconvert_devel_LDADD) $(LIBS)
+src/apps/matrixconvert_oprof-matrixconvert.$(OBJEXT):  \
+	src/apps/$(am__dirstamp) src/apps/$(DEPDIR)/$(am__dirstamp)
+
+matrixconvert-oprof$(EXEEXT): $(matrixconvert_oprof_OBJECTS) $(matrixconvert_oprof_DEPENDENCIES) $(EXTRA_matrixconvert_oprof_DEPENDENCIES) 
+	@rm -f matrixconvert-oprof$(EXEEXT)
+	$(AM_V_CXXLD)$(matrixconvert_oprof_LINK) $(matrixconvert_oprof_OBJECTS) $(matrixconvert_oprof_LDADD) $(LIBS)
 src/apps/matrixconvert_opt-matrixconvert.$(OBJEXT):  \
 	src/apps/$(am__dirstamp) src/apps/$(DEPDIR)/$(am__dirstamp)
 
@@ -14913,6 +15242,12 @@ src/apps/matrixsolve_devel-matrixsolve.$(OBJEXT):  \
 matrixsolve-devel$(EXEEXT): $(matrixsolve_devel_OBJECTS) $(matrixsolve_devel_DEPENDENCIES) $(EXTRA_matrixsolve_devel_DEPENDENCIES) 
 	@rm -f matrixsolve-devel$(EXEEXT)
 	$(AM_V_CXXLD)$(matrixsolve_devel_LINK) $(matrixsolve_devel_OBJECTS) $(matrixsolve_devel_LDADD) $(LIBS)
+src/apps/matrixsolve_oprof-matrixsolve.$(OBJEXT):  \
+	src/apps/$(am__dirstamp) src/apps/$(DEPDIR)/$(am__dirstamp)
+
+matrixsolve-oprof$(EXEEXT): $(matrixsolve_oprof_OBJECTS) $(matrixsolve_oprof_DEPENDENCIES) $(EXTRA_matrixsolve_oprof_DEPENDENCIES) 
+	@rm -f matrixsolve-oprof$(EXEEXT)
+	$(AM_V_CXXLD)$(matrixsolve_oprof_LINK) $(matrixsolve_oprof_OBJECTS) $(matrixsolve_oprof_LDADD) $(LIBS)
 src/apps/matrixsolve_opt-matrixsolve.$(OBJEXT):  \
 	src/apps/$(am__dirstamp) src/apps/$(DEPDIR)/$(am__dirstamp)
 
@@ -14931,6 +15266,12 @@ src/apps/meshavg_devel-meshavg.$(OBJEXT): src/apps/$(am__dirstamp) \
 meshavg-devel$(EXEEXT): $(meshavg_devel_OBJECTS) $(meshavg_devel_DEPENDENCIES) $(EXTRA_meshavg_devel_DEPENDENCIES) 
 	@rm -f meshavg-devel$(EXEEXT)
 	$(AM_V_CXXLD)$(meshavg_devel_LINK) $(meshavg_devel_OBJECTS) $(meshavg_devel_LDADD) $(LIBS)
+src/apps/meshavg_oprof-meshavg.$(OBJEXT): src/apps/$(am__dirstamp) \
+	src/apps/$(DEPDIR)/$(am__dirstamp)
+
+meshavg-oprof$(EXEEXT): $(meshavg_oprof_OBJECTS) $(meshavg_oprof_DEPENDENCIES) $(EXTRA_meshavg_oprof_DEPENDENCIES) 
+	@rm -f meshavg-oprof$(EXEEXT)
+	$(AM_V_CXXLD)$(meshavg_oprof_LINK) $(meshavg_oprof_OBJECTS) $(meshavg_oprof_LDADD) $(LIBS)
 src/apps/meshavg_opt-meshavg.$(OBJEXT): src/apps/$(am__dirstamp) \
 	src/apps/$(DEPDIR)/$(am__dirstamp)
 
@@ -14949,6 +15290,12 @@ src/apps/meshbcid_devel-meshbcid.$(OBJEXT): src/apps/$(am__dirstamp) \
 meshbcid-devel$(EXEEXT): $(meshbcid_devel_OBJECTS) $(meshbcid_devel_DEPENDENCIES) $(EXTRA_meshbcid_devel_DEPENDENCIES) 
 	@rm -f meshbcid-devel$(EXEEXT)
 	$(AM_V_CXXLD)$(meshbcid_devel_LINK) $(meshbcid_devel_OBJECTS) $(meshbcid_devel_LDADD) $(LIBS)
+src/apps/meshbcid_oprof-meshbcid.$(OBJEXT): src/apps/$(am__dirstamp) \
+	src/apps/$(DEPDIR)/$(am__dirstamp)
+
+meshbcid-oprof$(EXEEXT): $(meshbcid_oprof_OBJECTS) $(meshbcid_oprof_DEPENDENCIES) $(EXTRA_meshbcid_oprof_DEPENDENCIES) 
+	@rm -f meshbcid-oprof$(EXEEXT)
+	$(AM_V_CXXLD)$(meshbcid_oprof_LINK) $(meshbcid_oprof_OBJECTS) $(meshbcid_oprof_LDADD) $(LIBS)
 src/apps/meshbcid_opt-meshbcid.$(OBJEXT): src/apps/$(am__dirstamp) \
 	src/apps/$(DEPDIR)/$(am__dirstamp)
 
@@ -14967,6 +15314,12 @@ src/apps/meshdiff_devel-meshdiff.$(OBJEXT): src/apps/$(am__dirstamp) \
 meshdiff-devel$(EXEEXT): $(meshdiff_devel_OBJECTS) $(meshdiff_devel_DEPENDENCIES) $(EXTRA_meshdiff_devel_DEPENDENCIES) 
 	@rm -f meshdiff-devel$(EXEEXT)
 	$(AM_V_CXXLD)$(meshdiff_devel_LINK) $(meshdiff_devel_OBJECTS) $(meshdiff_devel_LDADD) $(LIBS)
+src/apps/meshdiff_oprof-meshdiff.$(OBJEXT): src/apps/$(am__dirstamp) \
+	src/apps/$(DEPDIR)/$(am__dirstamp)
+
+meshdiff-oprof$(EXEEXT): $(meshdiff_oprof_OBJECTS) $(meshdiff_oprof_DEPENDENCIES) $(EXTRA_meshdiff_oprof_DEPENDENCIES) 
+	@rm -f meshdiff-oprof$(EXEEXT)
+	$(AM_V_CXXLD)$(meshdiff_oprof_LINK) $(meshdiff_oprof_OBJECTS) $(meshdiff_oprof_LDADD) $(LIBS)
 src/apps/meshdiff_opt-meshdiff.$(OBJEXT): src/apps/$(am__dirstamp) \
 	src/apps/$(DEPDIR)/$(am__dirstamp)
 
@@ -14985,6 +15338,12 @@ src/apps/meshid_devel-meshid.$(OBJEXT): src/apps/$(am__dirstamp) \
 meshid-devel$(EXEEXT): $(meshid_devel_OBJECTS) $(meshid_devel_DEPENDENCIES) $(EXTRA_meshid_devel_DEPENDENCIES) 
 	@rm -f meshid-devel$(EXEEXT)
 	$(AM_V_CXXLD)$(meshid_devel_LINK) $(meshid_devel_OBJECTS) $(meshid_devel_LDADD) $(LIBS)
+src/apps/meshid_oprof-meshid.$(OBJEXT): src/apps/$(am__dirstamp) \
+	src/apps/$(DEPDIR)/$(am__dirstamp)
+
+meshid-oprof$(EXEEXT): $(meshid_oprof_OBJECTS) $(meshid_oprof_DEPENDENCIES) $(EXTRA_meshid_oprof_DEPENDENCIES) 
+	@rm -f meshid-oprof$(EXEEXT)
+	$(AM_V_CXXLD)$(meshid_oprof_LINK) $(meshid_oprof_OBJECTS) $(meshid_oprof_LDADD) $(LIBS)
 src/apps/meshid_opt-meshid.$(OBJEXT): src/apps/$(am__dirstamp) \
 	src/apps/$(DEPDIR)/$(am__dirstamp)
 
@@ -15003,6 +15362,12 @@ src/apps/meshnorm_devel-meshnorm.$(OBJEXT): src/apps/$(am__dirstamp) \
 meshnorm-devel$(EXEEXT): $(meshnorm_devel_OBJECTS) $(meshnorm_devel_DEPENDENCIES) $(EXTRA_meshnorm_devel_DEPENDENCIES) 
 	@rm -f meshnorm-devel$(EXEEXT)
 	$(AM_V_CXXLD)$(meshnorm_devel_LINK) $(meshnorm_devel_OBJECTS) $(meshnorm_devel_LDADD) $(LIBS)
+src/apps/meshnorm_oprof-meshnorm.$(OBJEXT): src/apps/$(am__dirstamp) \
+	src/apps/$(DEPDIR)/$(am__dirstamp)
+
+meshnorm-oprof$(EXEEXT): $(meshnorm_oprof_OBJECTS) $(meshnorm_oprof_DEPENDENCIES) $(EXTRA_meshnorm_oprof_DEPENDENCIES) 
+	@rm -f meshnorm-oprof$(EXEEXT)
+	$(AM_V_CXXLD)$(meshnorm_oprof_LINK) $(meshnorm_oprof_OBJECTS) $(meshnorm_oprof_LDADD) $(LIBS)
 src/apps/meshnorm_opt-meshnorm.$(OBJEXT): src/apps/$(am__dirstamp) \
 	src/apps/$(DEPDIR)/$(am__dirstamp)
 
@@ -15021,6 +15386,12 @@ src/apps/meshplot_devel-meshplot.$(OBJEXT): src/apps/$(am__dirstamp) \
 meshplot-devel$(EXEEXT): $(meshplot_devel_OBJECTS) $(meshplot_devel_DEPENDENCIES) $(EXTRA_meshplot_devel_DEPENDENCIES) 
 	@rm -f meshplot-devel$(EXEEXT)
 	$(AM_V_CXXLD)$(meshplot_devel_LINK) $(meshplot_devel_OBJECTS) $(meshplot_devel_LDADD) $(LIBS)
+src/apps/meshplot_oprof-meshplot.$(OBJEXT): src/apps/$(am__dirstamp) \
+	src/apps/$(DEPDIR)/$(am__dirstamp)
+
+meshplot-oprof$(EXEEXT): $(meshplot_oprof_OBJECTS) $(meshplot_oprof_DEPENDENCIES) $(EXTRA_meshplot_oprof_DEPENDENCIES) 
+	@rm -f meshplot-oprof$(EXEEXT)
+	$(AM_V_CXXLD)$(meshplot_oprof_LINK) $(meshplot_oprof_OBJECTS) $(meshplot_oprof_LDADD) $(LIBS)
 src/apps/meshplot_opt-meshplot.$(OBJEXT): src/apps/$(am__dirstamp) \
 	src/apps/$(DEPDIR)/$(am__dirstamp)
 
@@ -15039,6 +15410,12 @@ src/apps/meshtool_devel-meshtool.$(OBJEXT): src/apps/$(am__dirstamp) \
 meshtool-devel$(EXEEXT): $(meshtool_devel_OBJECTS) $(meshtool_devel_DEPENDENCIES) $(EXTRA_meshtool_devel_DEPENDENCIES) 
 	@rm -f meshtool-devel$(EXEEXT)
 	$(AM_V_CXXLD)$(meshtool_devel_LINK) $(meshtool_devel_OBJECTS) $(meshtool_devel_LDADD) $(LIBS)
+src/apps/meshtool_oprof-meshtool.$(OBJEXT): src/apps/$(am__dirstamp) \
+	src/apps/$(DEPDIR)/$(am__dirstamp)
+
+meshtool-oprof$(EXEEXT): $(meshtool_oprof_OBJECTS) $(meshtool_oprof_DEPENDENCIES) $(EXTRA_meshtool_oprof_DEPENDENCIES) 
+	@rm -f meshtool-oprof$(EXEEXT)
+	$(AM_V_CXXLD)$(meshtool_oprof_LINK) $(meshtool_oprof_OBJECTS) $(meshtool_oprof_LDADD) $(LIBS)
 src/apps/meshtool_opt-meshtool.$(OBJEXT): src/apps/$(am__dirstamp) \
 	src/apps/$(DEPDIR)/$(am__dirstamp)
 
@@ -15057,6 +15434,12 @@ src/apps/output_libmesh_version_devel-output_libmesh_version.$(OBJEXT):  \
 output_libmesh_version-devel$(EXEEXT): $(output_libmesh_version_devel_OBJECTS) $(output_libmesh_version_devel_DEPENDENCIES) $(EXTRA_output_libmesh_version_devel_DEPENDENCIES) 
 	@rm -f output_libmesh_version-devel$(EXEEXT)
 	$(AM_V_CXXLD)$(output_libmesh_version_devel_LINK) $(output_libmesh_version_devel_OBJECTS) $(output_libmesh_version_devel_LDADD) $(LIBS)
+src/apps/output_libmesh_version_oprof-output_libmesh_version.$(OBJEXT):  \
+	src/apps/$(am__dirstamp) src/apps/$(DEPDIR)/$(am__dirstamp)
+
+output_libmesh_version-oprof$(EXEEXT): $(output_libmesh_version_oprof_OBJECTS) $(output_libmesh_version_oprof_DEPENDENCIES) $(EXTRA_output_libmesh_version_oprof_DEPENDENCIES) 
+	@rm -f output_libmesh_version-oprof$(EXEEXT)
+	$(AM_V_CXXLD)$(output_libmesh_version_oprof_LINK) $(output_libmesh_version_oprof_OBJECTS) $(output_libmesh_version_oprof_LDADD) $(LIBS)
 src/apps/output_libmesh_version_opt-output_libmesh_version.$(OBJEXT):  \
 	src/apps/$(am__dirstamp) src/apps/$(DEPDIR)/$(am__dirstamp)
 
@@ -15075,6 +15458,12 @@ src/apps/projection_devel-projection.$(OBJEXT):  \
 projection-devel$(EXEEXT): $(projection_devel_OBJECTS) $(projection_devel_DEPENDENCIES) $(EXTRA_projection_devel_DEPENDENCIES) 
 	@rm -f projection-devel$(EXEEXT)
 	$(AM_V_CXXLD)$(projection_devel_LINK) $(projection_devel_OBJECTS) $(projection_devel_LDADD) $(LIBS)
+src/apps/projection_oprof-projection.$(OBJEXT):  \
+	src/apps/$(am__dirstamp) src/apps/$(DEPDIR)/$(am__dirstamp)
+
+projection-oprof$(EXEEXT): $(projection_oprof_OBJECTS) $(projection_oprof_DEPENDENCIES) $(EXTRA_projection_oprof_DEPENDENCIES) 
+	@rm -f projection-oprof$(EXEEXT)
+	$(AM_V_CXXLD)$(projection_oprof_LINK) $(projection_oprof_OBJECTS) $(projection_oprof_LDADD) $(LIBS)
 src/apps/projection_opt-projection.$(OBJEXT):  \
 	src/apps/$(am__dirstamp) src/apps/$(DEPDIR)/$(am__dirstamp)
 
@@ -15093,6 +15482,12 @@ src/apps/solution_components_devel-solution_components.$(OBJEXT):  \
 solution_components-devel$(EXEEXT): $(solution_components_devel_OBJECTS) $(solution_components_devel_DEPENDENCIES) $(EXTRA_solution_components_devel_DEPENDENCIES) 
 	@rm -f solution_components-devel$(EXEEXT)
 	$(AM_V_CXXLD)$(solution_components_devel_LINK) $(solution_components_devel_OBJECTS) $(solution_components_devel_LDADD) $(LIBS)
+src/apps/solution_components_oprof-solution_components.$(OBJEXT):  \
+	src/apps/$(am__dirstamp) src/apps/$(DEPDIR)/$(am__dirstamp)
+
+solution_components-oprof$(EXEEXT): $(solution_components_oprof_OBJECTS) $(solution_components_oprof_DEPENDENCIES) $(EXTRA_solution_components_oprof_DEPENDENCIES) 
+	@rm -f solution_components-oprof$(EXEEXT)
+	$(AM_V_CXXLD)$(solution_components_oprof_LINK) $(solution_components_oprof_OBJECTS) $(solution_components_oprof_LDADD) $(LIBS)
 src/apps/solution_components_opt-solution_components.$(OBJEXT):  \
 	src/apps/$(am__dirstamp) src/apps/$(DEPDIR)/$(am__dirstamp)
 
@@ -15111,6 +15506,12 @@ src/apps/splitter_devel-splitter.$(OBJEXT): src/apps/$(am__dirstamp) \
 splitter-devel$(EXEEXT): $(splitter_devel_OBJECTS) $(splitter_devel_DEPENDENCIES) $(EXTRA_splitter_devel_DEPENDENCIES) 
 	@rm -f splitter-devel$(EXEEXT)
 	$(AM_V_CXXLD)$(splitter_devel_LINK) $(splitter_devel_OBJECTS) $(splitter_devel_LDADD) $(LIBS)
+src/apps/splitter_oprof-splitter.$(OBJEXT): src/apps/$(am__dirstamp) \
+	src/apps/$(DEPDIR)/$(am__dirstamp)
+
+splitter-oprof$(EXEEXT): $(splitter_oprof_OBJECTS) $(splitter_oprof_DEPENDENCIES) $(EXTRA_splitter_oprof_DEPENDENCIES) 
+	@rm -f splitter-oprof$(EXEEXT)
+	$(AM_V_CXXLD)$(splitter_oprof_LINK) $(splitter_oprof_OBJECTS) $(splitter_oprof_LDADD) $(LIBS)
 src/apps/splitter_opt-splitter.$(OBJEXT): src/apps/$(am__dirstamp) \
 	src/apps/$(DEPDIR)/$(am__dirstamp)
 
@@ -15264,63 +15665,83 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/amr_dbg-amr.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/amr_devel-amr.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/amr_oprof-amr.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/amr_opt-amr.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/calculator_dbg-L2system.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/calculator_dbg-calculator.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/calculator_devel-L2system.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/calculator_devel-calculator.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/calculator_oprof-L2system.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/calculator_oprof-calculator.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/calculator_opt-L2system.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/calculator_opt-calculator.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/compare_dbg-compare.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/compare_devel-compare.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/compare_oprof-compare.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/compare_opt-compare.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/embedding_dbg-embedding.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/embedding_devel-embedding.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/embedding_oprof-embedding.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/embedding_opt-embedding.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/fparser_parse_dbg-fparser_parse.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/fparser_parse_devel-fparser_parse.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/fparser_parse_oprof-fparser_parse.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/fparser_parse_opt-fparser_parse.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/getpot_parse_dbg-getpot_parse.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/getpot_parse_devel-getpot_parse.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/getpot_parse_oprof-getpot_parse.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/getpot_parse_opt-getpot_parse.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/matrixconvert_dbg-matrixconvert.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/matrixconvert_devel-matrixconvert.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/matrixconvert_oprof-matrixconvert.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/matrixconvert_opt-matrixconvert.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/matrixsolve_dbg-matrixsolve.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/matrixsolve_devel-matrixsolve.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/matrixsolve_oprof-matrixsolve.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/matrixsolve_opt-matrixsolve.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/meshavg_dbg-meshavg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/meshavg_devel-meshavg.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/meshavg_oprof-meshavg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/meshavg_opt-meshavg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/meshbcid_dbg-meshbcid.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/meshbcid_devel-meshbcid.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/meshbcid_oprof-meshbcid.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/meshbcid_opt-meshbcid.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/meshdiff_dbg-meshdiff.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/meshdiff_devel-meshdiff.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/meshdiff_oprof-meshdiff.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/meshdiff_opt-meshdiff.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/meshid_dbg-meshid.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/meshid_devel-meshid.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/meshid_oprof-meshid.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/meshid_opt-meshid.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/meshnorm_dbg-meshnorm.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/meshnorm_devel-meshnorm.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/meshnorm_oprof-meshnorm.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/meshnorm_opt-meshnorm.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/meshplot_dbg-meshplot.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/meshplot_devel-meshplot.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/meshplot_oprof-meshplot.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/meshplot_opt-meshplot.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/meshtool_dbg-meshtool.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/meshtool_devel-meshtool.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/meshtool_oprof-meshtool.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/meshtool_opt-meshtool.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/output_libmesh_version_dbg-output_libmesh_version.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/output_libmesh_version_devel-output_libmesh_version.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/output_libmesh_version_oprof-output_libmesh_version.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/output_libmesh_version_opt-output_libmesh_version.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/projection_dbg-projection.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/projection_devel-projection.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/projection_oprof-projection.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/projection_opt-projection.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/solution_components_dbg-solution_components.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/solution_components_devel-solution_components.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/solution_components_oprof-solution_components.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/solution_components_opt-solution_components.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/splitter_dbg-splitter.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/splitter_devel-splitter.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/splitter_oprof-splitter.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/apps/$(DEPDIR)/splitter_opt-splitter.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/base/$(DEPDIR)/libmesh_dbg_la-dirichlet_boundary.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/base/$(DEPDIR)/libmesh_dbg_la-dof_map.Plo@am__quote@ # am--include-marker
@@ -34421,6 +34842,20 @@ src/apps/amr_devel-amr.obj: src/apps/amr.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(amr_devel_CPPFLAGS) $(CPPFLAGS) $(amr_devel_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/amr_devel-amr.obj `if test -f 'src/apps/amr.C'; then $(CYGPATH_W) 'src/apps/amr.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/amr.C'; fi`
 
+src/apps/amr_oprof-amr.o: src/apps/amr.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(amr_oprof_CPPFLAGS) $(CPPFLAGS) $(amr_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/amr_oprof-amr.o -MD -MP -MF src/apps/$(DEPDIR)/amr_oprof-amr.Tpo -c -o src/apps/amr_oprof-amr.o `test -f 'src/apps/amr.C' || echo '$(srcdir)/'`src/apps/amr.C
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/amr_oprof-amr.Tpo src/apps/$(DEPDIR)/amr_oprof-amr.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/amr.C' object='src/apps/amr_oprof-amr.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(amr_oprof_CPPFLAGS) $(CPPFLAGS) $(amr_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/amr_oprof-amr.o `test -f 'src/apps/amr.C' || echo '$(srcdir)/'`src/apps/amr.C
+
+src/apps/amr_oprof-amr.obj: src/apps/amr.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(amr_oprof_CPPFLAGS) $(CPPFLAGS) $(amr_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/amr_oprof-amr.obj -MD -MP -MF src/apps/$(DEPDIR)/amr_oprof-amr.Tpo -c -o src/apps/amr_oprof-amr.obj `if test -f 'src/apps/amr.C'; then $(CYGPATH_W) 'src/apps/amr.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/amr.C'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/amr_oprof-amr.Tpo src/apps/$(DEPDIR)/amr_oprof-amr.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/amr.C' object='src/apps/amr_oprof-amr.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(amr_oprof_CPPFLAGS) $(CPPFLAGS) $(amr_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/amr_oprof-amr.obj `if test -f 'src/apps/amr.C'; then $(CYGPATH_W) 'src/apps/amr.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/amr.C'; fi`
+
 src/apps/amr_opt-amr.o: src/apps/amr.C
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(amr_opt_CPPFLAGS) $(CPPFLAGS) $(amr_opt_CXXFLAGS) $(CXXFLAGS) -MT src/apps/amr_opt-amr.o -MD -MP -MF src/apps/$(DEPDIR)/amr_opt-amr.Tpo -c -o src/apps/amr_opt-amr.o `test -f 'src/apps/amr.C' || echo '$(srcdir)/'`src/apps/amr.C
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/amr_opt-amr.Tpo src/apps/$(DEPDIR)/amr_opt-amr.Po
@@ -34491,6 +34926,34 @@ src/apps/calculator_devel-L2system.obj: src/apps/L2system.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(calculator_devel_CPPFLAGS) $(CPPFLAGS) $(calculator_devel_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/calculator_devel-L2system.obj `if test -f 'src/apps/L2system.C'; then $(CYGPATH_W) 'src/apps/L2system.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/L2system.C'; fi`
 
+src/apps/calculator_oprof-calculator.o: src/apps/calculator.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(calculator_oprof_CPPFLAGS) $(CPPFLAGS) $(calculator_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/calculator_oprof-calculator.o -MD -MP -MF src/apps/$(DEPDIR)/calculator_oprof-calculator.Tpo -c -o src/apps/calculator_oprof-calculator.o `test -f 'src/apps/calculator.C' || echo '$(srcdir)/'`src/apps/calculator.C
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/calculator_oprof-calculator.Tpo src/apps/$(DEPDIR)/calculator_oprof-calculator.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/calculator.C' object='src/apps/calculator_oprof-calculator.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(calculator_oprof_CPPFLAGS) $(CPPFLAGS) $(calculator_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/calculator_oprof-calculator.o `test -f 'src/apps/calculator.C' || echo '$(srcdir)/'`src/apps/calculator.C
+
+src/apps/calculator_oprof-calculator.obj: src/apps/calculator.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(calculator_oprof_CPPFLAGS) $(CPPFLAGS) $(calculator_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/calculator_oprof-calculator.obj -MD -MP -MF src/apps/$(DEPDIR)/calculator_oprof-calculator.Tpo -c -o src/apps/calculator_oprof-calculator.obj `if test -f 'src/apps/calculator.C'; then $(CYGPATH_W) 'src/apps/calculator.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/calculator.C'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/calculator_oprof-calculator.Tpo src/apps/$(DEPDIR)/calculator_oprof-calculator.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/calculator.C' object='src/apps/calculator_oprof-calculator.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(calculator_oprof_CPPFLAGS) $(CPPFLAGS) $(calculator_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/calculator_oprof-calculator.obj `if test -f 'src/apps/calculator.C'; then $(CYGPATH_W) 'src/apps/calculator.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/calculator.C'; fi`
+
+src/apps/calculator_oprof-L2system.o: src/apps/L2system.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(calculator_oprof_CPPFLAGS) $(CPPFLAGS) $(calculator_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/calculator_oprof-L2system.o -MD -MP -MF src/apps/$(DEPDIR)/calculator_oprof-L2system.Tpo -c -o src/apps/calculator_oprof-L2system.o `test -f 'src/apps/L2system.C' || echo '$(srcdir)/'`src/apps/L2system.C
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/calculator_oprof-L2system.Tpo src/apps/$(DEPDIR)/calculator_oprof-L2system.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/L2system.C' object='src/apps/calculator_oprof-L2system.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(calculator_oprof_CPPFLAGS) $(CPPFLAGS) $(calculator_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/calculator_oprof-L2system.o `test -f 'src/apps/L2system.C' || echo '$(srcdir)/'`src/apps/L2system.C
+
+src/apps/calculator_oprof-L2system.obj: src/apps/L2system.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(calculator_oprof_CPPFLAGS) $(CPPFLAGS) $(calculator_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/calculator_oprof-L2system.obj -MD -MP -MF src/apps/$(DEPDIR)/calculator_oprof-L2system.Tpo -c -o src/apps/calculator_oprof-L2system.obj `if test -f 'src/apps/L2system.C'; then $(CYGPATH_W) 'src/apps/L2system.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/L2system.C'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/calculator_oprof-L2system.Tpo src/apps/$(DEPDIR)/calculator_oprof-L2system.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/L2system.C' object='src/apps/calculator_oprof-L2system.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(calculator_oprof_CPPFLAGS) $(CPPFLAGS) $(calculator_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/calculator_oprof-L2system.obj `if test -f 'src/apps/L2system.C'; then $(CYGPATH_W) 'src/apps/L2system.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/L2system.C'; fi`
+
 src/apps/calculator_opt-calculator.o: src/apps/calculator.C
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(calculator_opt_CPPFLAGS) $(CPPFLAGS) $(calculator_opt_CXXFLAGS) $(CXXFLAGS) -MT src/apps/calculator_opt-calculator.o -MD -MP -MF src/apps/$(DEPDIR)/calculator_opt-calculator.Tpo -c -o src/apps/calculator_opt-calculator.o `test -f 'src/apps/calculator.C' || echo '$(srcdir)/'`src/apps/calculator.C
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/calculator_opt-calculator.Tpo src/apps/$(DEPDIR)/calculator_opt-calculator.Po
@@ -34547,6 +35010,20 @@ src/apps/compare_devel-compare.obj: src/apps/compare.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(compare_devel_CPPFLAGS) $(CPPFLAGS) $(compare_devel_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/compare_devel-compare.obj `if test -f 'src/apps/compare.C'; then $(CYGPATH_W) 'src/apps/compare.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/compare.C'; fi`
 
+src/apps/compare_oprof-compare.o: src/apps/compare.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(compare_oprof_CPPFLAGS) $(CPPFLAGS) $(compare_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/compare_oprof-compare.o -MD -MP -MF src/apps/$(DEPDIR)/compare_oprof-compare.Tpo -c -o src/apps/compare_oprof-compare.o `test -f 'src/apps/compare.C' || echo '$(srcdir)/'`src/apps/compare.C
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/compare_oprof-compare.Tpo src/apps/$(DEPDIR)/compare_oprof-compare.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/compare.C' object='src/apps/compare_oprof-compare.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(compare_oprof_CPPFLAGS) $(CPPFLAGS) $(compare_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/compare_oprof-compare.o `test -f 'src/apps/compare.C' || echo '$(srcdir)/'`src/apps/compare.C
+
+src/apps/compare_oprof-compare.obj: src/apps/compare.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(compare_oprof_CPPFLAGS) $(CPPFLAGS) $(compare_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/compare_oprof-compare.obj -MD -MP -MF src/apps/$(DEPDIR)/compare_oprof-compare.Tpo -c -o src/apps/compare_oprof-compare.obj `if test -f 'src/apps/compare.C'; then $(CYGPATH_W) 'src/apps/compare.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/compare.C'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/compare_oprof-compare.Tpo src/apps/$(DEPDIR)/compare_oprof-compare.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/compare.C' object='src/apps/compare_oprof-compare.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(compare_oprof_CPPFLAGS) $(CPPFLAGS) $(compare_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/compare_oprof-compare.obj `if test -f 'src/apps/compare.C'; then $(CYGPATH_W) 'src/apps/compare.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/compare.C'; fi`
+
 src/apps/compare_opt-compare.o: src/apps/compare.C
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(compare_opt_CPPFLAGS) $(CPPFLAGS) $(compare_opt_CXXFLAGS) $(CXXFLAGS) -MT src/apps/compare_opt-compare.o -MD -MP -MF src/apps/$(DEPDIR)/compare_opt-compare.Tpo -c -o src/apps/compare_opt-compare.o `test -f 'src/apps/compare.C' || echo '$(srcdir)/'`src/apps/compare.C
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/compare_opt-compare.Tpo src/apps/$(DEPDIR)/compare_opt-compare.Po
@@ -34588,6 +35065,20 @@ src/apps/embedding_devel-embedding.obj: src/apps/embedding.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/embedding.C' object='src/apps/embedding_devel-embedding.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(embedding_devel_CPPFLAGS) $(CPPFLAGS) $(embedding_devel_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/embedding_devel-embedding.obj `if test -f 'src/apps/embedding.C'; then $(CYGPATH_W) 'src/apps/embedding.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/embedding.C'; fi`
+
+src/apps/embedding_oprof-embedding.o: src/apps/embedding.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(embedding_oprof_CPPFLAGS) $(CPPFLAGS) $(embedding_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/embedding_oprof-embedding.o -MD -MP -MF src/apps/$(DEPDIR)/embedding_oprof-embedding.Tpo -c -o src/apps/embedding_oprof-embedding.o `test -f 'src/apps/embedding.C' || echo '$(srcdir)/'`src/apps/embedding.C
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/embedding_oprof-embedding.Tpo src/apps/$(DEPDIR)/embedding_oprof-embedding.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/embedding.C' object='src/apps/embedding_oprof-embedding.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(embedding_oprof_CPPFLAGS) $(CPPFLAGS) $(embedding_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/embedding_oprof-embedding.o `test -f 'src/apps/embedding.C' || echo '$(srcdir)/'`src/apps/embedding.C
+
+src/apps/embedding_oprof-embedding.obj: src/apps/embedding.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(embedding_oprof_CPPFLAGS) $(CPPFLAGS) $(embedding_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/embedding_oprof-embedding.obj -MD -MP -MF src/apps/$(DEPDIR)/embedding_oprof-embedding.Tpo -c -o src/apps/embedding_oprof-embedding.obj `if test -f 'src/apps/embedding.C'; then $(CYGPATH_W) 'src/apps/embedding.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/embedding.C'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/embedding_oprof-embedding.Tpo src/apps/$(DEPDIR)/embedding_oprof-embedding.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/embedding.C' object='src/apps/embedding_oprof-embedding.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(embedding_oprof_CPPFLAGS) $(CPPFLAGS) $(embedding_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/embedding_oprof-embedding.obj `if test -f 'src/apps/embedding.C'; then $(CYGPATH_W) 'src/apps/embedding.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/embedding.C'; fi`
 
 src/apps/embedding_opt-embedding.o: src/apps/embedding.C
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(embedding_opt_CPPFLAGS) $(CPPFLAGS) $(embedding_opt_CXXFLAGS) $(CXXFLAGS) -MT src/apps/embedding_opt-embedding.o -MD -MP -MF src/apps/$(DEPDIR)/embedding_opt-embedding.Tpo -c -o src/apps/embedding_opt-embedding.o `test -f 'src/apps/embedding.C' || echo '$(srcdir)/'`src/apps/embedding.C
@@ -34631,6 +35122,20 @@ src/apps/fparser_parse_devel-fparser_parse.obj: src/apps/fparser_parse.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(fparser_parse_devel_CPPFLAGS) $(CPPFLAGS) $(fparser_parse_devel_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/fparser_parse_devel-fparser_parse.obj `if test -f 'src/apps/fparser_parse.C'; then $(CYGPATH_W) 'src/apps/fparser_parse.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/fparser_parse.C'; fi`
 
+src/apps/fparser_parse_oprof-fparser_parse.o: src/apps/fparser_parse.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(fparser_parse_oprof_CPPFLAGS) $(CPPFLAGS) $(fparser_parse_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/fparser_parse_oprof-fparser_parse.o -MD -MP -MF src/apps/$(DEPDIR)/fparser_parse_oprof-fparser_parse.Tpo -c -o src/apps/fparser_parse_oprof-fparser_parse.o `test -f 'src/apps/fparser_parse.C' || echo '$(srcdir)/'`src/apps/fparser_parse.C
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/fparser_parse_oprof-fparser_parse.Tpo src/apps/$(DEPDIR)/fparser_parse_oprof-fparser_parse.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/fparser_parse.C' object='src/apps/fparser_parse_oprof-fparser_parse.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(fparser_parse_oprof_CPPFLAGS) $(CPPFLAGS) $(fparser_parse_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/fparser_parse_oprof-fparser_parse.o `test -f 'src/apps/fparser_parse.C' || echo '$(srcdir)/'`src/apps/fparser_parse.C
+
+src/apps/fparser_parse_oprof-fparser_parse.obj: src/apps/fparser_parse.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(fparser_parse_oprof_CPPFLAGS) $(CPPFLAGS) $(fparser_parse_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/fparser_parse_oprof-fparser_parse.obj -MD -MP -MF src/apps/$(DEPDIR)/fparser_parse_oprof-fparser_parse.Tpo -c -o src/apps/fparser_parse_oprof-fparser_parse.obj `if test -f 'src/apps/fparser_parse.C'; then $(CYGPATH_W) 'src/apps/fparser_parse.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/fparser_parse.C'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/fparser_parse_oprof-fparser_parse.Tpo src/apps/$(DEPDIR)/fparser_parse_oprof-fparser_parse.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/fparser_parse.C' object='src/apps/fparser_parse_oprof-fparser_parse.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(fparser_parse_oprof_CPPFLAGS) $(CPPFLAGS) $(fparser_parse_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/fparser_parse_oprof-fparser_parse.obj `if test -f 'src/apps/fparser_parse.C'; then $(CYGPATH_W) 'src/apps/fparser_parse.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/fparser_parse.C'; fi`
+
 src/apps/fparser_parse_opt-fparser_parse.o: src/apps/fparser_parse.C
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(fparser_parse_opt_CPPFLAGS) $(CPPFLAGS) $(fparser_parse_opt_CXXFLAGS) $(CXXFLAGS) -MT src/apps/fparser_parse_opt-fparser_parse.o -MD -MP -MF src/apps/$(DEPDIR)/fparser_parse_opt-fparser_parse.Tpo -c -o src/apps/fparser_parse_opt-fparser_parse.o `test -f 'src/apps/fparser_parse.C' || echo '$(srcdir)/'`src/apps/fparser_parse.C
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/fparser_parse_opt-fparser_parse.Tpo src/apps/$(DEPDIR)/fparser_parse_opt-fparser_parse.Po
@@ -34672,6 +35177,20 @@ src/apps/getpot_parse_devel-getpot_parse.obj: src/apps/getpot_parse.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/getpot_parse.C' object='src/apps/getpot_parse_devel-getpot_parse.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(getpot_parse_devel_CPPFLAGS) $(CPPFLAGS) $(getpot_parse_devel_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/getpot_parse_devel-getpot_parse.obj `if test -f 'src/apps/getpot_parse.C'; then $(CYGPATH_W) 'src/apps/getpot_parse.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/getpot_parse.C'; fi`
+
+src/apps/getpot_parse_oprof-getpot_parse.o: src/apps/getpot_parse.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(getpot_parse_oprof_CPPFLAGS) $(CPPFLAGS) $(getpot_parse_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/getpot_parse_oprof-getpot_parse.o -MD -MP -MF src/apps/$(DEPDIR)/getpot_parse_oprof-getpot_parse.Tpo -c -o src/apps/getpot_parse_oprof-getpot_parse.o `test -f 'src/apps/getpot_parse.C' || echo '$(srcdir)/'`src/apps/getpot_parse.C
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/getpot_parse_oprof-getpot_parse.Tpo src/apps/$(DEPDIR)/getpot_parse_oprof-getpot_parse.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/getpot_parse.C' object='src/apps/getpot_parse_oprof-getpot_parse.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(getpot_parse_oprof_CPPFLAGS) $(CPPFLAGS) $(getpot_parse_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/getpot_parse_oprof-getpot_parse.o `test -f 'src/apps/getpot_parse.C' || echo '$(srcdir)/'`src/apps/getpot_parse.C
+
+src/apps/getpot_parse_oprof-getpot_parse.obj: src/apps/getpot_parse.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(getpot_parse_oprof_CPPFLAGS) $(CPPFLAGS) $(getpot_parse_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/getpot_parse_oprof-getpot_parse.obj -MD -MP -MF src/apps/$(DEPDIR)/getpot_parse_oprof-getpot_parse.Tpo -c -o src/apps/getpot_parse_oprof-getpot_parse.obj `if test -f 'src/apps/getpot_parse.C'; then $(CYGPATH_W) 'src/apps/getpot_parse.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/getpot_parse.C'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/getpot_parse_oprof-getpot_parse.Tpo src/apps/$(DEPDIR)/getpot_parse_oprof-getpot_parse.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/getpot_parse.C' object='src/apps/getpot_parse_oprof-getpot_parse.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(getpot_parse_oprof_CPPFLAGS) $(CPPFLAGS) $(getpot_parse_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/getpot_parse_oprof-getpot_parse.obj `if test -f 'src/apps/getpot_parse.C'; then $(CYGPATH_W) 'src/apps/getpot_parse.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/getpot_parse.C'; fi`
 
 src/apps/getpot_parse_opt-getpot_parse.o: src/apps/getpot_parse.C
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(getpot_parse_opt_CPPFLAGS) $(CPPFLAGS) $(getpot_parse_opt_CXXFLAGS) $(CXXFLAGS) -MT src/apps/getpot_parse_opt-getpot_parse.o -MD -MP -MF src/apps/$(DEPDIR)/getpot_parse_opt-getpot_parse.Tpo -c -o src/apps/getpot_parse_opt-getpot_parse.o `test -f 'src/apps/getpot_parse.C' || echo '$(srcdir)/'`src/apps/getpot_parse.C
@@ -34715,6 +35234,20 @@ src/apps/matrixconvert_devel-matrixconvert.obj: src/apps/matrixconvert.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(matrixconvert_devel_CPPFLAGS) $(CPPFLAGS) $(matrixconvert_devel_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/matrixconvert_devel-matrixconvert.obj `if test -f 'src/apps/matrixconvert.C'; then $(CYGPATH_W) 'src/apps/matrixconvert.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/matrixconvert.C'; fi`
 
+src/apps/matrixconvert_oprof-matrixconvert.o: src/apps/matrixconvert.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(matrixconvert_oprof_CPPFLAGS) $(CPPFLAGS) $(matrixconvert_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/matrixconvert_oprof-matrixconvert.o -MD -MP -MF src/apps/$(DEPDIR)/matrixconvert_oprof-matrixconvert.Tpo -c -o src/apps/matrixconvert_oprof-matrixconvert.o `test -f 'src/apps/matrixconvert.C' || echo '$(srcdir)/'`src/apps/matrixconvert.C
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/matrixconvert_oprof-matrixconvert.Tpo src/apps/$(DEPDIR)/matrixconvert_oprof-matrixconvert.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/matrixconvert.C' object='src/apps/matrixconvert_oprof-matrixconvert.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(matrixconvert_oprof_CPPFLAGS) $(CPPFLAGS) $(matrixconvert_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/matrixconvert_oprof-matrixconvert.o `test -f 'src/apps/matrixconvert.C' || echo '$(srcdir)/'`src/apps/matrixconvert.C
+
+src/apps/matrixconvert_oprof-matrixconvert.obj: src/apps/matrixconvert.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(matrixconvert_oprof_CPPFLAGS) $(CPPFLAGS) $(matrixconvert_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/matrixconvert_oprof-matrixconvert.obj -MD -MP -MF src/apps/$(DEPDIR)/matrixconvert_oprof-matrixconvert.Tpo -c -o src/apps/matrixconvert_oprof-matrixconvert.obj `if test -f 'src/apps/matrixconvert.C'; then $(CYGPATH_W) 'src/apps/matrixconvert.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/matrixconvert.C'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/matrixconvert_oprof-matrixconvert.Tpo src/apps/$(DEPDIR)/matrixconvert_oprof-matrixconvert.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/matrixconvert.C' object='src/apps/matrixconvert_oprof-matrixconvert.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(matrixconvert_oprof_CPPFLAGS) $(CPPFLAGS) $(matrixconvert_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/matrixconvert_oprof-matrixconvert.obj `if test -f 'src/apps/matrixconvert.C'; then $(CYGPATH_W) 'src/apps/matrixconvert.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/matrixconvert.C'; fi`
+
 src/apps/matrixconvert_opt-matrixconvert.o: src/apps/matrixconvert.C
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(matrixconvert_opt_CPPFLAGS) $(CPPFLAGS) $(matrixconvert_opt_CXXFLAGS) $(CXXFLAGS) -MT src/apps/matrixconvert_opt-matrixconvert.o -MD -MP -MF src/apps/$(DEPDIR)/matrixconvert_opt-matrixconvert.Tpo -c -o src/apps/matrixconvert_opt-matrixconvert.o `test -f 'src/apps/matrixconvert.C' || echo '$(srcdir)/'`src/apps/matrixconvert.C
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/matrixconvert_opt-matrixconvert.Tpo src/apps/$(DEPDIR)/matrixconvert_opt-matrixconvert.Po
@@ -34756,6 +35289,20 @@ src/apps/matrixsolve_devel-matrixsolve.obj: src/apps/matrixsolve.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/matrixsolve.C' object='src/apps/matrixsolve_devel-matrixsolve.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(matrixsolve_devel_CPPFLAGS) $(CPPFLAGS) $(matrixsolve_devel_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/matrixsolve_devel-matrixsolve.obj `if test -f 'src/apps/matrixsolve.C'; then $(CYGPATH_W) 'src/apps/matrixsolve.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/matrixsolve.C'; fi`
+
+src/apps/matrixsolve_oprof-matrixsolve.o: src/apps/matrixsolve.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(matrixsolve_oprof_CPPFLAGS) $(CPPFLAGS) $(matrixsolve_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/matrixsolve_oprof-matrixsolve.o -MD -MP -MF src/apps/$(DEPDIR)/matrixsolve_oprof-matrixsolve.Tpo -c -o src/apps/matrixsolve_oprof-matrixsolve.o `test -f 'src/apps/matrixsolve.C' || echo '$(srcdir)/'`src/apps/matrixsolve.C
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/matrixsolve_oprof-matrixsolve.Tpo src/apps/$(DEPDIR)/matrixsolve_oprof-matrixsolve.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/matrixsolve.C' object='src/apps/matrixsolve_oprof-matrixsolve.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(matrixsolve_oprof_CPPFLAGS) $(CPPFLAGS) $(matrixsolve_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/matrixsolve_oprof-matrixsolve.o `test -f 'src/apps/matrixsolve.C' || echo '$(srcdir)/'`src/apps/matrixsolve.C
+
+src/apps/matrixsolve_oprof-matrixsolve.obj: src/apps/matrixsolve.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(matrixsolve_oprof_CPPFLAGS) $(CPPFLAGS) $(matrixsolve_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/matrixsolve_oprof-matrixsolve.obj -MD -MP -MF src/apps/$(DEPDIR)/matrixsolve_oprof-matrixsolve.Tpo -c -o src/apps/matrixsolve_oprof-matrixsolve.obj `if test -f 'src/apps/matrixsolve.C'; then $(CYGPATH_W) 'src/apps/matrixsolve.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/matrixsolve.C'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/matrixsolve_oprof-matrixsolve.Tpo src/apps/$(DEPDIR)/matrixsolve_oprof-matrixsolve.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/matrixsolve.C' object='src/apps/matrixsolve_oprof-matrixsolve.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(matrixsolve_oprof_CPPFLAGS) $(CPPFLAGS) $(matrixsolve_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/matrixsolve_oprof-matrixsolve.obj `if test -f 'src/apps/matrixsolve.C'; then $(CYGPATH_W) 'src/apps/matrixsolve.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/matrixsolve.C'; fi`
 
 src/apps/matrixsolve_opt-matrixsolve.o: src/apps/matrixsolve.C
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(matrixsolve_opt_CPPFLAGS) $(CPPFLAGS) $(matrixsolve_opt_CXXFLAGS) $(CXXFLAGS) -MT src/apps/matrixsolve_opt-matrixsolve.o -MD -MP -MF src/apps/$(DEPDIR)/matrixsolve_opt-matrixsolve.Tpo -c -o src/apps/matrixsolve_opt-matrixsolve.o `test -f 'src/apps/matrixsolve.C' || echo '$(srcdir)/'`src/apps/matrixsolve.C
@@ -34799,6 +35346,20 @@ src/apps/meshavg_devel-meshavg.obj: src/apps/meshavg.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshavg_devel_CPPFLAGS) $(CPPFLAGS) $(meshavg_devel_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/meshavg_devel-meshavg.obj `if test -f 'src/apps/meshavg.C'; then $(CYGPATH_W) 'src/apps/meshavg.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/meshavg.C'; fi`
 
+src/apps/meshavg_oprof-meshavg.o: src/apps/meshavg.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshavg_oprof_CPPFLAGS) $(CPPFLAGS) $(meshavg_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/meshavg_oprof-meshavg.o -MD -MP -MF src/apps/$(DEPDIR)/meshavg_oprof-meshavg.Tpo -c -o src/apps/meshavg_oprof-meshavg.o `test -f 'src/apps/meshavg.C' || echo '$(srcdir)/'`src/apps/meshavg.C
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/meshavg_oprof-meshavg.Tpo src/apps/$(DEPDIR)/meshavg_oprof-meshavg.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/meshavg.C' object='src/apps/meshavg_oprof-meshavg.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshavg_oprof_CPPFLAGS) $(CPPFLAGS) $(meshavg_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/meshavg_oprof-meshavg.o `test -f 'src/apps/meshavg.C' || echo '$(srcdir)/'`src/apps/meshavg.C
+
+src/apps/meshavg_oprof-meshavg.obj: src/apps/meshavg.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshavg_oprof_CPPFLAGS) $(CPPFLAGS) $(meshavg_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/meshavg_oprof-meshavg.obj -MD -MP -MF src/apps/$(DEPDIR)/meshavg_oprof-meshavg.Tpo -c -o src/apps/meshavg_oprof-meshavg.obj `if test -f 'src/apps/meshavg.C'; then $(CYGPATH_W) 'src/apps/meshavg.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/meshavg.C'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/meshavg_oprof-meshavg.Tpo src/apps/$(DEPDIR)/meshavg_oprof-meshavg.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/meshavg.C' object='src/apps/meshavg_oprof-meshavg.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshavg_oprof_CPPFLAGS) $(CPPFLAGS) $(meshavg_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/meshavg_oprof-meshavg.obj `if test -f 'src/apps/meshavg.C'; then $(CYGPATH_W) 'src/apps/meshavg.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/meshavg.C'; fi`
+
 src/apps/meshavg_opt-meshavg.o: src/apps/meshavg.C
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshavg_opt_CPPFLAGS) $(CPPFLAGS) $(meshavg_opt_CXXFLAGS) $(CXXFLAGS) -MT src/apps/meshavg_opt-meshavg.o -MD -MP -MF src/apps/$(DEPDIR)/meshavg_opt-meshavg.Tpo -c -o src/apps/meshavg_opt-meshavg.o `test -f 'src/apps/meshavg.C' || echo '$(srcdir)/'`src/apps/meshavg.C
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/meshavg_opt-meshavg.Tpo src/apps/$(DEPDIR)/meshavg_opt-meshavg.Po
@@ -34840,6 +35401,20 @@ src/apps/meshbcid_devel-meshbcid.obj: src/apps/meshbcid.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/meshbcid.C' object='src/apps/meshbcid_devel-meshbcid.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshbcid_devel_CPPFLAGS) $(CPPFLAGS) $(meshbcid_devel_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/meshbcid_devel-meshbcid.obj `if test -f 'src/apps/meshbcid.C'; then $(CYGPATH_W) 'src/apps/meshbcid.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/meshbcid.C'; fi`
+
+src/apps/meshbcid_oprof-meshbcid.o: src/apps/meshbcid.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshbcid_oprof_CPPFLAGS) $(CPPFLAGS) $(meshbcid_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/meshbcid_oprof-meshbcid.o -MD -MP -MF src/apps/$(DEPDIR)/meshbcid_oprof-meshbcid.Tpo -c -o src/apps/meshbcid_oprof-meshbcid.o `test -f 'src/apps/meshbcid.C' || echo '$(srcdir)/'`src/apps/meshbcid.C
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/meshbcid_oprof-meshbcid.Tpo src/apps/$(DEPDIR)/meshbcid_oprof-meshbcid.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/meshbcid.C' object='src/apps/meshbcid_oprof-meshbcid.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshbcid_oprof_CPPFLAGS) $(CPPFLAGS) $(meshbcid_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/meshbcid_oprof-meshbcid.o `test -f 'src/apps/meshbcid.C' || echo '$(srcdir)/'`src/apps/meshbcid.C
+
+src/apps/meshbcid_oprof-meshbcid.obj: src/apps/meshbcid.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshbcid_oprof_CPPFLAGS) $(CPPFLAGS) $(meshbcid_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/meshbcid_oprof-meshbcid.obj -MD -MP -MF src/apps/$(DEPDIR)/meshbcid_oprof-meshbcid.Tpo -c -o src/apps/meshbcid_oprof-meshbcid.obj `if test -f 'src/apps/meshbcid.C'; then $(CYGPATH_W) 'src/apps/meshbcid.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/meshbcid.C'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/meshbcid_oprof-meshbcid.Tpo src/apps/$(DEPDIR)/meshbcid_oprof-meshbcid.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/meshbcid.C' object='src/apps/meshbcid_oprof-meshbcid.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshbcid_oprof_CPPFLAGS) $(CPPFLAGS) $(meshbcid_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/meshbcid_oprof-meshbcid.obj `if test -f 'src/apps/meshbcid.C'; then $(CYGPATH_W) 'src/apps/meshbcid.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/meshbcid.C'; fi`
 
 src/apps/meshbcid_opt-meshbcid.o: src/apps/meshbcid.C
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshbcid_opt_CPPFLAGS) $(CPPFLAGS) $(meshbcid_opt_CXXFLAGS) $(CXXFLAGS) -MT src/apps/meshbcid_opt-meshbcid.o -MD -MP -MF src/apps/$(DEPDIR)/meshbcid_opt-meshbcid.Tpo -c -o src/apps/meshbcid_opt-meshbcid.o `test -f 'src/apps/meshbcid.C' || echo '$(srcdir)/'`src/apps/meshbcid.C
@@ -34883,6 +35458,20 @@ src/apps/meshdiff_devel-meshdiff.obj: src/apps/meshdiff.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshdiff_devel_CPPFLAGS) $(CPPFLAGS) $(meshdiff_devel_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/meshdiff_devel-meshdiff.obj `if test -f 'src/apps/meshdiff.C'; then $(CYGPATH_W) 'src/apps/meshdiff.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/meshdiff.C'; fi`
 
+src/apps/meshdiff_oprof-meshdiff.o: src/apps/meshdiff.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshdiff_oprof_CPPFLAGS) $(CPPFLAGS) $(meshdiff_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/meshdiff_oprof-meshdiff.o -MD -MP -MF src/apps/$(DEPDIR)/meshdiff_oprof-meshdiff.Tpo -c -o src/apps/meshdiff_oprof-meshdiff.o `test -f 'src/apps/meshdiff.C' || echo '$(srcdir)/'`src/apps/meshdiff.C
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/meshdiff_oprof-meshdiff.Tpo src/apps/$(DEPDIR)/meshdiff_oprof-meshdiff.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/meshdiff.C' object='src/apps/meshdiff_oprof-meshdiff.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshdiff_oprof_CPPFLAGS) $(CPPFLAGS) $(meshdiff_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/meshdiff_oprof-meshdiff.o `test -f 'src/apps/meshdiff.C' || echo '$(srcdir)/'`src/apps/meshdiff.C
+
+src/apps/meshdiff_oprof-meshdiff.obj: src/apps/meshdiff.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshdiff_oprof_CPPFLAGS) $(CPPFLAGS) $(meshdiff_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/meshdiff_oprof-meshdiff.obj -MD -MP -MF src/apps/$(DEPDIR)/meshdiff_oprof-meshdiff.Tpo -c -o src/apps/meshdiff_oprof-meshdiff.obj `if test -f 'src/apps/meshdiff.C'; then $(CYGPATH_W) 'src/apps/meshdiff.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/meshdiff.C'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/meshdiff_oprof-meshdiff.Tpo src/apps/$(DEPDIR)/meshdiff_oprof-meshdiff.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/meshdiff.C' object='src/apps/meshdiff_oprof-meshdiff.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshdiff_oprof_CPPFLAGS) $(CPPFLAGS) $(meshdiff_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/meshdiff_oprof-meshdiff.obj `if test -f 'src/apps/meshdiff.C'; then $(CYGPATH_W) 'src/apps/meshdiff.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/meshdiff.C'; fi`
+
 src/apps/meshdiff_opt-meshdiff.o: src/apps/meshdiff.C
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshdiff_opt_CPPFLAGS) $(CPPFLAGS) $(meshdiff_opt_CXXFLAGS) $(CXXFLAGS) -MT src/apps/meshdiff_opt-meshdiff.o -MD -MP -MF src/apps/$(DEPDIR)/meshdiff_opt-meshdiff.Tpo -c -o src/apps/meshdiff_opt-meshdiff.o `test -f 'src/apps/meshdiff.C' || echo '$(srcdir)/'`src/apps/meshdiff.C
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/meshdiff_opt-meshdiff.Tpo src/apps/$(DEPDIR)/meshdiff_opt-meshdiff.Po
@@ -34924,6 +35513,20 @@ src/apps/meshid_devel-meshid.obj: src/apps/meshid.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/meshid.C' object='src/apps/meshid_devel-meshid.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshid_devel_CPPFLAGS) $(CPPFLAGS) $(meshid_devel_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/meshid_devel-meshid.obj `if test -f 'src/apps/meshid.C'; then $(CYGPATH_W) 'src/apps/meshid.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/meshid.C'; fi`
+
+src/apps/meshid_oprof-meshid.o: src/apps/meshid.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshid_oprof_CPPFLAGS) $(CPPFLAGS) $(meshid_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/meshid_oprof-meshid.o -MD -MP -MF src/apps/$(DEPDIR)/meshid_oprof-meshid.Tpo -c -o src/apps/meshid_oprof-meshid.o `test -f 'src/apps/meshid.C' || echo '$(srcdir)/'`src/apps/meshid.C
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/meshid_oprof-meshid.Tpo src/apps/$(DEPDIR)/meshid_oprof-meshid.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/meshid.C' object='src/apps/meshid_oprof-meshid.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshid_oprof_CPPFLAGS) $(CPPFLAGS) $(meshid_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/meshid_oprof-meshid.o `test -f 'src/apps/meshid.C' || echo '$(srcdir)/'`src/apps/meshid.C
+
+src/apps/meshid_oprof-meshid.obj: src/apps/meshid.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshid_oprof_CPPFLAGS) $(CPPFLAGS) $(meshid_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/meshid_oprof-meshid.obj -MD -MP -MF src/apps/$(DEPDIR)/meshid_oprof-meshid.Tpo -c -o src/apps/meshid_oprof-meshid.obj `if test -f 'src/apps/meshid.C'; then $(CYGPATH_W) 'src/apps/meshid.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/meshid.C'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/meshid_oprof-meshid.Tpo src/apps/$(DEPDIR)/meshid_oprof-meshid.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/meshid.C' object='src/apps/meshid_oprof-meshid.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshid_oprof_CPPFLAGS) $(CPPFLAGS) $(meshid_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/meshid_oprof-meshid.obj `if test -f 'src/apps/meshid.C'; then $(CYGPATH_W) 'src/apps/meshid.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/meshid.C'; fi`
 
 src/apps/meshid_opt-meshid.o: src/apps/meshid.C
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshid_opt_CPPFLAGS) $(CPPFLAGS) $(meshid_opt_CXXFLAGS) $(CXXFLAGS) -MT src/apps/meshid_opt-meshid.o -MD -MP -MF src/apps/$(DEPDIR)/meshid_opt-meshid.Tpo -c -o src/apps/meshid_opt-meshid.o `test -f 'src/apps/meshid.C' || echo '$(srcdir)/'`src/apps/meshid.C
@@ -34967,6 +35570,20 @@ src/apps/meshnorm_devel-meshnorm.obj: src/apps/meshnorm.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshnorm_devel_CPPFLAGS) $(CPPFLAGS) $(meshnorm_devel_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/meshnorm_devel-meshnorm.obj `if test -f 'src/apps/meshnorm.C'; then $(CYGPATH_W) 'src/apps/meshnorm.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/meshnorm.C'; fi`
 
+src/apps/meshnorm_oprof-meshnorm.o: src/apps/meshnorm.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshnorm_oprof_CPPFLAGS) $(CPPFLAGS) $(meshnorm_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/meshnorm_oprof-meshnorm.o -MD -MP -MF src/apps/$(DEPDIR)/meshnorm_oprof-meshnorm.Tpo -c -o src/apps/meshnorm_oprof-meshnorm.o `test -f 'src/apps/meshnorm.C' || echo '$(srcdir)/'`src/apps/meshnorm.C
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/meshnorm_oprof-meshnorm.Tpo src/apps/$(DEPDIR)/meshnorm_oprof-meshnorm.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/meshnorm.C' object='src/apps/meshnorm_oprof-meshnorm.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshnorm_oprof_CPPFLAGS) $(CPPFLAGS) $(meshnorm_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/meshnorm_oprof-meshnorm.o `test -f 'src/apps/meshnorm.C' || echo '$(srcdir)/'`src/apps/meshnorm.C
+
+src/apps/meshnorm_oprof-meshnorm.obj: src/apps/meshnorm.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshnorm_oprof_CPPFLAGS) $(CPPFLAGS) $(meshnorm_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/meshnorm_oprof-meshnorm.obj -MD -MP -MF src/apps/$(DEPDIR)/meshnorm_oprof-meshnorm.Tpo -c -o src/apps/meshnorm_oprof-meshnorm.obj `if test -f 'src/apps/meshnorm.C'; then $(CYGPATH_W) 'src/apps/meshnorm.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/meshnorm.C'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/meshnorm_oprof-meshnorm.Tpo src/apps/$(DEPDIR)/meshnorm_oprof-meshnorm.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/meshnorm.C' object='src/apps/meshnorm_oprof-meshnorm.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshnorm_oprof_CPPFLAGS) $(CPPFLAGS) $(meshnorm_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/meshnorm_oprof-meshnorm.obj `if test -f 'src/apps/meshnorm.C'; then $(CYGPATH_W) 'src/apps/meshnorm.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/meshnorm.C'; fi`
+
 src/apps/meshnorm_opt-meshnorm.o: src/apps/meshnorm.C
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshnorm_opt_CPPFLAGS) $(CPPFLAGS) $(meshnorm_opt_CXXFLAGS) $(CXXFLAGS) -MT src/apps/meshnorm_opt-meshnorm.o -MD -MP -MF src/apps/$(DEPDIR)/meshnorm_opt-meshnorm.Tpo -c -o src/apps/meshnorm_opt-meshnorm.o `test -f 'src/apps/meshnorm.C' || echo '$(srcdir)/'`src/apps/meshnorm.C
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/meshnorm_opt-meshnorm.Tpo src/apps/$(DEPDIR)/meshnorm_opt-meshnorm.Po
@@ -35008,6 +35625,20 @@ src/apps/meshplot_devel-meshplot.obj: src/apps/meshplot.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/meshplot.C' object='src/apps/meshplot_devel-meshplot.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshplot_devel_CPPFLAGS) $(CPPFLAGS) $(meshplot_devel_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/meshplot_devel-meshplot.obj `if test -f 'src/apps/meshplot.C'; then $(CYGPATH_W) 'src/apps/meshplot.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/meshplot.C'; fi`
+
+src/apps/meshplot_oprof-meshplot.o: src/apps/meshplot.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshplot_oprof_CPPFLAGS) $(CPPFLAGS) $(meshplot_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/meshplot_oprof-meshplot.o -MD -MP -MF src/apps/$(DEPDIR)/meshplot_oprof-meshplot.Tpo -c -o src/apps/meshplot_oprof-meshplot.o `test -f 'src/apps/meshplot.C' || echo '$(srcdir)/'`src/apps/meshplot.C
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/meshplot_oprof-meshplot.Tpo src/apps/$(DEPDIR)/meshplot_oprof-meshplot.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/meshplot.C' object='src/apps/meshplot_oprof-meshplot.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshplot_oprof_CPPFLAGS) $(CPPFLAGS) $(meshplot_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/meshplot_oprof-meshplot.o `test -f 'src/apps/meshplot.C' || echo '$(srcdir)/'`src/apps/meshplot.C
+
+src/apps/meshplot_oprof-meshplot.obj: src/apps/meshplot.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshplot_oprof_CPPFLAGS) $(CPPFLAGS) $(meshplot_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/meshplot_oprof-meshplot.obj -MD -MP -MF src/apps/$(DEPDIR)/meshplot_oprof-meshplot.Tpo -c -o src/apps/meshplot_oprof-meshplot.obj `if test -f 'src/apps/meshplot.C'; then $(CYGPATH_W) 'src/apps/meshplot.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/meshplot.C'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/meshplot_oprof-meshplot.Tpo src/apps/$(DEPDIR)/meshplot_oprof-meshplot.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/meshplot.C' object='src/apps/meshplot_oprof-meshplot.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshplot_oprof_CPPFLAGS) $(CPPFLAGS) $(meshplot_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/meshplot_oprof-meshplot.obj `if test -f 'src/apps/meshplot.C'; then $(CYGPATH_W) 'src/apps/meshplot.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/meshplot.C'; fi`
 
 src/apps/meshplot_opt-meshplot.o: src/apps/meshplot.C
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshplot_opt_CPPFLAGS) $(CPPFLAGS) $(meshplot_opt_CXXFLAGS) $(CXXFLAGS) -MT src/apps/meshplot_opt-meshplot.o -MD -MP -MF src/apps/$(DEPDIR)/meshplot_opt-meshplot.Tpo -c -o src/apps/meshplot_opt-meshplot.o `test -f 'src/apps/meshplot.C' || echo '$(srcdir)/'`src/apps/meshplot.C
@@ -35051,6 +35682,20 @@ src/apps/meshtool_devel-meshtool.obj: src/apps/meshtool.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshtool_devel_CPPFLAGS) $(CPPFLAGS) $(meshtool_devel_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/meshtool_devel-meshtool.obj `if test -f 'src/apps/meshtool.C'; then $(CYGPATH_W) 'src/apps/meshtool.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/meshtool.C'; fi`
 
+src/apps/meshtool_oprof-meshtool.o: src/apps/meshtool.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshtool_oprof_CPPFLAGS) $(CPPFLAGS) $(meshtool_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/meshtool_oprof-meshtool.o -MD -MP -MF src/apps/$(DEPDIR)/meshtool_oprof-meshtool.Tpo -c -o src/apps/meshtool_oprof-meshtool.o `test -f 'src/apps/meshtool.C' || echo '$(srcdir)/'`src/apps/meshtool.C
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/meshtool_oprof-meshtool.Tpo src/apps/$(DEPDIR)/meshtool_oprof-meshtool.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/meshtool.C' object='src/apps/meshtool_oprof-meshtool.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshtool_oprof_CPPFLAGS) $(CPPFLAGS) $(meshtool_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/meshtool_oprof-meshtool.o `test -f 'src/apps/meshtool.C' || echo '$(srcdir)/'`src/apps/meshtool.C
+
+src/apps/meshtool_oprof-meshtool.obj: src/apps/meshtool.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshtool_oprof_CPPFLAGS) $(CPPFLAGS) $(meshtool_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/meshtool_oprof-meshtool.obj -MD -MP -MF src/apps/$(DEPDIR)/meshtool_oprof-meshtool.Tpo -c -o src/apps/meshtool_oprof-meshtool.obj `if test -f 'src/apps/meshtool.C'; then $(CYGPATH_W) 'src/apps/meshtool.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/meshtool.C'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/meshtool_oprof-meshtool.Tpo src/apps/$(DEPDIR)/meshtool_oprof-meshtool.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/meshtool.C' object='src/apps/meshtool_oprof-meshtool.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshtool_oprof_CPPFLAGS) $(CPPFLAGS) $(meshtool_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/meshtool_oprof-meshtool.obj `if test -f 'src/apps/meshtool.C'; then $(CYGPATH_W) 'src/apps/meshtool.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/meshtool.C'; fi`
+
 src/apps/meshtool_opt-meshtool.o: src/apps/meshtool.C
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(meshtool_opt_CPPFLAGS) $(CPPFLAGS) $(meshtool_opt_CXXFLAGS) $(CXXFLAGS) -MT src/apps/meshtool_opt-meshtool.o -MD -MP -MF src/apps/$(DEPDIR)/meshtool_opt-meshtool.Tpo -c -o src/apps/meshtool_opt-meshtool.o `test -f 'src/apps/meshtool.C' || echo '$(srcdir)/'`src/apps/meshtool.C
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/meshtool_opt-meshtool.Tpo src/apps/$(DEPDIR)/meshtool_opt-meshtool.Po
@@ -35092,6 +35737,20 @@ src/apps/output_libmesh_version_devel-output_libmesh_version.obj: src/apps/outpu
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/output_libmesh_version.C' object='src/apps/output_libmesh_version_devel-output_libmesh_version.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(output_libmesh_version_devel_CPPFLAGS) $(CPPFLAGS) $(output_libmesh_version_devel_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/output_libmesh_version_devel-output_libmesh_version.obj `if test -f 'src/apps/output_libmesh_version.C'; then $(CYGPATH_W) 'src/apps/output_libmesh_version.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/output_libmesh_version.C'; fi`
+
+src/apps/output_libmesh_version_oprof-output_libmesh_version.o: src/apps/output_libmesh_version.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(output_libmesh_version_oprof_CPPFLAGS) $(CPPFLAGS) $(output_libmesh_version_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/output_libmesh_version_oprof-output_libmesh_version.o -MD -MP -MF src/apps/$(DEPDIR)/output_libmesh_version_oprof-output_libmesh_version.Tpo -c -o src/apps/output_libmesh_version_oprof-output_libmesh_version.o `test -f 'src/apps/output_libmesh_version.C' || echo '$(srcdir)/'`src/apps/output_libmesh_version.C
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/output_libmesh_version_oprof-output_libmesh_version.Tpo src/apps/$(DEPDIR)/output_libmesh_version_oprof-output_libmesh_version.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/output_libmesh_version.C' object='src/apps/output_libmesh_version_oprof-output_libmesh_version.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(output_libmesh_version_oprof_CPPFLAGS) $(CPPFLAGS) $(output_libmesh_version_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/output_libmesh_version_oprof-output_libmesh_version.o `test -f 'src/apps/output_libmesh_version.C' || echo '$(srcdir)/'`src/apps/output_libmesh_version.C
+
+src/apps/output_libmesh_version_oprof-output_libmesh_version.obj: src/apps/output_libmesh_version.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(output_libmesh_version_oprof_CPPFLAGS) $(CPPFLAGS) $(output_libmesh_version_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/output_libmesh_version_oprof-output_libmesh_version.obj -MD -MP -MF src/apps/$(DEPDIR)/output_libmesh_version_oprof-output_libmesh_version.Tpo -c -o src/apps/output_libmesh_version_oprof-output_libmesh_version.obj `if test -f 'src/apps/output_libmesh_version.C'; then $(CYGPATH_W) 'src/apps/output_libmesh_version.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/output_libmesh_version.C'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/output_libmesh_version_oprof-output_libmesh_version.Tpo src/apps/$(DEPDIR)/output_libmesh_version_oprof-output_libmesh_version.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/output_libmesh_version.C' object='src/apps/output_libmesh_version_oprof-output_libmesh_version.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(output_libmesh_version_oprof_CPPFLAGS) $(CPPFLAGS) $(output_libmesh_version_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/output_libmesh_version_oprof-output_libmesh_version.obj `if test -f 'src/apps/output_libmesh_version.C'; then $(CYGPATH_W) 'src/apps/output_libmesh_version.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/output_libmesh_version.C'; fi`
 
 src/apps/output_libmesh_version_opt-output_libmesh_version.o: src/apps/output_libmesh_version.C
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(output_libmesh_version_opt_CPPFLAGS) $(CPPFLAGS) $(output_libmesh_version_opt_CXXFLAGS) $(CXXFLAGS) -MT src/apps/output_libmesh_version_opt-output_libmesh_version.o -MD -MP -MF src/apps/$(DEPDIR)/output_libmesh_version_opt-output_libmesh_version.Tpo -c -o src/apps/output_libmesh_version_opt-output_libmesh_version.o `test -f 'src/apps/output_libmesh_version.C' || echo '$(srcdir)/'`src/apps/output_libmesh_version.C
@@ -35135,6 +35794,20 @@ src/apps/projection_devel-projection.obj: src/apps/projection.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(projection_devel_CPPFLAGS) $(CPPFLAGS) $(projection_devel_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/projection_devel-projection.obj `if test -f 'src/apps/projection.C'; then $(CYGPATH_W) 'src/apps/projection.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/projection.C'; fi`
 
+src/apps/projection_oprof-projection.o: src/apps/projection.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(projection_oprof_CPPFLAGS) $(CPPFLAGS) $(projection_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/projection_oprof-projection.o -MD -MP -MF src/apps/$(DEPDIR)/projection_oprof-projection.Tpo -c -o src/apps/projection_oprof-projection.o `test -f 'src/apps/projection.C' || echo '$(srcdir)/'`src/apps/projection.C
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/projection_oprof-projection.Tpo src/apps/$(DEPDIR)/projection_oprof-projection.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/projection.C' object='src/apps/projection_oprof-projection.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(projection_oprof_CPPFLAGS) $(CPPFLAGS) $(projection_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/projection_oprof-projection.o `test -f 'src/apps/projection.C' || echo '$(srcdir)/'`src/apps/projection.C
+
+src/apps/projection_oprof-projection.obj: src/apps/projection.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(projection_oprof_CPPFLAGS) $(CPPFLAGS) $(projection_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/projection_oprof-projection.obj -MD -MP -MF src/apps/$(DEPDIR)/projection_oprof-projection.Tpo -c -o src/apps/projection_oprof-projection.obj `if test -f 'src/apps/projection.C'; then $(CYGPATH_W) 'src/apps/projection.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/projection.C'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/projection_oprof-projection.Tpo src/apps/$(DEPDIR)/projection_oprof-projection.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/projection.C' object='src/apps/projection_oprof-projection.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(projection_oprof_CPPFLAGS) $(CPPFLAGS) $(projection_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/projection_oprof-projection.obj `if test -f 'src/apps/projection.C'; then $(CYGPATH_W) 'src/apps/projection.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/projection.C'; fi`
+
 src/apps/projection_opt-projection.o: src/apps/projection.C
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(projection_opt_CPPFLAGS) $(CPPFLAGS) $(projection_opt_CXXFLAGS) $(CXXFLAGS) -MT src/apps/projection_opt-projection.o -MD -MP -MF src/apps/$(DEPDIR)/projection_opt-projection.Tpo -c -o src/apps/projection_opt-projection.o `test -f 'src/apps/projection.C' || echo '$(srcdir)/'`src/apps/projection.C
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/projection_opt-projection.Tpo src/apps/$(DEPDIR)/projection_opt-projection.Po
@@ -35177,6 +35850,20 @@ src/apps/solution_components_devel-solution_components.obj: src/apps/solution_co
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(solution_components_devel_CPPFLAGS) $(CPPFLAGS) $(solution_components_devel_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/solution_components_devel-solution_components.obj `if test -f 'src/apps/solution_components.C'; then $(CYGPATH_W) 'src/apps/solution_components.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/solution_components.C'; fi`
 
+src/apps/solution_components_oprof-solution_components.o: src/apps/solution_components.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(solution_components_oprof_CPPFLAGS) $(CPPFLAGS) $(solution_components_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/solution_components_oprof-solution_components.o -MD -MP -MF src/apps/$(DEPDIR)/solution_components_oprof-solution_components.Tpo -c -o src/apps/solution_components_oprof-solution_components.o `test -f 'src/apps/solution_components.C' || echo '$(srcdir)/'`src/apps/solution_components.C
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/solution_components_oprof-solution_components.Tpo src/apps/$(DEPDIR)/solution_components_oprof-solution_components.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/solution_components.C' object='src/apps/solution_components_oprof-solution_components.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(solution_components_oprof_CPPFLAGS) $(CPPFLAGS) $(solution_components_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/solution_components_oprof-solution_components.o `test -f 'src/apps/solution_components.C' || echo '$(srcdir)/'`src/apps/solution_components.C
+
+src/apps/solution_components_oprof-solution_components.obj: src/apps/solution_components.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(solution_components_oprof_CPPFLAGS) $(CPPFLAGS) $(solution_components_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/solution_components_oprof-solution_components.obj -MD -MP -MF src/apps/$(DEPDIR)/solution_components_oprof-solution_components.Tpo -c -o src/apps/solution_components_oprof-solution_components.obj `if test -f 'src/apps/solution_components.C'; then $(CYGPATH_W) 'src/apps/solution_components.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/solution_components.C'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/solution_components_oprof-solution_components.Tpo src/apps/$(DEPDIR)/solution_components_oprof-solution_components.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/solution_components.C' object='src/apps/solution_components_oprof-solution_components.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(solution_components_oprof_CPPFLAGS) $(CPPFLAGS) $(solution_components_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/solution_components_oprof-solution_components.obj `if test -f 'src/apps/solution_components.C'; then $(CYGPATH_W) 'src/apps/solution_components.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/solution_components.C'; fi`
+
 src/apps/solution_components_opt-solution_components.o: src/apps/solution_components.C
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(solution_components_opt_CPPFLAGS) $(CPPFLAGS) $(solution_components_opt_CXXFLAGS) $(CXXFLAGS) -MT src/apps/solution_components_opt-solution_components.o -MD -MP -MF src/apps/$(DEPDIR)/solution_components_opt-solution_components.Tpo -c -o src/apps/solution_components_opt-solution_components.o `test -f 'src/apps/solution_components.C' || echo '$(srcdir)/'`src/apps/solution_components.C
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/solution_components_opt-solution_components.Tpo src/apps/$(DEPDIR)/solution_components_opt-solution_components.Po
@@ -35218,6 +35905,20 @@ src/apps/splitter_devel-splitter.obj: src/apps/splitter.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/splitter.C' object='src/apps/splitter_devel-splitter.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(splitter_devel_CPPFLAGS) $(CPPFLAGS) $(splitter_devel_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/splitter_devel-splitter.obj `if test -f 'src/apps/splitter.C'; then $(CYGPATH_W) 'src/apps/splitter.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/splitter.C'; fi`
+
+src/apps/splitter_oprof-splitter.o: src/apps/splitter.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(splitter_oprof_CPPFLAGS) $(CPPFLAGS) $(splitter_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/splitter_oprof-splitter.o -MD -MP -MF src/apps/$(DEPDIR)/splitter_oprof-splitter.Tpo -c -o src/apps/splitter_oprof-splitter.o `test -f 'src/apps/splitter.C' || echo '$(srcdir)/'`src/apps/splitter.C
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/splitter_oprof-splitter.Tpo src/apps/$(DEPDIR)/splitter_oprof-splitter.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/splitter.C' object='src/apps/splitter_oprof-splitter.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(splitter_oprof_CPPFLAGS) $(CPPFLAGS) $(splitter_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/splitter_oprof-splitter.o `test -f 'src/apps/splitter.C' || echo '$(srcdir)/'`src/apps/splitter.C
+
+src/apps/splitter_oprof-splitter.obj: src/apps/splitter.C
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(splitter_oprof_CPPFLAGS) $(CPPFLAGS) $(splitter_oprof_CXXFLAGS) $(CXXFLAGS) -MT src/apps/splitter_oprof-splitter.obj -MD -MP -MF src/apps/$(DEPDIR)/splitter_oprof-splitter.Tpo -c -o src/apps/splitter_oprof-splitter.obj `if test -f 'src/apps/splitter.C'; then $(CYGPATH_W) 'src/apps/splitter.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/splitter.C'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/apps/$(DEPDIR)/splitter_oprof-splitter.Tpo src/apps/$(DEPDIR)/splitter_oprof-splitter.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/apps/splitter.C' object='src/apps/splitter_oprof-splitter.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(splitter_oprof_CPPFLAGS) $(CPPFLAGS) $(splitter_oprof_CXXFLAGS) $(CXXFLAGS) -c -o src/apps/splitter_oprof-splitter.obj `if test -f 'src/apps/splitter.C'; then $(CYGPATH_W) 'src/apps/splitter.C'; else $(CYGPATH_W) '$(srcdir)/src/apps/splitter.C'; fi`
 
 src/apps/splitter_opt-splitter.o: src/apps/splitter.C
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(splitter_opt_CPPFLAGS) $(CPPFLAGS) $(splitter_opt_CXXFLAGS) $(CXXFLAGS) -MT src/apps/splitter_opt-splitter.o -MD -MP -MF src/apps/$(DEPDIR)/splitter_opt-splitter.Tpo -c -o src/apps/splitter_opt-splitter.o `test -f 'src/apps/splitter.C' || echo '$(srcdir)/'`src/apps/splitter.C
@@ -35719,63 +36420,83 @@ distclean: distclean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -f src/apps/$(DEPDIR)/amr_dbg-amr.Po
 	-rm -f src/apps/$(DEPDIR)/amr_devel-amr.Po
+	-rm -f src/apps/$(DEPDIR)/amr_oprof-amr.Po
 	-rm -f src/apps/$(DEPDIR)/amr_opt-amr.Po
 	-rm -f src/apps/$(DEPDIR)/calculator_dbg-L2system.Po
 	-rm -f src/apps/$(DEPDIR)/calculator_dbg-calculator.Po
 	-rm -f src/apps/$(DEPDIR)/calculator_devel-L2system.Po
 	-rm -f src/apps/$(DEPDIR)/calculator_devel-calculator.Po
+	-rm -f src/apps/$(DEPDIR)/calculator_oprof-L2system.Po
+	-rm -f src/apps/$(DEPDIR)/calculator_oprof-calculator.Po
 	-rm -f src/apps/$(DEPDIR)/calculator_opt-L2system.Po
 	-rm -f src/apps/$(DEPDIR)/calculator_opt-calculator.Po
 	-rm -f src/apps/$(DEPDIR)/compare_dbg-compare.Po
 	-rm -f src/apps/$(DEPDIR)/compare_devel-compare.Po
+	-rm -f src/apps/$(DEPDIR)/compare_oprof-compare.Po
 	-rm -f src/apps/$(DEPDIR)/compare_opt-compare.Po
 	-rm -f src/apps/$(DEPDIR)/embedding_dbg-embedding.Po
 	-rm -f src/apps/$(DEPDIR)/embedding_devel-embedding.Po
+	-rm -f src/apps/$(DEPDIR)/embedding_oprof-embedding.Po
 	-rm -f src/apps/$(DEPDIR)/embedding_opt-embedding.Po
 	-rm -f src/apps/$(DEPDIR)/fparser_parse_dbg-fparser_parse.Po
 	-rm -f src/apps/$(DEPDIR)/fparser_parse_devel-fparser_parse.Po
+	-rm -f src/apps/$(DEPDIR)/fparser_parse_oprof-fparser_parse.Po
 	-rm -f src/apps/$(DEPDIR)/fparser_parse_opt-fparser_parse.Po
 	-rm -f src/apps/$(DEPDIR)/getpot_parse_dbg-getpot_parse.Po
 	-rm -f src/apps/$(DEPDIR)/getpot_parse_devel-getpot_parse.Po
+	-rm -f src/apps/$(DEPDIR)/getpot_parse_oprof-getpot_parse.Po
 	-rm -f src/apps/$(DEPDIR)/getpot_parse_opt-getpot_parse.Po
 	-rm -f src/apps/$(DEPDIR)/matrixconvert_dbg-matrixconvert.Po
 	-rm -f src/apps/$(DEPDIR)/matrixconvert_devel-matrixconvert.Po
+	-rm -f src/apps/$(DEPDIR)/matrixconvert_oprof-matrixconvert.Po
 	-rm -f src/apps/$(DEPDIR)/matrixconvert_opt-matrixconvert.Po
 	-rm -f src/apps/$(DEPDIR)/matrixsolve_dbg-matrixsolve.Po
 	-rm -f src/apps/$(DEPDIR)/matrixsolve_devel-matrixsolve.Po
+	-rm -f src/apps/$(DEPDIR)/matrixsolve_oprof-matrixsolve.Po
 	-rm -f src/apps/$(DEPDIR)/matrixsolve_opt-matrixsolve.Po
 	-rm -f src/apps/$(DEPDIR)/meshavg_dbg-meshavg.Po
 	-rm -f src/apps/$(DEPDIR)/meshavg_devel-meshavg.Po
+	-rm -f src/apps/$(DEPDIR)/meshavg_oprof-meshavg.Po
 	-rm -f src/apps/$(DEPDIR)/meshavg_opt-meshavg.Po
 	-rm -f src/apps/$(DEPDIR)/meshbcid_dbg-meshbcid.Po
 	-rm -f src/apps/$(DEPDIR)/meshbcid_devel-meshbcid.Po
+	-rm -f src/apps/$(DEPDIR)/meshbcid_oprof-meshbcid.Po
 	-rm -f src/apps/$(DEPDIR)/meshbcid_opt-meshbcid.Po
 	-rm -f src/apps/$(DEPDIR)/meshdiff_dbg-meshdiff.Po
 	-rm -f src/apps/$(DEPDIR)/meshdiff_devel-meshdiff.Po
+	-rm -f src/apps/$(DEPDIR)/meshdiff_oprof-meshdiff.Po
 	-rm -f src/apps/$(DEPDIR)/meshdiff_opt-meshdiff.Po
 	-rm -f src/apps/$(DEPDIR)/meshid_dbg-meshid.Po
 	-rm -f src/apps/$(DEPDIR)/meshid_devel-meshid.Po
+	-rm -f src/apps/$(DEPDIR)/meshid_oprof-meshid.Po
 	-rm -f src/apps/$(DEPDIR)/meshid_opt-meshid.Po
 	-rm -f src/apps/$(DEPDIR)/meshnorm_dbg-meshnorm.Po
 	-rm -f src/apps/$(DEPDIR)/meshnorm_devel-meshnorm.Po
+	-rm -f src/apps/$(DEPDIR)/meshnorm_oprof-meshnorm.Po
 	-rm -f src/apps/$(DEPDIR)/meshnorm_opt-meshnorm.Po
 	-rm -f src/apps/$(DEPDIR)/meshplot_dbg-meshplot.Po
 	-rm -f src/apps/$(DEPDIR)/meshplot_devel-meshplot.Po
+	-rm -f src/apps/$(DEPDIR)/meshplot_oprof-meshplot.Po
 	-rm -f src/apps/$(DEPDIR)/meshplot_opt-meshplot.Po
 	-rm -f src/apps/$(DEPDIR)/meshtool_dbg-meshtool.Po
 	-rm -f src/apps/$(DEPDIR)/meshtool_devel-meshtool.Po
+	-rm -f src/apps/$(DEPDIR)/meshtool_oprof-meshtool.Po
 	-rm -f src/apps/$(DEPDIR)/meshtool_opt-meshtool.Po
 	-rm -f src/apps/$(DEPDIR)/output_libmesh_version_dbg-output_libmesh_version.Po
 	-rm -f src/apps/$(DEPDIR)/output_libmesh_version_devel-output_libmesh_version.Po
+	-rm -f src/apps/$(DEPDIR)/output_libmesh_version_oprof-output_libmesh_version.Po
 	-rm -f src/apps/$(DEPDIR)/output_libmesh_version_opt-output_libmesh_version.Po
 	-rm -f src/apps/$(DEPDIR)/projection_dbg-projection.Po
 	-rm -f src/apps/$(DEPDIR)/projection_devel-projection.Po
+	-rm -f src/apps/$(DEPDIR)/projection_oprof-projection.Po
 	-rm -f src/apps/$(DEPDIR)/projection_opt-projection.Po
 	-rm -f src/apps/$(DEPDIR)/solution_components_dbg-solution_components.Po
 	-rm -f src/apps/$(DEPDIR)/solution_components_devel-solution_components.Po
+	-rm -f src/apps/$(DEPDIR)/solution_components_oprof-solution_components.Po
 	-rm -f src/apps/$(DEPDIR)/solution_components_opt-solution_components.Po
 	-rm -f src/apps/$(DEPDIR)/splitter_dbg-splitter.Po
 	-rm -f src/apps/$(DEPDIR)/splitter_devel-splitter.Po
+	-rm -f src/apps/$(DEPDIR)/splitter_oprof-splitter.Po
 	-rm -f src/apps/$(DEPDIR)/splitter_opt-splitter.Po
 	-rm -f src/base/$(DEPDIR)/libmesh_dbg_la-dirichlet_boundary.Plo
 	-rm -f src/base/$(DEPDIR)/libmesh_dbg_la-dof_map.Plo
@@ -38210,63 +38931,83 @@ maintainer-clean: maintainer-clean-recursive
 	-rm -rf $(top_srcdir)/autom4te.cache
 	-rm -f src/apps/$(DEPDIR)/amr_dbg-amr.Po
 	-rm -f src/apps/$(DEPDIR)/amr_devel-amr.Po
+	-rm -f src/apps/$(DEPDIR)/amr_oprof-amr.Po
 	-rm -f src/apps/$(DEPDIR)/amr_opt-amr.Po
 	-rm -f src/apps/$(DEPDIR)/calculator_dbg-L2system.Po
 	-rm -f src/apps/$(DEPDIR)/calculator_dbg-calculator.Po
 	-rm -f src/apps/$(DEPDIR)/calculator_devel-L2system.Po
 	-rm -f src/apps/$(DEPDIR)/calculator_devel-calculator.Po
+	-rm -f src/apps/$(DEPDIR)/calculator_oprof-L2system.Po
+	-rm -f src/apps/$(DEPDIR)/calculator_oprof-calculator.Po
 	-rm -f src/apps/$(DEPDIR)/calculator_opt-L2system.Po
 	-rm -f src/apps/$(DEPDIR)/calculator_opt-calculator.Po
 	-rm -f src/apps/$(DEPDIR)/compare_dbg-compare.Po
 	-rm -f src/apps/$(DEPDIR)/compare_devel-compare.Po
+	-rm -f src/apps/$(DEPDIR)/compare_oprof-compare.Po
 	-rm -f src/apps/$(DEPDIR)/compare_opt-compare.Po
 	-rm -f src/apps/$(DEPDIR)/embedding_dbg-embedding.Po
 	-rm -f src/apps/$(DEPDIR)/embedding_devel-embedding.Po
+	-rm -f src/apps/$(DEPDIR)/embedding_oprof-embedding.Po
 	-rm -f src/apps/$(DEPDIR)/embedding_opt-embedding.Po
 	-rm -f src/apps/$(DEPDIR)/fparser_parse_dbg-fparser_parse.Po
 	-rm -f src/apps/$(DEPDIR)/fparser_parse_devel-fparser_parse.Po
+	-rm -f src/apps/$(DEPDIR)/fparser_parse_oprof-fparser_parse.Po
 	-rm -f src/apps/$(DEPDIR)/fparser_parse_opt-fparser_parse.Po
 	-rm -f src/apps/$(DEPDIR)/getpot_parse_dbg-getpot_parse.Po
 	-rm -f src/apps/$(DEPDIR)/getpot_parse_devel-getpot_parse.Po
+	-rm -f src/apps/$(DEPDIR)/getpot_parse_oprof-getpot_parse.Po
 	-rm -f src/apps/$(DEPDIR)/getpot_parse_opt-getpot_parse.Po
 	-rm -f src/apps/$(DEPDIR)/matrixconvert_dbg-matrixconvert.Po
 	-rm -f src/apps/$(DEPDIR)/matrixconvert_devel-matrixconvert.Po
+	-rm -f src/apps/$(DEPDIR)/matrixconvert_oprof-matrixconvert.Po
 	-rm -f src/apps/$(DEPDIR)/matrixconvert_opt-matrixconvert.Po
 	-rm -f src/apps/$(DEPDIR)/matrixsolve_dbg-matrixsolve.Po
 	-rm -f src/apps/$(DEPDIR)/matrixsolve_devel-matrixsolve.Po
+	-rm -f src/apps/$(DEPDIR)/matrixsolve_oprof-matrixsolve.Po
 	-rm -f src/apps/$(DEPDIR)/matrixsolve_opt-matrixsolve.Po
 	-rm -f src/apps/$(DEPDIR)/meshavg_dbg-meshavg.Po
 	-rm -f src/apps/$(DEPDIR)/meshavg_devel-meshavg.Po
+	-rm -f src/apps/$(DEPDIR)/meshavg_oprof-meshavg.Po
 	-rm -f src/apps/$(DEPDIR)/meshavg_opt-meshavg.Po
 	-rm -f src/apps/$(DEPDIR)/meshbcid_dbg-meshbcid.Po
 	-rm -f src/apps/$(DEPDIR)/meshbcid_devel-meshbcid.Po
+	-rm -f src/apps/$(DEPDIR)/meshbcid_oprof-meshbcid.Po
 	-rm -f src/apps/$(DEPDIR)/meshbcid_opt-meshbcid.Po
 	-rm -f src/apps/$(DEPDIR)/meshdiff_dbg-meshdiff.Po
 	-rm -f src/apps/$(DEPDIR)/meshdiff_devel-meshdiff.Po
+	-rm -f src/apps/$(DEPDIR)/meshdiff_oprof-meshdiff.Po
 	-rm -f src/apps/$(DEPDIR)/meshdiff_opt-meshdiff.Po
 	-rm -f src/apps/$(DEPDIR)/meshid_dbg-meshid.Po
 	-rm -f src/apps/$(DEPDIR)/meshid_devel-meshid.Po
+	-rm -f src/apps/$(DEPDIR)/meshid_oprof-meshid.Po
 	-rm -f src/apps/$(DEPDIR)/meshid_opt-meshid.Po
 	-rm -f src/apps/$(DEPDIR)/meshnorm_dbg-meshnorm.Po
 	-rm -f src/apps/$(DEPDIR)/meshnorm_devel-meshnorm.Po
+	-rm -f src/apps/$(DEPDIR)/meshnorm_oprof-meshnorm.Po
 	-rm -f src/apps/$(DEPDIR)/meshnorm_opt-meshnorm.Po
 	-rm -f src/apps/$(DEPDIR)/meshplot_dbg-meshplot.Po
 	-rm -f src/apps/$(DEPDIR)/meshplot_devel-meshplot.Po
+	-rm -f src/apps/$(DEPDIR)/meshplot_oprof-meshplot.Po
 	-rm -f src/apps/$(DEPDIR)/meshplot_opt-meshplot.Po
 	-rm -f src/apps/$(DEPDIR)/meshtool_dbg-meshtool.Po
 	-rm -f src/apps/$(DEPDIR)/meshtool_devel-meshtool.Po
+	-rm -f src/apps/$(DEPDIR)/meshtool_oprof-meshtool.Po
 	-rm -f src/apps/$(DEPDIR)/meshtool_opt-meshtool.Po
 	-rm -f src/apps/$(DEPDIR)/output_libmesh_version_dbg-output_libmesh_version.Po
 	-rm -f src/apps/$(DEPDIR)/output_libmesh_version_devel-output_libmesh_version.Po
+	-rm -f src/apps/$(DEPDIR)/output_libmesh_version_oprof-output_libmesh_version.Po
 	-rm -f src/apps/$(DEPDIR)/output_libmesh_version_opt-output_libmesh_version.Po
 	-rm -f src/apps/$(DEPDIR)/projection_dbg-projection.Po
 	-rm -f src/apps/$(DEPDIR)/projection_devel-projection.Po
+	-rm -f src/apps/$(DEPDIR)/projection_oprof-projection.Po
 	-rm -f src/apps/$(DEPDIR)/projection_opt-projection.Po
 	-rm -f src/apps/$(DEPDIR)/solution_components_dbg-solution_components.Po
 	-rm -f src/apps/$(DEPDIR)/solution_components_devel-solution_components.Po
+	-rm -f src/apps/$(DEPDIR)/solution_components_oprof-solution_components.Po
 	-rm -f src/apps/$(DEPDIR)/solution_components_opt-solution_components.Po
 	-rm -f src/apps/$(DEPDIR)/splitter_dbg-splitter.Po
 	-rm -f src/apps/$(DEPDIR)/splitter_devel-splitter.Po
+	-rm -f src/apps/$(DEPDIR)/splitter_oprof-splitter.Po
 	-rm -f src/apps/$(DEPDIR)/splitter_opt-splitter.Po
 	-rm -f src/base/$(DEPDIR)/libmesh_dbg_la-dirichlet_boundary.Plo
 	-rm -f src/base/$(DEPDIR)/libmesh_dbg_la-dof_map.Plo
