@@ -1517,7 +1517,7 @@ void MeshTools::Modification::all_rbb (MeshBase & mesh)
         const Real w1 = n1.get_extra_datum<Real>(weight_index);
 
         // If we see edges that are unevenly parameterized, not just
-        // curved, I'm not sure what we want to do with those.  We
+        // curved, it's not obvious what we want to do with those.  We
         // can't isogeometrically represent a circular arc in this
         // case unless we change the weights on the endpoints, but
         // then that cascades to requiring changes in every other
@@ -1525,18 +1525,33 @@ void MeshTools::Modification::all_rbb (MeshBase & mesh)
         //
         // Presumably we want to maintain a somewhat similar uneven
         // parameterization, for whatever boundary layer grading the
-        // mesh user wanted?  For now just scream and die.
+        // mesh user wanted?  That should be an option later, though
+        // it breaks the exactness of circular arcs.  For now we'll
+        // just move the midnodes if necessary.
+        const Point orig_e02 = p2-p0,
+                    orig_e21 = p1-p2;
+        const Real orig_02_len_sq = orig_e02.norm_sq(),
+                   orig_21_len_sq = orig_e21.norm_sq();
+        if (std::abs(orig_02_len_sq-orig_21_len_sq) > edge_chord_len_sq * TOLERANCE*TOLERANCE)
+          {
+            const Point orig_displacement_vec = p2-midchord;
+
+            // If we're on a straight line then just keep it straight
+            if (orig_displacement_vec*orig_e02 <
+                edge_chord_len_sq*TOLERANCE*TOLERANCE*TOLERANCE)
+              p2 = midchord;
+            else
+              p2 = circumcenter(p0, p1, p2);
+          }
+
         const Point e02 = p2-p0,
                     e21 = p1-p2;
         const Real chord_02_len_sq = e02.norm_sq(),
                    chord_21_len_sq = e21.norm_sq();
-        if (std::abs(chord_02_len_sq-chord_21_len_sq) > edge_chord_len_sq * TOLERANCE*TOLERANCE)
-          libmesh_not_implemented_msg
-            ("all_rbb() currently doesn't support unevenly parameterized edges");
+        const Point displacement_vec = p2-midchord;
 
         // For straight edges we'll just want the middle node weight
         // to match the endpoint nodes
-        const Point displacement_vec = p2-midchord;
         if (displacement_vec.norm_sq() <
             edge_chord_len_sq*TOLERANCE*TOLERANCE*TOLERANCE)
         {
@@ -1577,7 +1592,7 @@ void MeshTools::Modification::all_rbb (MeshBase & mesh)
         p2 += displacement_vec.unit() * (R-r);
       };
 
-      auto make_face_rbb = [weight_index, almost_equal] (Elem & face)
+      auto make_face_rbb = [weight_index] (Elem & face)
       {
         // Prisms and pyramids may need to skip some faces while
         // adjusting others
