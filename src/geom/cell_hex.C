@@ -277,7 +277,7 @@ Hex::edges_adjacent_to_node(const unsigned int n) const
 }
 
 
-Real Hex::quality (const ElemQuality q) const
+std::optional<Real> Hex::query_quality (const ElemQuality q) const
 {
   switch (q)
     {
@@ -498,7 +498,7 @@ Real Hex::quality (const ElemQuality q) const
        * Maybe the base class knows...
        */
     default:
-      return Elem::quality(q);
+      return Elem::query_quality(q);
     }
 }
 

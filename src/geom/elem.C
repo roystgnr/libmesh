@@ -1780,7 +1780,7 @@ void Elem::write_connectivity (std::ostream & out_stream,
 
 
 
-Real Elem::quality (const ElemQuality q) const
+std::optional<Real> Elem::query_quality (const ElemQuality q) const
 {
   switch (q)
     {
@@ -1875,7 +1875,7 @@ Real Elem::quality (const ElemQuality q) const
       {
         // For 1D and 2D elements, just call this function with MIN,MAX_ANGLE instead.
         if (this->dim() < 3)
-          return this->quality((q == MIN_DIHEDRAL_ANGLE) ? MIN_ANGLE : MAX_ANGLE);
+          return this->query_quality((q == MIN_DIHEDRAL_ANGLE) ? MIN_ANGLE : MAX_ANGLE);
 
         // Initialize return values
         Real min_angle = std::numeric_limits<Real>::max();
@@ -1996,22 +1996,23 @@ Real Elem::quality (const ElemQuality q) const
         return min_node_area;
       }
 
-      // Return 1 if we made it here
     default:
-      {
-        libmesh_do_once( libmesh_here();
-
-                         libMesh::err << "ERROR: quality metric "
-                         << Utility::enum_to_string(q)
-                         << " not implemented on element type "
-                         << Utility::enum_to_string(this->type())
-                         << std::endl
-                         << "Returning 1."
-                         << std::endl; );
-
-        return 1.;
-      }
+      return std::nullopt;
     }
+}
+
+
+
+Real Elem::quality (const ElemQuality q) const
+{
+  const auto result = this->query_quality(q);
+
+  libmesh_error_msg_if(!result,
+                       "Quality metric " << Utility::enum_to_string(q)
+                       << " is not supported on element type "
+                       << Utility::enum_to_string(this->type()));
+
+  return *result;
 }
 
 

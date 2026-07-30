@@ -299,7 +299,7 @@ InfHex::edges_adjacent_to_node(const unsigned int n) const
   return {};
 }
 
-Real InfHex::quality (const ElemQuality q) const
+std::optional<Real> InfHex::query_quality (const ElemQuality q) const
 {
   switch (q)
     {
@@ -404,7 +404,7 @@ Real InfHex::quality (const ElemQuality q) const
        * Maybe the base class knows...
        */
     default:
-      return Elem::quality(q);
+      return Elem::query_quality(q);
     }
 }
 
