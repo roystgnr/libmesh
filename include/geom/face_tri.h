@@ -174,7 +174,7 @@ public:
    * \returns A quantitative assessment of element quality based on
    * the quality metric \p q specified by the user.
    */
-  virtual Real quality (const ElemQuality q) const override;
+  virtual std::optional<Real> query_quality (const ElemQuality q) const override;
 
   /**
    * \returns The suggested quality bounds for the hex based on quality

@@ -57,6 +57,12 @@ public:
       {
         // EDGE_LENGTH_RATIO is one metric that is defined on all elements
         const Real edge_length_ratio = elem->quality(EDGE_LENGTH_RATIO);
+        const auto queried_edge_length_ratio = elem->query_quality(EDGE_LENGTH_RATIO);
+        CPPUNIT_ASSERT(queried_edge_length_ratio);
+        CPPUNIT_ASSERT_EQUAL(edge_length_ratio, *queried_edge_length_ratio);
+
+        // SIZE currently has no implementation for any element type.
+        CPPUNIT_ASSERT(!elem->query_quality(SIZE));
 
         // We use "0" to mean infinity rather than inf or NaN, and
         // every quality other than that should be 1 or larger (worse)

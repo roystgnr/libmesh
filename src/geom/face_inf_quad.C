@@ -225,9 +225,9 @@ InfQuad::edges_adjacent_to_node(const unsigned int n) const
 }
 
 
-Real InfQuad::quality (const ElemQuality q) const
+std::optional<Real> InfQuad::query_quality (const ElemQuality q) const
 {
-  return Elem::quality(q); // Not implemented
+  return Elem::query_quality(q); // Not implemented
 }
 
 

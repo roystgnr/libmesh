@@ -213,7 +213,7 @@ Quad::edges_adjacent_to_node(const unsigned int n) const
   return {};
 }
 
-Real Quad::quality (const ElemQuality q) const
+std::optional<Real> Quad::query_quality (const ElemQuality q) const
 {
   switch (q)
     {
@@ -476,7 +476,7 @@ Real Quad::quality (const ElemQuality q) const
       }
 
     default:
-      return Elem::quality(q);
+      return Elem::query_quality(q);
     }
 }
 

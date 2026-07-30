@@ -43,6 +43,7 @@
 #include <set>
 #include <vector>
 #include <memory>
+#include <optional>
 #include <array>
 
 namespace libMesh
@@ -1080,7 +1081,7 @@ public:
   /**
    * \returns A quantitative assessment of element quality based on
    * the quality metric \p q specified by the user. Not all ElemQuality
-   * metrics are supported for all Elem types; consult the Elem::quality()
+   * metrics are supported for all Elem types; consult the Elem::query_quality()
    * overrides for specific Elem types to determine which quality metrics
    * are supported. The ElemQuality metrics with generic support for all
    * Elems with dimension > 1 are:
@@ -1092,8 +1093,19 @@ public:
    *    between adjacent planar faces of the element), which we plan to
    *    add support for in the future. In 2D, we compute the angle
    *    between adjacent sides for this metric.
+   *
+   * Throws an error if \p q is not supported for this element.
    */
-  virtual Real quality (const ElemQuality q) const;
+  Real quality (const ElemQuality q) const;
+
+  /**
+   * Queries a quantitative assessment of element quality based on
+   * the quality metric \p q specified by the user.
+   *
+   * \returns The metric value when \p q is supported for this element,
+   * or std::nullopt otherwise.
+   */
+  virtual std::optional<Real> query_quality (const ElemQuality q) const;
 
   /**
    * \returns The suggested quality bounds for the Elem based on

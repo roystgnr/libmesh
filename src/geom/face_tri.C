@@ -169,7 +169,7 @@ Tri::edges_adjacent_to_node(const unsigned int n) const
 }
 
 
-Real Tri::quality (const ElemQuality q) const
+std::optional<Real> Tri::query_quality (const ElemQuality q) const
 {
   switch (q)
     {
@@ -300,11 +300,11 @@ Real Tri::quality (const ElemQuality q) const
       }
 
     default:
-      return Elem::quality(q);
+      return Elem::query_quality(q);
     }
 
   // We won't get here.
-  return Elem::quality(q);
+  return Elem::query_quality(q);
 }
 
 
