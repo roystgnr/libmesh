@@ -105,8 +105,18 @@ AC_ARG_ENABLE(exceptions,
 
 AS_IF([test "$enableexceptions" != no],
       [
-        AC_DEFINE(ENABLE_EXCEPTIONS, 1, [Flag indicating if the library should be built to throw C++ exceptions on unexpected errors])
-        AC_MSG_RESULT(<<< Configuring library with exception throwing support >>>)
+        AX_CXX_EXCEPTIONS
+        AS_IF([test "x$ax_cv_cxx_exceptions" = xyes],
+              [
+                AC_DEFINE(ENABLE_EXCEPTIONS, 1, [Flag indicating if the library should be built to throw C++ exceptions on unexpected errors])
+                AC_MSG_RESULT(<<< Configuring library with C++ exception throwing >>>)
+              ],
+              [
+                AC_MSG_RESULT(<<< Failed to detect C++ exception throwing support >>>)
+              ])
+      ],
+      [
+        AC_MSG_RESULT(<<< Configuring library with C++ exception throwing disabled >>>)
       ])
 # --------------------------------------------------------------
 
