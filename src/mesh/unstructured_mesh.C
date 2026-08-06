@@ -405,6 +405,11 @@ all_increased_order_range (UnstructuredMesh & mesh,
   bool already_higher_order =
     std::all_of(stored_range.begin(), stored_range.end(),
                 is_higher_order);
+      /*
+    std::all_of(std::execution::par_unseq,
+                stored_range.begin(), stored_range.end(),
+                is_higher_order);
+                */
 
   // Check with other processors and possibly return early
   mesh.comm().min(already_higher_order);
