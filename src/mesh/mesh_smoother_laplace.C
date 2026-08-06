@@ -63,6 +63,8 @@ void LaplaceMeshSmoother::smooth()
 
   for (unsigned int n=0; n<_n_iterations; n++)
     {
+      LOG_SCOPE("smooth() calculate node positions", "LaplaceMeshSmoother");
+
       new_positions.resize(_mesh.max_node_id());
 
       auto calculate_new_position = [this, &on_boundary, &new_positions](const Node * node) {
@@ -98,6 +100,7 @@ void LaplaceMeshSmoother::smooth()
                                   _mesh.pid_nodes_end(DofObject::invalid_processor_id)))
         calculate_new_position(node);
 
+      LOG_SCOPE("smooth() set node positions", "LaplaceMeshSmoother");
 
       // now update the node positions (local and unpartitioned nodes only)
       for (auto & node : _mesh.local_node_ptr_range())
@@ -109,6 +112,8 @@ void LaplaceMeshSmoother::smooth()
         if (!on_boundary.count(node->id()) && (_graph[node->id()].size() > 0))
           *node = new_positions[node->id()];
 
+      LOG_SCOPE("smooth() sync node positions", "LaplaceMeshSmoother");
+
       // Now the nodes which are ghosts on this processor may have been moved on
       // the processors which own them.  So we need to synchronize with our neighbors
       // and get the most up-to-date positions for the ghosts.
@@ -117,6 +122,8 @@ void LaplaceMeshSmoother::smooth()
         (_mesh.comm(), _mesh.nodes_begin(), _mesh.nodes_end(), sync_object);
 
     } // end for _n_iterations
+
+  LOG_SCOPE("smooth() second-order nodes", "LaplaceMeshSmoother");
 
   // finally adjust the second order nodes (those located between vertices)
   // these nodes will be located between their adjacent nodes
@@ -162,6 +169,8 @@ void LaplaceMeshSmoother::smooth(unsigned int n_iterations)
 
 void LaplaceMeshSmoother::init()
 {
+  LOG_SCOPE("init()", "LaplaceMeshSmoother");
+
   // For avoiding extraneous element side construction
   ElemSideBuilder side_builder;
 

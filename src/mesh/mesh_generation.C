@@ -2419,6 +2419,7 @@ void MeshTools::Generation::build_sphere (UnstructuredMesh & mesh,
   // Loop over the elements, refine, pop nodes to boundary.
   for (unsigned int r=0; r<nr; r++)
     {
+      LOG_SCOPE("build_sphere() refinement", "MeshTools::Generation");
       // A DistributedMesh needs a little prep before refinement, and
       // may need us to keep track of ghost node movement.
       std::unordered_set<dof_id_type> moved_ghost_nodes;

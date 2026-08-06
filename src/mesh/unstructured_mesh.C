@@ -57,7 +57,9 @@ namespace {
 
 using namespace libMesh;
 
-// Helper functions for all_second_order, all_complete_order
+// Helpers for all_second_order, all_complete_order
+MeshBase::mutex_type vertices_to_ho_mutex;
+MeshBase::mutex_type exterior_children_mutex;
 
 std::map<std::vector<dof_id_type>, Node *>::iterator
 map_hi_order_node(unsigned int hon,
@@ -86,6 +88,9 @@ map_hi_order_node(unsigned int hon,
    */
   std::sort(adjacent_vertices_ids.begin(),
             adjacent_vertices_ids.end());
+
+  // Allow multiple threads to work on adj_vertices_to_ho_nodes
+  MeshBase::mutex_type::scoped_lock lock(vertices_to_ho_mutex);
 
   // Does this set of vertices already have a mid-node added?  If not
   // we'll want to add it.
