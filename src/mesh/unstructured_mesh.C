@@ -357,6 +357,14 @@ all_increased_order_range (UnstructuredMesh & mesh,
   // This function must be run on all processors at once
   timpi_parallel_only(mesh.comm());
 
+  // Make a contiguous copy of our range once, then we can thread it
+  // (and let STL algorithms thread it) over and over.
+  //
+  // It's tempting to get the MeshBase-cached range instead when our
+  // range matches that, but as soon as we insert new elements the
+  // range is invalid and the mesh will clear it.
+  const ElemRange stored_range(range.begin(), range.end());
+
   /*
    * The maximum number of new higher-order nodes we might be adding,
    * for use when picking unique unique_id values later. This variable
@@ -394,7 +402,8 @@ all_increased_order_range (UnstructuredMesh & mesh,
   };
 
   bool already_higher_order =
-    std::all_of(range.begin(), range.end(), is_higher_order);
+    std::all_of(stored_range.begin(), stored_range.end(),
+                is_higher_order);
 
   // Check with other processors and possibly return early
   mesh.comm().min(already_higher_order);
@@ -442,7 +451,7 @@ all_increased_order_range (UnstructuredMesh & mesh,
    * completely-partitioned meshes (where we'll sync nodes later);
    * let's keep track to make sure we're not in any in-between state.
    */
-  dof_id_type n_unpartitioned_elem = 0;
+  std::atomic<dof_id_type> n_unpartitioned_elem = 0;
 
   /**
    * Loop over the elements in the given range.  If any are
@@ -473,7 +482,10 @@ all_increased_order_range (UnstructuredMesh & mesh,
         const ElemType old_type = elem->type();
         const ElemType new_type = elem_type_converter(old_type);
         if (old_type != new_type)
-          exterior_children_of.emplace(elem, std::vector<Elem *>());
+          {
+            MeshBase::mutex_type::scoped_lock lock(exterior_children_mutex);
+            exterior_children_of.emplace(elem, std::vector<Elem *>());
+          }
       }
   };
 
@@ -481,10 +493,13 @@ all_increased_order_range (UnstructuredMesh & mesh,
   // find point neighbors to track
   if (range.begin() == mesh.elements_begin() &&
       range.end() == mesh.elements_end())
-    {
-      for (auto & elem : range)
-        track_if_necessary(elem);
-    }
+    Threads::parallel_for
+      (stored_range,
+       [&track_if_necessary](const ElemRange & subrange)
+       {
+         for (Elem * elem : subrange)
+           track_if_necessary(elem);
+       });
   else
     {
       GhostingFunctor::map_type point_neighbor_elements;
@@ -505,10 +520,25 @@ all_increased_order_range (UnstructuredMesh & mesh,
    * Loop over all mesh elements to look for interior_parent links we
    * need to upgrade later.
    */
-  for (auto & elem : mesh.element_ptr_range())
-    if (auto exterior_map_it = exterior_children_of.find(elem->interior_parent());
-        exterior_map_it != exterior_children_of.end())
-      exterior_map_it->second.push_back(elem);
+  Threads::parallel_for
+    (mesh.element_stored_range(),
+     [&exterior_children_of]
+     (const ElemRange & subrange)
+     {
+       for (Elem * elem : subrange)
+         {
+           Elem * ip = elem->interior_parent();
+           if (ip)
+             {
+               MeshBase::mutex_type::scoped_lock lock(exterior_children_mutex);
+               if (auto exterior_map_it = exterior_children_of.find(ip);
+                   exterior_map_it != exterior_children_of.end())
+                 {
+                   exterior_map_it->second.push_back(elem);
+                 }
+             }
+         }
+     });
 
   /**
    * Loop over the low-ordered elements in the _elements vector.
@@ -516,44 +546,49 @@ all_increased_order_range (UnstructuredMesh & mesh,
    * them with an equivalent second-order element.  Don't
    * forget to delete the low-order element, or else it will leak!
    */
-  for (auto & lo_elem : range)
-    {
-      // Now we can skip the elements in the range that are already
-      // higher-order.
-      const ElemType old_type = lo_elem->type();
-      const ElemType new_type = elem_type_converter(old_type);
+  Threads::parallel_for
+    (stored_range,
+     [&](const ElemRange & subrange)
+     {
+       for (Elem * lo_elem : subrange)
+         {
+           // Now we can skip the elements in the range that are already
+           // higher-order.
+           const ElemType old_type = lo_elem->type();
+           const ElemType new_type = elem_type_converter(old_type);
 
-      if (old_type == new_type)
-        continue;
+           if (old_type == new_type)
+             continue;
 
-      // this does _not_ work for refined elements
-      libmesh_assert_equal_to (lo_elem->level(), 0);
+           // this does _not_ work for refined elements
+           libmesh_assert_equal_to (lo_elem->level(), 0);
 
-      if (lo_elem->processor_id() == DofObject::invalid_processor_id)
-        ++n_unpartitioned_elem;
+           if (lo_elem->processor_id() == DofObject::invalid_processor_id)
+             ++n_unpartitioned_elem;
 
-      /*
-       * Build the higher-order equivalent; add to
-       * the new_elements list.
-       */
-      auto ho_elem = Elem::build (new_type);
+           /*
+            * Build the higher-order equivalent; add to
+            * the new_elements list.
+            */
+           auto ho_elem = Elem::build (new_type);
 
-      libmesh_assert_equal_to (lo_elem->n_vertices(), ho_elem->n_vertices());
+           libmesh_assert_equal_to (lo_elem->n_vertices(), ho_elem->n_vertices());
 
-      /*
-       * By definition the initial nodes of the lower and higher order
-       * element are identically numbered.  Transfer these.
-       */
-      for (unsigned int v=0, lnn=lo_elem->n_nodes(); v < lnn; v++)
-        ho_elem->set_node(v, lo_elem->node_ptr(v));
+           /*
+            * By definition the initial nodes of the lower and higher order
+            * element are identically numbered.  Transfer these.
+            */
+           for (unsigned int v=0, lnn=lo_elem->n_nodes(); v < lnn; v++)
+             ho_elem->set_node(v, lo_elem->node_ptr(v));
 
-      transfer_elem(*lo_elem, std::move(ho_elem),
+           transfer_elem(*lo_elem, std::move(ho_elem),
 #ifdef LIBMESH_ENABLE_UNIQUE_ID
-                    max_unique_id, max_new_nodes_per_elem,
+                         max_unique_id, max_new_nodes_per_elem,
 #endif
-                    mesh, adj_vertices_to_ho_nodes,
-                    exterior_children_of);
-    } // end for (auto & lo_elem : range)
+                         mesh, adj_vertices_to_ho_nodes,
+                         exterior_children_of);
+         }
+     });
 
   // we can clear the map at this point.
   adj_vertices_to_ho_nodes.clear();
@@ -576,13 +611,16 @@ all_increased_order_range (UnstructuredMesh & mesh,
       mesh.comm().max(max_unpartitioned_elem);
       if (max_unpartitioned_elem)
         {
+          // TIMPI still gets confused by std::atomic
+          dof_id_type check_n_unpartitioned_elem = n_unpartitioned_elem;
           // We'd better be effectively serialized here.  In theory we
           // could support more complicated cases but for now we
           // only support "completely partitioned" and/or "serialized"
           if (mesh.is_serial())
-            libmesh_assert(mesh.comm().verify(n_unpartitioned_elem));
+            libmesh_assert(mesh.comm().verify(check_n_unpartitioned_elem));
           else
             libmesh_not_implemented();
+          libmesh_ignore(check_n_unpartitioned_elem);
         }
       else
         {
