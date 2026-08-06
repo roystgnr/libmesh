@@ -319,8 +319,13 @@ void transfer_elem(Elem & lo_elem,
    * mesh, they need to be preserved.  We do that in the same loop
    * here.
    */
-  mesh.get_boundary_info().copy_boundary_ids
-    (mesh.get_boundary_info(), &lo_elem, hi_elem.get());
+  {
+    static MeshBase::mutex_type boundary_mutex;
+    MeshBase::scoped_lock_type lock(boundary_mutex);
+
+    mesh.get_boundary_info().copy_boundary_ids
+      (mesh.get_boundary_info(), &lo_elem, hi_elem.get());
+  }
 
   /*
    * The new second-order element is ready.
