@@ -144,26 +144,32 @@ void transfer_elem(Elem & lo_elem,
            * the average over the adjacent vertices.
            */
           Point new_location = 0;
-          for (dof_id_type vertex_id : adjacent_vertices_ids)
-            new_location += mesh.point(vertex_id);
+          Node * hi_node;
+          {
+            // Allow multiple threads to edit mesh nodes
+            MeshBase::mutex_type::scoped_lock lock(mesh.nodes_mutex);
 
-          new_location /= static_cast<Real>(adjacent_vertices_ids.size());
+            for (dof_id_type vertex_id : adjacent_vertices_ids)
+              new_location += mesh.point(vertex_id);
 
-          /* Add the new point to the mesh.
-           *
-           * If we are on a serialized mesh, then we're doing this
-           * all in sync, and the node processor_id will be
-           * consistent between processors.
-           *
-           * If we are on a distributed mesh, we can fix
-           * inconsistent processor ids later, but only if every
-           * processor gives new nodes a *locally* consistent
-           * processor id, so we'll give the new node the
-           * processor id of an adjacent element for now and then
-           * we'll update that later if appropriate.
-           */
-          Node * hi_node = mesh.add_point
-            (new_location, DofObject::invalid_id, lo_pid);
+            new_location /= static_cast<Real>(adjacent_vertices_ids.size());
+
+            /* Add the new point to the mesh.
+             *
+             * If we are on a serialized mesh, then we're doing this
+             * all in sync, and the node processor_id will be
+             * consistent between processors.
+             *
+             * If we are on a distributed mesh, we can fix
+             * inconsistent processor ids later, but only if every
+             * processor gives new nodes a *locally* consistent
+             * processor id, so we'll give the new node the
+             * processor id of an adjacent element for now and then
+             * we'll update that later if appropriate.
+             */
+            hi_node = mesh.add_point
+              (new_location, DofObject::invalid_id, lo_pid);
+          }
 
           /* Come up with a unique unique_id for a potentially new
            * node.  On a distributed mesh we don't yet know what
@@ -201,6 +207,9 @@ void transfer_elem(Elem & lo_elem,
       // yes, already added.
       else
         {
+          // Allow multiple threads to edit mesh nodes
+          MeshBase::mutex_type::scoped_lock lock(mesh.nodes_mutex);
+
           Node * hi_node = pos->second;
           libmesh_assert(hi_node);
           libmesh_assert_equal_to(mesh.node_ptr(hi_node->id()), hi_node);
@@ -227,31 +236,37 @@ void transfer_elem(Elem & lo_elem,
         }
     }
 
-  /*
-   * find_neighbors relies on remote_elem neighbor links being
-   * properly maintained.  Our own code here relies on ordinary
-   * neighbor links being properly maintained, so let's just keep
-   * everything up to date.
-   */
-  for (auto s : lo_elem.side_index_range())
-    {
-      Elem * neigh = lo_elem.neighbor_ptr(s);
-      if (!neigh)
-        continue;
+  {
+    // Allow multiple threads to work on neighbors
+    static MeshBase::mutex_type neigh_mutex;
+    MeshBase::mutex_type::scoped_lock lock(neigh_mutex);
 
-      if (neigh != remote_elem)
-        {
-          // We don't support AMR even outside our own range yet.
-          libmesh_assert_equal_to (neigh->level(), 0);
+    /*
+     * find_neighbors relies on remote_elem neighbor links being
+     * properly maintained.  Our own code here relies on ordinary
+     * neighbor links being properly maintained, so let's just keep
+     * everything up to date.
+     */
+    for (auto s : lo_elem.side_index_range())
+      {
+        Elem * neigh = lo_elem.neighbor_ptr(s);
+        if (!neigh)
+          continue;
 
-          const unsigned int ns = neigh->which_neighbor_am_i(&lo_elem);
-          libmesh_assert_not_equal_to(ns, libMesh::invalid_uint);
+        if (neigh != remote_elem)
+          {
+            // We don't support AMR even outside our own range yet.
+            libmesh_assert_equal_to (neigh->level(), 0);
 
-          neigh->set_neighbor(ns, hi_elem.get());
-        }
+            const unsigned int ns = neigh->which_neighbor_am_i(&lo_elem);
+            libmesh_assert_not_equal_to(ns, libMesh::invalid_uint);
 
-      hi_elem->set_neighbor(s, neigh);
-    }
+            neigh->set_neighbor(ns, hi_elem.get());
+          }
+
+        hi_elem->set_neighbor(s, neigh);
+      }
+  }
 
   /**
    * If the old element has an interior_parent(), transfer it to the
@@ -263,31 +278,36 @@ void transfer_elem(Elem & lo_elem,
   if (interior_p)
     hi_elem->set_interior_parent(interior_p);
 
-  if (auto parent_exterior_it = exterior_children_of.find(interior_p);
-      parent_exterior_it != exterior_children_of.end())
-    {
-      auto & exteriors = parent_exterior_it->second;
-      for (std::size_t i : index_range(exteriors))
-        if (exteriors[i] == &lo_elem)
-          {
-            exteriors[i] = hi_elem.get();
-            break;
-          }
-    }
+  {
+    // Allow multiple threads to work on exterior_children_of
+    MeshBase::mutex_type::scoped_lock lock(exterior_children_mutex);
 
-  /**
-   * If we had interior_parent() links to the old element, transfer
-   * them to the new element.
-   */
-  if (auto exterior_it = exterior_children_of.find(&lo_elem);
-      exterior_it != exterior_children_of.end())
-    {
-      for (Elem * exterior_elem : exterior_it->second)
-        {
-          libmesh_assert(exterior_elem->interior_parent() == &lo_elem);
-          exterior_elem->set_interior_parent(hi_elem.get());
-        }
-    }
+    if (auto parent_exterior_it = exterior_children_of.find(interior_p);
+        parent_exterior_it != exterior_children_of.end())
+      {
+        auto & exteriors = parent_exterior_it->second;
+        for (std::size_t i : index_range(exteriors))
+          if (exteriors[i] == &lo_elem)
+            {
+              exteriors[i] = hi_elem.get();
+              break;
+            }
+      }
+
+    /**
+     * If we had interior_parent() links to the old element, transfer
+     * them to the new element.
+     */
+    if (auto exterior_it = exterior_children_of.find(&lo_elem);
+        exterior_it != exterior_children_of.end())
+      {
+        for (Elem * exterior_elem : exterior_it->second)
+          {
+            libmesh_assert(exterior_elem->interior_parent() == &lo_elem);
+            exterior_elem->set_interior_parent(hi_elem.get());
+          }
+      }
+  }
 
   /**
    * If the old element had any boundary conditions they
@@ -319,6 +339,9 @@ void transfer_elem(Elem & lo_elem,
     hi_elem->set_extra_integer(i, lo_elem.get_extra_integer(i));
 
   hi_elem->inherit_data_from(lo_elem);
+
+  // Allow multiple threads to edit mesh elements
+  MeshBase::mutex_type::scoped_lock lock(mesh.elems_mutex);
 
   mesh.insert_elem(std::move(hi_elem));
 }
