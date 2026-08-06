@@ -30,6 +30,7 @@
 #include "libmesh/variant_filter_iterator.h"
 #include "libmesh/parallel_object.h"
 #include "libmesh/simple_range.h"
+#include "libmesh/threads.h"
 
 // C++ Includes
 #include <cstddef>
@@ -2102,6 +2103,14 @@ public:
     bool has_reinit_ghosting_functors;
     bool has_synched_subdomain_name_map;
   };
+
+  /**
+   * Mutex type for use in protecting mesh container access within
+   * threaded regions.
+   */
+  typedef Threads::spin_mutex mutex_type;
+  mutex_type elems_mutex;
+  mutex_type nodes_mutex;
 
 protected:
 
