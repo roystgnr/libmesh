@@ -91,7 +91,7 @@ map_hi_order_node(unsigned int hon,
             adjacent_vertices_ids.end());
 
   // Allow multiple threads to work on adj_vertices_to_ho_nodes
-  MeshBase::mutex_type::scoped_lock lock(vertices_to_ho_mutex);
+  MeshBase::scoped_lock_type lock(vertices_to_ho_mutex);
 
   // Does this set of vertices already have a mid-node added?  If not
   // we'll want to add it.
@@ -148,7 +148,7 @@ void transfer_elem(Elem & lo_elem,
           Node * hi_node;
           {
             // Allow multiple threads to edit mesh nodes
-            MeshBase::mutex_type::scoped_lock lock(mesh.nodes_mutex);
+            MeshBase::scoped_lock_type lock(mesh.nodes_mutex);
 
             for (dof_id_type vertex_id : adjacent_vertices_ids)
               new_location += mesh.point(vertex_id);
@@ -209,7 +209,7 @@ void transfer_elem(Elem & lo_elem,
       else
         {
           // Allow multiple threads to edit mesh nodes
-          MeshBase::mutex_type::scoped_lock lock(mesh.nodes_mutex);
+          MeshBase::scoped_lock_type lock(mesh.nodes_mutex);
 
           Node * hi_node = pos->second;
           libmesh_assert(hi_node);
@@ -238,9 +238,8 @@ void transfer_elem(Elem & lo_elem,
     }
 
   {
-    // Allow multiple threads to work on neighbors
     static MeshBase::mutex_type neigh_mutex;
-    MeshBase::mutex_type::scoped_lock lock(neigh_mutex);
+    MeshBase::scoped_lock_type lock(neigh_mutex);
 
     /*
      * find_neighbors relies on remote_elem neighbor links being
@@ -280,8 +279,7 @@ void transfer_elem(Elem & lo_elem,
     hi_elem->set_interior_parent(interior_p);
 
   {
-    // Allow multiple threads to work on exterior_children_of
-    MeshBase::mutex_type::scoped_lock lock(exterior_children_mutex);
+    MeshBase::scoped_lock_type lock(exterior_children_mutex);
 
     if (auto parent_exterior_it = exterior_children_of.find(interior_p);
         parent_exterior_it != exterior_children_of.end())
@@ -342,7 +340,7 @@ void transfer_elem(Elem & lo_elem,
   hi_elem->inherit_data_from(lo_elem);
 
   // Allow multiple threads to edit mesh elements
-  MeshBase::mutex_type::scoped_lock lock(mesh.elems_mutex);
+  MeshBase::scoped_lock_type lock(mesh.elems_mutex);
 
   mesh.insert_elem(std::move(hi_elem));
 }
@@ -536,7 +534,7 @@ all_increased_order_range (UnstructuredMesh & mesh,
            Elem * ip = elem->interior_parent();
            if (ip)
              {
-               MeshBase::mutex_type::scoped_lock lock(exterior_children_mutex);
+               MeshBase::scoped_lock_type lock(exterior_children_mutex);
                if (auto exterior_map_it = exterior_children_of.find(ip);
                    exterior_map_it != exterior_children_of.end())
                  {

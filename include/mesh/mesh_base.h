@@ -2107,8 +2107,12 @@ public:
   /**
    * Mutex type for use in protecting mesh container access within
    * threaded regions.
+   *
+   * In my tests with high contention on the pthreads backend, our
+   * spin_mutex does seem to perform better than std::mutex!
    */
   typedef Threads::spin_mutex mutex_type;
+  typedef Threads::spin_mutex::scoped_lock scoped_lock_type;
   mutex_type elems_mutex;
   mutex_type nodes_mutex;
 
