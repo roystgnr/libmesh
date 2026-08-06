@@ -564,7 +564,7 @@ public:
   // 12 RBB triangles
   void testAllRBBSphere6() { LOG_UNIT_TEST; test_sphere(0); }
   void testAllRBBSphere24() { LOG_UNIT_TEST; test_sphere(1); }
-  void testAllRBBSphere96() { LOG_UNIT_TEST; test_sphere(2); }
+  void testAllRBBSphere96() { LOG_UNIT_TEST; test_sphere(5); }
 
   void testAllRBBTri6Sphere12() { LOG_UNIT_TEST; test_sphere(0, TRI6); }
   void testAllRBBTri6Sphere48() { LOG_UNIT_TEST; test_sphere(1, TRI6); }
