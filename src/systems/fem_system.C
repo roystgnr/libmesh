@@ -40,6 +40,14 @@ using namespace libMesh;
 typedef Threads::spin_mutex femsystem_mutex;
 femsystem_mutex assembly_mutex;
 
+bool is_spline_nodeelem(const Elem & elem,
+                        const System & sys)
+{
+  return (elem.type() == NODEELEM &&
+          sys.get_mesh().n_constraint_rows());
+}
+
+
 void assemble_unconstrained_element_system(const FEMSystem & _sys,
                                            const bool _get_jacobian,
                                            const bool _constrain_heterogeneously,
@@ -401,6 +409,9 @@ public:
 
     for (const auto & elem : range)
       {
+        if (is_spline_nodeelem(*elem, _sys))
+          continue;
+
         _femcontext.pre_fe_reinit(_sys, elem);
         _femcontext.elem_fe_reinit();
 
@@ -440,6 +451,9 @@ public:
 
     for (const auto & elem : range)
       {
+        if (is_spline_nodeelem(*elem, _sys))
+          continue;
+
         _femcontext.pre_fe_reinit(_sys, elem);
 
         // Optionally initialize all the interior FE objects on elem.
@@ -517,6 +531,9 @@ public:
 
     for (const auto & elem : range)
       {
+        if (is_spline_nodeelem(*elem, _sys))
+          continue;
+
         _femcontext.pre_fe_reinit(_sys, elem);
 
         // We might have some heterogenous dofs here; let's see for
@@ -654,6 +671,9 @@ public:
 
     for (const auto & elem : range)
       {
+        if (is_spline_nodeelem(*elem, _sys))
+          continue;
+
         _femcontext.pre_fe_reinit(_sys, elem);
 
         // We might have some heterogenous dofs here; let's see for
