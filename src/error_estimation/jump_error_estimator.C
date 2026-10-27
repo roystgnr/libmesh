@@ -269,8 +269,17 @@ void JumpErrorEstimator::estimate_error (const System & system,
               if (!child.active())
                 compute_on_parent = false;
 
-          if (compute_on_parent &&
-              !error_per_cell[parent->id()])
+          // error_per_cell entries aren't atomic and we're
+          // technically not allowed to check if an entry has been
+          // written to *while* others are writing it
+          if (compute_on_parent)
+            {
+              Threads::spin_mutex::scoped_lock lock(error_mtx);
+              if (error_per_cell[parent->id()])
+                compute_on_parent = false;
+            }
+
+          if (compute_on_parent)
             {
               // Compute a projection onto the parent
               DenseVector<Number> Uparent;
