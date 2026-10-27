@@ -102,14 +102,6 @@ void JumpErrorEstimator::estimate_error (const System & system,
   // The current mesh
   const MeshBase & mesh = system.get_mesh();
 
-  // The number of variables in the system
-  const unsigned int n_vars = system.n_vars();
-
-  // The DofMap for this system
-#ifdef LIBMESH_ENABLE_AMR
-  const DofMap & dof_map = system.get_dof_map();
-#endif
-
   // Resize the error_per_cell vector according to the
   // maximum element ID because we will be indexing it with IDs.
   // Initialize to 0.
@@ -143,359 +135,431 @@ void JumpErrorEstimator::estimate_error (const System & system,
       sys.update();
     }
 
-  // We don't use full elem_jacobian or subjacobians here.
-  fine_context = std::make_unique<FEMContext>
-    (system, nullptr, /* allocate_local_matrices = */ false);
-  coarse_context = std::make_unique<FEMContext>
-    (system, nullptr, /* allocate_local_matrices = */ false);
-
-  // Don't overintegrate - we're evaluating differences of FE values,
-  // not products of them.
-  if (this->use_unweighted_quadrature_rules)
-    fine_context->use_unweighted_quadrature_rules(system.extra_quadrature_order);
-
-  // Loop over all the variables we've been requested to find jumps in, to
-  // pre-request
-  for (var=0; var<n_vars; var++)
-    {
-      // Skip variables which aren't part of our norm,
-      // as well as SCALAR variables, which have no jumps
-      if (error_norm.weight(var) == 0.0 ||
-          system.variable_type(var).family == SCALAR)
-        continue;
-
-      // FIXME: Need to generalize this to vector-valued elements. [PB]
-      FEBase * side_fe = nullptr;
-
-      const std::set<unsigned char> & elem_dims =
-        fine_context->elem_dimensions();
-
-      for (const auto & dim : elem_dims)
-        {
-          fine_context->get_side_fe( var, side_fe, dim );
-
-          side_fe->get_xyz();
-        }
-    }
-
-  this->init_context(*fine_context);
-  this->init_context(*coarse_context);
-
-  // If we're integrating jumps across mesh slits, then we'll need a
-  // point locator to find slits, and we'll need to integrate point by
-  // point on sides.
-  std::unique_ptr<PointLocatorBase> point_locator;
-  std::unique_ptr<const Elem> side_ptr;
-
+  // Pre-create a point locator before threads get sublocators later
   if (integrate_slits)
-    point_locator = mesh.sub_point_locator();
+    mesh.sub_point_locator();
 
-  // Iterate over all the active elements in the mesh
-  // that live on this processor.
-  for (const auto & e : mesh.active_local_element_ptr_range())
+  // We're dealing with neighbors on other threads, so need to avoid
+  // stepping on each others' toes
+  Threads::spin_mutex error_mtx, flux_mtx;
+
+  // Iterate over all the active elements in the mesh that live on
+  // this processor.  Use threads iff the derived class supports them.
+  Threads::parallel_for
+    (mesh.active_local_element_stored_range(),
+    [this, &system, &error_mtx, &flux_mtx, &error_per_cell,
+     &n_flux_faces, estimate_parent_error]
+    (const ConstElemRange & range)
     {
-      const dof_id_type e_id = e->id();
+      // If we're threading-compatible, we need per-thread data.
+      std::unique_ptr<FEMContext> thread_fine_context, thread_coarse_context;
+      Real thread_fine_error, thread_coarse_error;
+
+      std::unique_ptr<FEMContext> & my_fine_context =
+        support_threads ? thread_fine_context : fine_context;
+      std::unique_ptr<FEMContext> & my_coarse_context =
+        support_threads ? thread_coarse_context : coarse_context;
+      Real & my_fine_error =
+        support_threads ? thread_fine_error : fine_error;
+      Real & my_coarse_error =
+        support_threads ? thread_coarse_error : coarse_error;
+
+      auto internal_integration =
+        [this, &my_fine_context, &my_coarse_context,
+         &my_fine_error, &my_coarse_error] ()
+        {
+          if (support_threads)
+            this->integrate_internal_side(*my_fine_context,
+                                          *my_coarse_context,
+                                          my_fine_error,
+                                          my_coarse_error);
+          else
+            this->internal_side_integration();
+        };
+
+      auto boundary_integration =
+        [this, &my_fine_context, &my_fine_error] ()
+        {
+          if (support_threads)
+            return this->integrate_boundary_side(*my_fine_context,
+                                                 my_fine_error);
+          else
+            return this->boundary_side_integration();
+        };
+
+      // We don't use full elem_jacobian or subjacobians here.
+      my_fine_context = std::make_unique<FEMContext>
+        (system, nullptr, /* allocate_local_matrices = */ false);
+      my_coarse_context = std::make_unique<FEMContext>
+        (system, nullptr, /* allocate_local_matrices = */ false);
+
+      // Don't overintegrate - we're evaluating differences of FE values,
+      // not products of them.
+      if (this->use_unweighted_quadrature_rules)
+        my_fine_context->use_unweighted_quadrature_rules(system.extra_quadrature_order);
+
+      // The number of variables in the system
+      const unsigned int n_vars = system.n_vars();
+
+      // Loop over all the variables we've been requested to find jumps in, to
+      // pre-request
+      for (var=0; var<n_vars; var++)
+        {
+          // Skip variables which aren't part of our norm,
+          // as well as SCALAR variables, which have no jumps
+          if (error_norm.weight(var) == 0.0 ||
+              system.variable_type(var).family == SCALAR)
+            continue;
+
+          // FIXME: Need to generalize this to vector-valued elements. [PB]
+          FEBase * side_fe = nullptr;
+
+          const std::set<unsigned char> & elem_dims =
+            my_fine_context->elem_dimensions();
+
+          for (const auto & dim : elem_dims)
+            {
+              my_fine_context->get_side_fe( var, side_fe, dim );
+
+              side_fe->get_xyz();
+            }
+        }
+
+      this->init_context(*my_fine_context);
+      this->init_context(*my_coarse_context);
+
+      // If we're integrating jumps across mesh slits, then we'll need a
+      // point locator to find slits, and we'll need to integrate point by
+      // point on sides.
+      std::unique_ptr<const Elem> side_ptr;
+
+      std::unique_ptr<PointLocatorBase> point_locator;
+      if (integrate_slits)
+        point_locator = system.get_mesh().sub_point_locator();
+
+  // The DofMap for this system
+#ifdef LIBMESH_ENABLE_AMR
+      const DofMap & dof_map = system.get_dof_map();
+#endif
+
+      for (const Elem * e : range)
+        {
+          const dof_id_type e_id = e->id();
 
 #ifdef LIBMESH_ENABLE_AMR
 
-      if (e->infinite())
-      {
-         libmesh_warning("Warning: Jumps on the border of infinite elements are ignored."
-                         << std::endl);
-         continue;
-      }
+          if (e->infinite())
+          {
+             libmesh_warning("Warning: Jumps on the border of infinite elements are ignored."
+                             << std::endl);
+             continue;
+          }
 
-      // See if the parent of element e has been examined yet;
-      // if not, we may want to compute the estimator on it
-      const Elem * parent = e->parent();
+          // See if the parent of element e has been examined yet;
+          // if not, we may want to compute the estimator on it
+          const Elem * parent = e->parent();
 
-      // We only can compute and only need to compute on
-      // parents with all active children
-      bool compute_on_parent = true;
-      if (!parent || !estimate_parent_error)
-        compute_on_parent = false;
-      else
-        for (auto & child : parent->child_ref_range())
-          if (!child.active())
+          // We only can compute and only need to compute on
+          // parents with all active children
+          bool compute_on_parent = true;
+          if (!parent || !estimate_parent_error)
             compute_on_parent = false;
+          else
+            for (auto & child : parent->child_ref_range())
+              if (!child.active())
+                compute_on_parent = false;
 
-      if (compute_on_parent &&
-          !error_per_cell[parent->id()])
-        {
-          // Compute a projection onto the parent
-          DenseVector<Number> Uparent;
-          FEBase::coarsened_dof_values
-            (*(system.solution), dof_map, parent, Uparent, false);
-
-          // Loop over the neighbors of the parent
-          for (auto n_p : parent->side_index_range())
+          if (compute_on_parent &&
+              !error_per_cell[parent->id()])
             {
-              if (parent->neighbor_ptr(n_p) != nullptr) // parent has a neighbor here
+              // Compute a projection onto the parent
+              DenseVector<Number> Uparent;
+              FEBase::coarsened_dof_values
+                (*(system.solution), dof_map, parent, Uparent, false);
+
+              // Loop over the neighbors of the parent
+              for (auto n_p : parent->side_index_range())
                 {
-                  // Find the active neighbors in this direction
-                  std::vector<const Elem *> active_neighbors;
-                  parent->neighbor_ptr(n_p)->
-                    active_family_tree_by_neighbor(active_neighbors,
-                                                   parent);
-                  // Compute the flux to each active neighbor
-                  for (std::size_t a=0,
-                        n_active_neighbors = active_neighbors.size();
-                       a != n_active_neighbors; ++a)
+                  if (parent->neighbor_ptr(n_p) != nullptr) // parent has a neighbor here
                     {
-                      const Elem * f = active_neighbors[a];
-
-                      if (f ->infinite()) // don't take infinite elements into account
-                         continue;
-
-                      // FIXME - what about when f->level <
-                      // parent->level()??
-                      if (f->level() >= parent->level())
+                      // Find the active neighbors in this direction
+                      std::vector<const Elem *> active_neighbors;
+                      parent->neighbor_ptr(n_p)->
+                        active_family_tree_by_neighbor(active_neighbors,
+                                                       parent);
+                      // Compute the flux to each active neighbor
+                      for (std::size_t a=0,
+                            n_active_neighbors = active_neighbors.size();
+                           a != n_active_neighbors; ++a)
                         {
-                          fine_context->pre_fe_reinit(system, f);
-                          coarse_context->pre_fe_reinit(system, parent);
-                          libmesh_assert_equal_to
-                            (coarse_context->get_elem_solution().size(),
-                             Uparent.size());
-                          coarse_context->get_elem_solution() = Uparent;
+                          const Elem * f = active_neighbors[a];
 
-                          this->reinit_sides();
+                          if (f ->infinite()) // don't take infinite elements into account
+                             continue;
 
-                          // Loop over all significant variables in the system
-                          for (var=0; var<n_vars; var++)
-                            if (error_norm.weight(var) != 0.0 &&
-                                system.variable_type(var).family != SCALAR)
-                              {
-                                this->internal_side_integration();
-
-                                error_per_cell[fine_context->get_elem().id()] +=
-                                  static_cast<ErrorVectorReal>(fine_error);
-                                error_per_cell[coarse_context->get_elem().id()] +=
-                                  static_cast<ErrorVectorReal>(coarse_error);
-                              }
-
-                          // Keep track of the number of internal flux
-                          // sides found on each element
-                          if (scale_by_n_flux_faces)
+                          // FIXME - what about when f->level <
+                          // parent->level()??
+                          if (f->level() >= parent->level())
                             {
-                              n_flux_faces[fine_context->get_elem().id()]++;
-                              n_flux_faces[coarse_context->get_elem().id()] +=
-                                this->coarse_n_flux_faces_increment();
+                              my_fine_context->pre_fe_reinit(system, f);
+                              my_coarse_context->pre_fe_reinit(system, parent);
+                              libmesh_assert_equal_to
+                                (my_coarse_context->get_elem_solution().size(),
+                                 Uparent.size());
+                              my_coarse_context->get_elem_solution() = Uparent;
+
+                              this->reinit_sides();
+
+                              // Loop over all significant variables in the system
+                              for (var=0; var<n_vars; var++)
+                                if (error_norm.weight(var) != 0.0 &&
+                                    system.variable_type(var).family != SCALAR)
+                                  {
+                                    internal_integration();
+
+                                    Threads::spin_mutex::scoped_lock lock(error_mtx);
+                                    error_per_cell[my_fine_context->get_elem().id()] +=
+                                      static_cast<ErrorVectorReal>(my_fine_error);
+                                    error_per_cell[my_coarse_context->get_elem().id()] +=
+                                      static_cast<ErrorVectorReal>(my_coarse_error);
+                                  }
+
+                              // Keep track of the number of internal flux
+                              // sides found on each element
+                              if (scale_by_n_flux_faces)
+                                {
+                                  Threads::spin_mutex::scoped_lock lock(flux_mtx);
+                                  n_flux_faces[my_fine_context->get_elem().id()]++;
+                                  n_flux_faces[my_coarse_context->get_elem().id()] +=
+                                    this->coarse_n_flux_faces_increment();
+                                }
                             }
                         }
                     }
-                }
-              else if (integrate_boundary_sides)
-                {
-                  fine_context->pre_fe_reinit(system, parent);
-                  libmesh_assert_equal_to
-                    (fine_context->get_elem_solution().size(),
-                     Uparent.size());
-                  fine_context->get_elem_solution() = Uparent;
-                  fine_context->side = cast_int<unsigned char>(n_p);
-                  fine_context->side_fe_reinit();
+                  else if (integrate_boundary_sides)
+                    {
+                      my_fine_context->pre_fe_reinit(system, parent);
+                      libmesh_assert_equal_to
+                        (my_fine_context->get_elem_solution().size(),
+                         Uparent.size());
+                      my_fine_context->get_elem_solution() = Uparent;
+                      my_fine_context->side = cast_int<unsigned char>(n_p);
+                      my_fine_context->side_fe_reinit();
 
-                  // If we find a boundary flux for any variable,
-                  // let's just count it as a flux face for all
-                  // variables.  Otherwise we'd need to keep track of
-                  // a separate n_flux_faces and error_per_cell for
-                  // every single var.
-                  bool found_boundary_flux = false;
+                      // If we find a boundary flux for any variable,
+                      // let's just count it as a flux face for all
+                      // variables.  Otherwise we'd need to keep track of
+                      // a separate n_flux_faces and error_per_cell for
+                      // every single var.
+                      bool found_boundary_flux = false;
 
-                  for (var=0; var<n_vars; var++)
-                    if (error_norm.weight(var) != 0.0 &&
-                        system.variable_type(var).family != SCALAR)
-                      {
-                        if (this->boundary_side_integration())
+                      for (var=0; var<n_vars; var++)
+                        if (error_norm.weight(var) != 0.0 &&
+                            system.variable_type(var).family != SCALAR)
                           {
-                            error_per_cell[fine_context->get_elem().id()] +=
-                              static_cast<ErrorVectorReal>(fine_error);
-                            found_boundary_flux = true;
+                            if (boundary_integration())
+                              {
+                                Threads::spin_mutex::scoped_lock lock(error_mtx);
+                                error_per_cell[my_fine_context->get_elem().id()] +=
+                                  static_cast<ErrorVectorReal>(my_fine_error);
+                                found_boundary_flux = true;
+                              }
                           }
-                      }
 
-                  if (scale_by_n_flux_faces && found_boundary_flux)
-                    n_flux_faces[fine_context->get_elem().id()]++;
+                      if (scale_by_n_flux_faces && found_boundary_flux)
+                        {
+                          Threads::spin_mutex::scoped_lock lock(flux_mtx);
+                          n_flux_faces[my_fine_context->get_elem().id()]++;
+                        }
+                    }
                 }
             }
-        }
 #endif // #ifdef LIBMESH_ENABLE_AMR
 
-      // If we do any more flux integration, e will be the fine element
-      fine_context->pre_fe_reinit(system, e);
+          // If we do any more flux integration, e will be the fine element
+          my_fine_context->pre_fe_reinit(system, e);
 
-      // Loop over the neighbors of element e
-      for (auto n_e : e->side_index_range())
-        {
-          if ((e->neighbor_ptr(n_e) != nullptr) ||
-              integrate_boundary_sides)
+          // Loop over the neighbors of element e
+          for (auto n_e : e->side_index_range())
             {
-              fine_context->side = cast_int<unsigned char>(n_e);
-              fine_context->side_fe_reinit();
-            }
-
-          // e is not on the boundary (infinite elements are treated as boundary)
-          if (e->neighbor_ptr(n_e) != nullptr
-              && !e->neighbor_ptr(n_e) ->infinite())
-            {
-
-              const Elem * f           = e->neighbor_ptr(n_e);
-              const dof_id_type f_id = f->id();
-
-              // Compute flux jumps if we are in case 1 or case 2.
-              if ((f->active() && (f->level() == e->level()) && (e_id < f_id))
-                  || (f->level() < e->level()))
+              if ((e->neighbor_ptr(n_e) != nullptr) ||
+                  integrate_boundary_sides)
                 {
-                  // f is now the coarse element
-                  coarse_context->pre_fe_reinit(system, f);
+                  my_fine_context->side = cast_int<unsigned char>(n_e);
+                  my_fine_context->side_fe_reinit();
+                }
 
-                  this->reinit_sides();
-
-                  // Loop over all significant variables in the system
-                  for (var=0; var<n_vars; var++)
-                    if (error_norm.weight(var) != 0.0 &&
-                        system.variable_type(var).family != SCALAR)
-                      {
-                        this->internal_side_integration();
-
-                        error_per_cell[fine_context->get_elem().id()] +=
-                          static_cast<ErrorVectorReal>(fine_error);
-                        error_per_cell[coarse_context->get_elem().id()] +=
-                          static_cast<ErrorVectorReal>(coarse_error);
-                      }
-
-                  // Keep track of the number of internal flux
-                  // sides found on each element
-                  if (scale_by_n_flux_faces)
-                    {
-                      n_flux_faces[fine_context->get_elem().id()]++;
-                      n_flux_faces[coarse_context->get_elem().id()] +=
-                        this->coarse_n_flux_faces_increment();
-                    }
-                } // end if (case1 || case2)
-            } // if (e->neighbor(n_e) != nullptr)
-
-          // e might not have a neighbor_ptr, but might still have
-          // another element sharing its side.  This can happen in a
-          // mesh where solution continuity is maintained via nodal
-          // constraint rows.
-          else if (integrate_slits)
-            {
-              side_ptr = e->build_side_ptr(n_e);
-              std::set<const Elem *> candidate_elements;
-              (*point_locator)(side_ptr->vertex_average(), candidate_elements);
-
-              // We should have at least found ourselves...
-              libmesh_assert(candidate_elements.count(e));
-
-              // If we only found ourselves, this probably isn't a
-              // slit; we don't yet support meshes so non-conforming
-              // as to have overlap of part of an element side without
-              // overlap of its center.
-              if (candidate_elements.size() < 2)
-                continue;
-
-              FEType hardest_fe_type = fine_context->find_hardest_fe_type();
-
-              auto dim = e->dim();
-
-              auto side_qrule =
-                hardest_fe_type.unweighted_quadrature_rule
-                (dim-1, system.extra_quadrature_order);
-              auto side_fe = FEAbstract::build(dim, hardest_fe_type);
-              side_fe->attach_quadrature_rule(side_qrule.get());
-              const std::vector<Point> & qface_point = side_fe->get_xyz();
-              side_fe->reinit(e, n_e);
-
-              for (auto qp : make_range(side_qrule->n_points()))
+              // e is not on the boundary (infinite elements are treated as boundary)
+              if (e->neighbor_ptr(n_e) != nullptr
+                  && !e->neighbor_ptr(n_e) ->infinite())
                 {
-                  const Point p = qface_point[qp];
-                  const std::vector<Point> qp_pointvec(1, p);
-                  std::set<const Elem *> side_elements;
-                  (*point_locator)(side_ptr->vertex_average(), side_elements);
 
-                  // If we have multiple neighbors meeting here we'll just
-                  // take weighted jumps from all of them.
-                  //
-                  // We'll also do integrations from both sides of slits,
-                  // rather than try to figure out a disambiguation rule
-                  // that makes sense for non-conforming slits in general.
-                  // This means we want an extra factor of 0.5 on the
-                  // integrals to compensate for doubling them.
-                  const std::size_t n_neighbors = side_elements.size() - 1;
-                  const Real neighbor_frac = Real(1)/n_neighbors;
+                  const Elem * f           = e->neighbor_ptr(n_e);
+                  const dof_id_type f_id = f->id();
 
-                  const std::vector<Real>
-                    qp_weightvec(1, neighbor_frac * side_qrule->w(qp));
-
-                  for (const Elem * f : side_elements)
+                  // Compute flux jumps if we are in case 1 or case 2.
+                  if ((f->active() && (f->level() == e->level()) && (e_id < f_id))
+                      || (f->level() < e->level()))
                     {
-                      if (f == e)
-                        continue;
+                      // f is now the coarse element
+                      my_coarse_context->pre_fe_reinit(system, f);
 
-                      coarse_context->pre_fe_reinit(system, f);
-                      fine_context->pre_fe_reinit(system, e);
-                      std::vector<Point> qp_coarse, qp_fine;
-                      for (unsigned int v=0; v<n_vars; v++)
-                        if (error_norm.weight(v) != 0.0 &&
-                            fine_context->get_system().variable_type(v).family != SCALAR)
-                          {
-                            FEBase * coarse_fe = coarse_context->get_side_fe(v, dim);
-                            if (qp_coarse.empty())
-                              FEMap::inverse_map (dim, f, qp_pointvec, qp_coarse);
-                            coarse_fe->reinit(f, &qp_coarse, &qp_weightvec);
-                            FEBase * fine_fe = fine_context->get_side_fe(v, dim);
-                            if (qp_fine.empty())
-                              FEMap::inverse_map (dim, e, qp_pointvec, qp_fine);
-                            fine_fe->reinit(e, &qp_fine, &qp_weightvec);
-                          }
+                      this->reinit_sides();
 
                       // Loop over all significant variables in the system
                       for (var=0; var<n_vars; var++)
                         if (error_norm.weight(var) != 0.0 &&
                             system.variable_type(var).family != SCALAR)
                           {
-                            this->internal_side_integration();
+                            internal_integration();
 
-                            error_per_cell[fine_context->get_elem().id()] +=
-                              static_cast<ErrorVectorReal>(fine_error);
-                            error_per_cell[coarse_context->get_elem().id()] +=
-                              static_cast<ErrorVectorReal>(coarse_error);
+                            Threads::spin_mutex::scoped_lock lock(error_mtx);
+                            error_per_cell[my_fine_context->get_elem().id()] +=
+                              static_cast<ErrorVectorReal>(my_fine_error);
+                            error_per_cell[my_coarse_context->get_elem().id()] +=
+                              static_cast<ErrorVectorReal>(my_coarse_error);
                           }
+
+                      // Keep track of the number of internal flux
+                      // sides found on each element
+                      if (scale_by_n_flux_faces)
+                        {
+                          Threads::spin_mutex::scoped_lock lock(flux_mtx);
+                          n_flux_faces[my_fine_context->get_elem().id()]++;
+                          n_flux_faces[my_coarse_context->get_elem().id()] +=
+                            this->coarse_n_flux_faces_increment();
+                        }
+                    } // end if (case1 || case2)
+                } // if (e->neighbor(n_e) != nullptr)
+
+              // e might not have a neighbor_ptr, but might still have
+              // another element sharing its side.  This can happen in a
+              // mesh where solution continuity is maintained via nodal
+              // constraint rows.
+              else if (integrate_slits)
+                {
+                  side_ptr = e->build_side_ptr(n_e);
+                  std::set<const Elem *> candidate_elements;
+                  (*point_locator)(side_ptr->vertex_average(), candidate_elements);
+
+                  // We should have at least found ourselves...
+                  libmesh_assert(candidate_elements.count(e));
+
+                  // If we only found ourselves, this probably isn't a
+                  // slit; we don't yet support meshes so non-conforming
+                  // as to have overlap of part of an element side without
+                  // overlap of its center.
+                  if (candidate_elements.size() < 2)
+                    continue;
+
+                  FEType hardest_fe_type = my_fine_context->find_hardest_fe_type();
+
+                  auto dim = e->dim();
+
+                  auto side_qrule =
+                    hardest_fe_type.unweighted_quadrature_rule
+                    (dim-1, system.extra_quadrature_order);
+                  auto side_fe = FEAbstract::build(dim, hardest_fe_type);
+                  side_fe->attach_quadrature_rule(side_qrule.get());
+                  const std::vector<Point> & qface_point = side_fe->get_xyz();
+                  side_fe->reinit(e, n_e);
+
+                  for (auto qp : make_range(side_qrule->n_points()))
+                    {
+                      const Point p = qface_point[qp];
+                      const std::vector<Point> qp_pointvec(1, p);
+                      std::set<const Elem *> side_elements;
+                      (*point_locator)(side_ptr->vertex_average(), side_elements);
+
+                      // If we have multiple neighbors meeting here we'll just
+                      // take weighted jumps from all of them.
+                      //
+                      // We'll also do integrations from both sides of slits,
+                      // rather than try to figure out a disambiguation rule
+                      // that makes sense for non-conforming slits in general.
+                      // This means we want an extra factor of 0.5 on the
+                      // integrals to compensate for doubling them.
+                      const std::size_t n_neighbors = side_elements.size() - 1;
+                      const Real neighbor_frac = Real(1)/n_neighbors;
+
+                      const std::vector<Real>
+                        qp_weightvec(1, neighbor_frac * side_qrule->w(qp));
+
+                      for (const Elem * f : side_elements)
+                        {
+                          if (f == e)
+                            continue;
+
+                          my_coarse_context->pre_fe_reinit(system, f);
+                          my_fine_context->pre_fe_reinit(system, e);
+                          std::vector<Point> qp_coarse, qp_fine;
+                          for (unsigned int v=0; v<n_vars; v++)
+                            if (error_norm.weight(v) != 0.0 &&
+                                my_fine_context->get_system().variable_type(v).family != SCALAR)
+                              {
+                                FEBase * coarse_fe = my_coarse_context->get_side_fe(v, dim);
+                                if (qp_coarse.empty())
+                                  FEMap::inverse_map (dim, f, qp_pointvec, qp_coarse);
+                                coarse_fe->reinit(f, &qp_coarse, &qp_weightvec);
+                                FEBase * fine_fe = my_fine_context->get_side_fe(v, dim);
+                                if (qp_fine.empty())
+                                  FEMap::inverse_map (dim, e, qp_pointvec, qp_fine);
+                                fine_fe->reinit(e, &qp_fine, &qp_weightvec);
+                              }
+
+                          // Loop over all significant variables in the system
+                          for (var=0; var<n_vars; var++)
+                            if (error_norm.weight(var) != 0.0 &&
+                                system.variable_type(var).family != SCALAR)
+                              {
+                                internal_integration();
+
+                                Threads::spin_mutex::scoped_lock lock(error_mtx);
+                                error_per_cell[my_fine_context->get_elem().id()] +=
+                                  static_cast<ErrorVectorReal>(my_fine_error);
+                                error_per_cell[my_coarse_context->get_elem().id()] +=
+                                  static_cast<ErrorVectorReal>(my_coarse_error);
+                              }
+                        }
                     }
                 }
-            }
 
-          // Otherwise, e is on the boundary.  If it happens to
-          // be on a Dirichlet boundary, we need not do anything.
-          // On the other hand, if e is on a Neumann (flux) boundary
-          // with grad(u).n = g, we need to compute the additional residual
-          // (h * \int |g - grad(u_h).n|^2 dS)^(1/2).
-          // We can only do this with some knowledge of the boundary
-          // conditions, i.e. the user must have attached an appropriate
-          // BC function.
-          else if (integrate_boundary_sides)
-            {
-              if (integrate_slits)
-                libmesh_not_implemented();
+              // Otherwise, e is on the boundary.  If it happens to
+              // be on a Dirichlet boundary, we need not do anything.
+              // On the other hand, if e is on a Neumann (flux) boundary
+              // with grad(u).n = g, we need to compute the additional residual
+              // (h * \int |g - grad(u_h).n|^2 dS)^(1/2).
+              // We can only do this with some knowledge of the boundary
+              // conditions, i.e. the user must have attached an appropriate
+              // BC function.
+              else if (integrate_boundary_sides)
+                {
+                  if (integrate_slits)
+                    libmesh_not_implemented();
 
-              bool found_boundary_flux = false;
+                  bool found_boundary_flux = false;
 
-              for (var=0; var<n_vars; var++)
-                if (error_norm.weight(var) != 0.0 &&
-                    system.variable_type(var).family != SCALAR)
-                  if (this->boundary_side_integration())
+                  for (var=0; var<n_vars; var++)
+                    if (error_norm.weight(var) != 0.0 &&
+                        system.variable_type(var).family != SCALAR)
+                      if (this->boundary_side_integration())
+                        {
+                          Threads::spin_mutex::scoped_lock lock(error_mtx);
+                          error_per_cell[my_fine_context->get_elem().id()] +=
+                            static_cast<ErrorVectorReal>(my_fine_error);
+                          found_boundary_flux = true;
+                        }
+
+                  if (scale_by_n_flux_faces && found_boundary_flux)
                     {
-                      error_per_cell[fine_context->get_elem().id()] +=
-                        static_cast<ErrorVectorReal>(fine_error);
-                      found_boundary_flux = true;
+                      Threads::spin_mutex::scoped_lock lock(flux_mtx);
+                      n_flux_faces[my_fine_context->get_elem().id()]++;
                     }
-
-              if (scale_by_n_flux_faces && found_boundary_flux)
-                n_flux_faces[fine_context->get_elem().id()]++;
-            } // end if (e->neighbor_ptr(n_e) == nullptr)
-        } // end loop over neighbors
-    } // End loop over active local elements
-
+                } // end if (e->neighbor_ptr(n_e) == nullptr)
+            } // end loop over neighbors
+        } // end loop over subrange
+    },
+    this->support_threads ? libMesh::n_threads() : 1); // End threaded loop
 
   // Each processor has now computed the error contributions
   // for its local elements.  We need to sum the vector
@@ -509,10 +573,13 @@ void JumpErrorEstimator::estimate_error (const System & system,
   this->reduce_error(error_per_cell, system.comm());
 
   // Compute the square-root of each component.
-  for (auto i : index_range(error_per_cell))
-    if (error_per_cell[i] != 0.)
-      error_per_cell[i] = std::sqrt(error_per_cell[i]);
-
+  Threads::parallel_for_each
+    (index_range(error_per_cell),
+     [&error_per_cell](auto i)
+     {
+       if (error_per_cell[i] != 0.)
+         error_per_cell[i] = std::sqrt(error_per_cell[i]);
+     });
 
   if (this->scale_by_n_flux_faces)
     {
@@ -527,13 +594,15 @@ void JumpErrorEstimator::estimate_error (const System & system,
 #endif
 
       // Scale the error by the number of flux faces for each element
-      for (auto i : index_range(n_flux_faces))
-        {
-          if (n_flux_faces[i] == 0.0) // inactive or non-local element
-            continue;
+      Threads::parallel_for_each
+        (index_range(n_flux_faces),
+         [&error_per_cell, &n_flux_faces](auto i)
+         {
+           if (n_flux_faces[i] == 0.0) // inactive or non-local element
+             return;
 
-          error_per_cell[i] /= static_cast<ErrorVectorReal>(n_flux_faces[i]);
-        }
+           error_per_cell[i] /= static_cast<ErrorVectorReal>(n_flux_faces[i]);
+         });
     }
 
   // If we used a non-standard solution before, now is the time to fix

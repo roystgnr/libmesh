@@ -58,6 +58,7 @@ public:
       use_unweighted_quadrature_rules(false),
       integrate_slits(false),
       integrate_boundary_sides(false),
+      support_threads(false),
       fine_context(),
       coarse_context(),
       fine_error(0),
@@ -150,8 +151,37 @@ protected:
   /**
    * The function, to be implemented by derived classes, which calculates an error
    * term on an internal side
+   *
+   * \deprecated - New subclasses should override the thread-safe
+   * \p integrate_internal_side function (which uses arguments rather
+   * than member variables) instead.
    */
   virtual void internal_side_integration() = 0;
+
+  /**
+   * The function, to be implemented by derived classes where
+   * support_threads is set to true, which calculates an error
+   * term on an internal side.
+   */
+  virtual void integrate_internal_side(FEMContext & /*fine_con*/,
+                                       FEMContext & /*coarse_con*/,
+                                       Real & /*fine_err*/,
+                                       Real & /*coarse_err*/) {
+    libmesh_error();
+  }
+
+  /**
+   * The function, to be implemented by derived classes, which
+   * calculates an error term on a boundary side.
+   *
+   * \deprecated - New subclasses should override the thread-safe
+   * \p integrate_boundary_side function (which uses arguments rather
+   * than member variables) instead.
+   *
+   * \returns \p true if the flux bc function is in fact defined on
+   * the current side.
+   */
+  virtual bool boundary_side_integration() { return false; }
 
   /**
    * The function, to be implemented by derived classes, which
@@ -160,13 +190,20 @@ protected:
    * \returns \p true if the flux bc function is in fact defined on
    * the current side.
    */
-  virtual bool boundary_side_integration() { return false; }
+  virtual bool integrate_boundary_side(FEMContext & /*context*/,
+                                       Real & /*error*/) { return false; }
 
   /**
    * A boolean flag, by default false, to be set to true if integrations
    * with boundary_side_integration() should be performed
    */
   bool integrate_boundary_sides;
+
+  /**
+   * A boolean flag, by default false, to be set to true if integrations
+   * can be done on multiple threads
+   */
+  bool support_threads;
 
   /**
    * Context objects for integrating on the fine and coarse elements
