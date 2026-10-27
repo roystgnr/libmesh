@@ -400,6 +400,7 @@ void PetscMatrix<T>::reset_preallocation()
 template <typename T>
 void PetscMatrix<T>::zero ()
 {
+  LOG_SCOPE("zero()", "PetscMatrix");
   libmesh_assert (this->initialized());
 
   semiparallel_only();
@@ -1018,6 +1019,7 @@ void PetscMatrix<T>::add_matrix(const DenseMatrix<T> & dm,
 template <typename T>
 void PetscMatrix<T>::add (const T a_in, const SparseMatrix<T> & X_in)
 {
+  LOG_SCOPE("add(a,X)", "PetscMatrix");
   libmesh_assert (this->initialized());
 
   // sanity check. but this cannot avoid
