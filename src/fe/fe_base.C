@@ -44,141 +44,6 @@
 // C++ Includes
 #include <memory>
 
-// Anonymous namespace, for a helper function for periodic boundary
-// constraint calculations
-namespace
-{
-using namespace libMesh;
-
-#ifdef LIBMESH_ENABLE_PERIODIC
-
-// Find the "primary" element around a boundary point:
-const Elem * primary_boundary_point_neighbor(const Elem * elem,
-                                             const Point & p,
-                                             const BoundaryInfo & boundary_info,
-                                             const std::set<boundary_id_type> & boundary_ids)
-{
-  // If we don't find a better alternative, the user will have
-  // provided the primary element
-  const Elem * primary = elem;
-
-  // Container to catch boundary IDs passed back by BoundaryInfo.
-  std::vector<boundary_id_type> bc_ids;
-
-  // Pull object out of the loop to reduce heap operations
-  std::unique_ptr<const Elem> periodic_side;
-
-  std::set<const Elem *> point_neighbors;
-  elem->find_point_neighbors(p, point_neighbors);
-  for (const auto & pt_neighbor : point_neighbors)
-    {
-      // If this point neighbor isn't at least
-      // as coarse as the current primary elem, or if it is at
-      // the same level but has a lower id, then
-      // we won't defer to it.
-      if ((pt_neighbor->level() > primary->level()) ||
-          (pt_neighbor->level() == primary->level() &&
-           pt_neighbor->id() < primary->id()))
-        continue;
-
-      // Otherwise, we will defer to the point neighbor, but only if
-      // one of its sides is on a relevant boundary and that side
-      // contains this vertex
-      bool vertex_on_periodic_side = false;
-      for (auto ns : pt_neighbor->side_index_range())
-        {
-          boundary_info.boundary_ids (pt_neighbor, ns, bc_ids);
-
-          bool on_relevant_boundary = false;
-          for (const auto & id : boundary_ids)
-            if (std::find(bc_ids.begin(), bc_ids.end(), id) != bc_ids.end())
-              on_relevant_boundary = true;
-
-          if (!on_relevant_boundary)
-            continue;
-
-          pt_neighbor->build_side_ptr(periodic_side, ns);
-          if (!periodic_side->contains_point(p))
-            continue;
-
-          vertex_on_periodic_side = true;
-          break;
-        }
-
-      if (vertex_on_periodic_side)
-        primary = pt_neighbor;
-    }
-
-  return primary;
-}
-
-// Find the "primary" element around a boundary edge:
-const Elem * primary_boundary_edge_neighbor(const Elem * elem,
-                                            const Point & p1,
-                                            const Point & p2,
-                                            const BoundaryInfo & boundary_info,
-                                            const std::set<boundary_id_type> & boundary_ids)
-{
-  // If we don't find a better alternative, the user will have
-  // provided the primary element
-  const Elem * primary = elem;
-
-  std::set<const Elem *> edge_neighbors;
-  elem->find_edge_neighbors(p1, p2, edge_neighbors);
-
-  // Container to catch boundary IDs handed back by BoundaryInfo
-  std::vector<boundary_id_type> bc_ids;
-
-  // Pull object out of the loop to reduce heap operations
-  std::unique_ptr<const Elem> periodic_side;
-
-  for (const auto & e_neighbor : edge_neighbors)
-    {
-      // If this edge neighbor isn't at least
-      // as coarse as the current primary elem, or if it is at
-      // the same level but has a lower id, then
-      // we won't defer to it.
-      if ((e_neighbor->level() > primary->level()) ||
-          (e_neighbor->level() == primary->level() &&
-           e_neighbor->id() < primary->id()))
-        continue;
-
-      // Otherwise, we will defer to the edge neighbor, but only if
-      // one of its sides is on this periodic boundary and that
-      // side contains this edge
-      bool vertex_on_periodic_side = false;
-      for (auto ns : e_neighbor->side_index_range())
-        {
-          boundary_info.boundary_ids (e_neighbor, ns, bc_ids);
-
-          bool on_relevant_boundary = false;
-          for (const auto & id : boundary_ids)
-            if (std::find(bc_ids.begin(), bc_ids.end(), id) != bc_ids.end())
-              on_relevant_boundary = true;
-
-          if (!on_relevant_boundary)
-            continue;
-
-          e_neighbor->build_side_ptr(periodic_side, ns);
-          if (!(periodic_side->contains_point(p1) &&
-                periodic_side->contains_point(p2)))
-            continue;
-
-          vertex_on_periodic_side = true;
-          break;
-        }
-
-      if (vertex_on_periodic_side)
-        primary = e_neighbor;
-    }
-
-  return primary;
-}
-
-#endif // LIBMESH_ENABLE_PERIODIC
-
-}
-
 namespace libMesh
 {
 
@@ -1929,7 +1794,7 @@ compute_periodic_constraints (DofConstraints & constraints,
   libmesh_assert (cont == C_ZERO || cont == C_ONE);
 
   // We'll use element size to generate relative tolerances later
-  const Real primary_hmin = elem->hmin();
+  const Real elem_hmin = elem->hmin();
 
   std::unique_ptr<FEGenericBase<OutputShape>> neigh_fe
     (FEGenericBase<OutputShape>::build(Dim, base_fe_type));
@@ -2134,415 +1999,84 @@ compute_periodic_constraints (DofConstraints & constraints,
                   Ke.cholesky_solve(Fe, Ue[is]);
                 }
 
-              // Make sure we're not adding recursive constraints
-              // due to the redundancy in the way we add periodic
-              // boundary constraints
+              // Make sure we're not adding cyclic constraints due to
+              // the redundancy in the way we add periodic boundary
+              // constraints
               //
               // In order for this to work while threaded or on
               // distributed meshes, we need a rigorous way to
-              // avoid recursive constraints.  Here it is:
+              // avoid cycles of constraints.  On distributed
+              // meshes with remote point-neighbors in particular, not
+              // every rank may be able to see the "root"
+              // unconstrained DoF(s) that should constrain its own
+              // periodic constrained DoFs.
               //
-              // For vertex DoFs, if there is a "prior" element
-              // (i.e. a coarser element or an equally refined
-              // element with a lower id) on this boundary which
-              // contains the vertex point, then we will avoid
-              // generating constraints; the prior element (or
-              // something prior to it) may do so.  If we are the
-              // most prior (or "primary") element on this
-              // boundary sharing this point, then we look at the
-              // boundary periodic to us, we find the primary
-              // element there, and if that primary is coarser or
-              // equal-but-lower-id, then our vertex dofs are
-              // constrained in terms of that element.
+              // We handle this via a total ordering on nodes (which
+              // is where all boundary DoFs that might have a periodic
+              // boundary live).
               //
-              // For edge DoFs, if there is a coarser element
-              // on this boundary sharing this edge, then we will
-              // avoid generating constraints (we will be
-              // constrained indirectly via AMR constraints
-              // connecting us to the coarser element's DoFs).  If
-              // we are the coarsest element sharing this edge,
-              // then we generate constraints if and only if we
-              // are finer than the coarsest element on the
-              // boundary periodic to us sharing the corresponding
-              // periodic edge, or if we are at equal level but
-              // our edge nodes have higher ids than the periodic
-              // edge nodes (sorted from highest to lowest, then
-              // compared lexicographically)
+              // If the paired element we're looking at is coarser
+              // than our element, we can constrain to it.
               //
-              // For face DoFs, we generate constraints if we are
-              // finer than our periodic neighbor, or if we are at
-              // equal level but our element id is higher than its
-              // element id.
-              //
-              // If the primary neighbor is also the current elem
-              // (a 1-element-thick mesh) then we choose which
-              // vertex dofs to constrain via lexicographic
-              // ordering on point locations
+              // If the paired active neighbor we're looking at is at
+              // the same level as our active element, then it is
+              // "conforming" across the periodic boundary, and our
+              // boundary nodes should match theirs one-to-one; we
+              // will just use nodes' lexicographic ordering to
+              // determine which constrains which.
+              std::set<dof_id_type> dofs_to_not_constrain;
 
-              // FIXME: This code doesn't yet properly handle
-              // cases where multiple different periodic BCs
-              // intersect.
-              std::set<dof_id_type> my_constrained_dofs;
-
-              // Container to catch boundary IDs handed back by BoundaryInfo.
-              std::vector<boundary_id_type> new_bc_ids;
-
-              for (auto n : elem->node_index_range())
+              if (neigh->level() == elem->level())
                 {
-                  if (!elem->is_node_on_side(n,s))
-                    continue;
+                  auto elem_nodes = elem->nodes_on_side(s);
+                  auto neigh_nodes = neigh->nodes_on_side(s_neigh);
 
-                  const Node & my_node = elem->node_ref(n);
+                  const Real tol = elem_hmin * TOLERANCE;
 
-                  if (elem->is_vertex(n))
+                  auto do_not_constrain =
+                    [&dofs_to_not_constrain, sys_number, variable_number]
+                    (const DofObject & d)
                     {
-                      // Find all boundary ids that include this
-                      // point and have periodic boundary
-                      // conditions for this variable
-                      std::set<boundary_id_type> point_bcids;
+                      for (auto i : make_range(d.n_comp(sys_number,
+                                                        variable_number)))
+                        dofs_to_not_constrain.insert
+                          (d.dof_number (sys_number, variable_number, i));
+                    };
 
-                      for (unsigned int new_s = 0;
-                           new_s != max_ns; ++new_s)
-                        {
-                          if (!elem->is_node_on_side(n,new_s))
-                            continue;
-
-                          mesh.get_boundary_info().boundary_ids (elem, s, new_bc_ids);
-
-                          for (const auto & new_boundary_id : new_bc_ids)
-                            {
-                              const PeriodicBoundaryBase * new_periodic = boundaries.boundary(new_boundary_id);
-                              if (new_periodic && new_periodic->is_my_variable(variable_number))
-                            point_bcids.insert(new_boundary_id);
-                            }
-                        }
-
-                      // See if this vertex has point neighbors to
-                      // defer to
-                      if (primary_boundary_point_neighbor
-                          (elem, my_node, mesh.get_boundary_info(), point_bcids)
-                          != elem)
-                        continue;
-
-                      // Find the complementary boundary id set
-                      std::set<boundary_id_type> point_pairedids;
-                      for (const auto & new_boundary_id : point_bcids)
-                        {
-                          const PeriodicBoundaryBase * new_periodic = boundaries.boundary(new_boundary_id);
-                          point_pairedids.insert(new_periodic->pairedboundary);
-                        }
-
-                      // What do we want to constrain against?
-                      const Elem * primary_elem = nullptr;
-                      const Elem * main_neigh = nullptr;
-                      Point main_pt = my_node,
-                        primary_pt = my_node;
-
-                      for (const auto & new_boundary_id : point_bcids)
-                        {
-                          // Find the corresponding periodic point and
-                          // its primary neighbor
-                          const PeriodicBoundaryBase * new_periodic = boundaries.boundary(new_boundary_id);
-
-                          const Point neigh_pt =
-                            new_periodic->get_corresponding_pos(my_node);
-
-                          // If the point is getting constrained
-                          // to itself by this PBC then we don't
-                          // generate any constraints
-                          if (neigh_pt.absolute_fuzzy_equals
-                              (my_node, primary_hmin*TOLERANCE))
-                            continue;
-
-                          // Otherwise we'll have a constraint in
-                          // one direction or another
-                          if (!primary_elem)
-                            primary_elem = elem;
-
-                          const Elem * primary_neigh =
-                            primary_boundary_point_neighbor(neigh, neigh_pt,
-                                                            mesh.get_boundary_info(),
-                                                            point_pairedids);
-
-                          libmesh_assert(primary_neigh);
-
-                          if (new_boundary_id == boundary_id)
-                            {
-                              main_neigh = primary_neigh;
-                              main_pt = neigh_pt;
-                            }
-
-                          // Finer elements will get constrained in
-                          // terms of coarser neighbors, not the
-                          // other way around
-                          if ((primary_neigh->level() > primary_elem->level()) ||
-
-                              // For equal-level elements, the one with
-                              // higher id gets constrained in terms of
-                              // the one with lower id
-                              (primary_neigh->level() == primary_elem->level() &&
-                               primary_neigh->id() > primary_elem->id()) ||
-
-                              // On a one-element-thick mesh, we compare
-                              // points to see what side gets constrained
-                              (primary_neigh == primary_elem &&
-                               (neigh_pt > primary_pt)))
-                            continue;
-
-                          primary_elem = primary_neigh;
-                          primary_pt = neigh_pt;
-                        }
-
-                      if (!primary_elem ||
-                          primary_elem != main_neigh ||
-                          primary_pt != main_pt)
-                        continue;
-                    }
-                  else if (elem->is_edge(n))
+                  for (auto n : elem_nodes)
                     {
-                      // Find which edge we're on
-                      unsigned int e=0, ne = elem->n_edges();
-                      for (; e != ne; ++e)
+                      const Node & my_node = elem->node_ref(n);
+
+                      const Point neigh_pt =
+                        periodic->get_corresponding_pos(my_node);
+
+                      if (my_node.absolute_fuzzy_equals(neigh_pt, tol))
                         {
-                          if (elem->is_node_on_edge(n,e))
-                            break;
+                          do_not_constrain(my_node);
+                          continue;
                         }
-                      libmesh_assert_less (e, elem->n_edges());
 
-                      // Find the edge end nodes
-                      const Node
-                        * e1 = nullptr,
-                        * e2 = nullptr;
-                      for (auto nn : elem->node_index_range())
+                      for (auto nn : neigh_nodes)
                         {
-                          if (nn == n)
-                            continue;
+                          const Point & neigh_node = neigh->point(nn);
 
-                          if (elem->is_node_on_edge(nn, e))
+                          if (neigh_node.absolute_fuzzy_equals(neigh_pt, tol))
                             {
-                              if (e1 == nullptr)
-                                {
-                                  e1 = elem->node_ptr(nn);
-                                }
-                              else
-                                {
-                                  e2 = elem->node_ptr(nn);
-                                  break;
-                                }
+                              if (neigh_node > my_node)
+                                do_not_constrain(my_node);
+                              break;
                             }
                         }
-                      libmesh_assert (e1 && e2);
-
-                      // Find all boundary ids that include this
-                      // edge and have periodic boundary
-                      // conditions for this variable
-                      std::set<boundary_id_type> edge_bcids;
-
-                      for (unsigned int new_s = 0;
-                           new_s != max_ns; ++new_s)
-                        {
-                          if (!elem->is_node_on_side(n,new_s))
-                            continue;
-
-                          // We're reusing the new_bc_ids vector created outside the loop over nodes.
-                          mesh.get_boundary_info().boundary_ids (elem, s, new_bc_ids);
-
-                          for (const auto & new_boundary_id : new_bc_ids)
-                            {
-                              const PeriodicBoundaryBase * new_periodic = boundaries.boundary(new_boundary_id);
-                              if (new_periodic && new_periodic->is_my_variable(variable_number))
-                                edge_bcids.insert(new_boundary_id);
-                            }
-                        }
-
-
-                      // See if this edge has neighbors to defer to
-                      if (primary_boundary_edge_neighbor
-                          (elem, *e1, *e2, mesh.get_boundary_info(), edge_bcids)
-                          != elem)
-                        continue;
-
-                      // Find the complementary boundary id set
-                      std::set<boundary_id_type> edge_pairedids;
-                      for (const auto & new_boundary_id : edge_bcids)
-                        {
-                          const PeriodicBoundaryBase * new_periodic = boundaries.boundary(new_boundary_id);
-                          edge_pairedids.insert(new_periodic->pairedboundary);
-                        }
-
-                      // What do we want to constrain against?
-                      const Elem * primary_elem = nullptr;
-                      const Elem * main_neigh = nullptr;
-                      Point main_pt1 = *e1,
-                        main_pt2 = *e2,
-                        primary_pt1 = *e1,
-                        primary_pt2 = *e2;
-
-                      for (const auto & new_boundary_id : edge_bcids)
-                        {
-                          // Find the corresponding periodic edge and
-                          // its primary neighbor
-                          const PeriodicBoundaryBase * new_periodic = boundaries.boundary(new_boundary_id);
-
-                          Point neigh_pt1 = new_periodic->get_corresponding_pos(*e1),
-                            neigh_pt2 = new_periodic->get_corresponding_pos(*e2);
-
-                          // If the edge is getting constrained
-                          // to itself by this PBC then we don't
-                          // generate any constraints
-                          if (neigh_pt1.absolute_fuzzy_equals
-                              (*e1, primary_hmin*TOLERANCE) &&
-                              neigh_pt2.absolute_fuzzy_equals
-                              (*e2, primary_hmin*TOLERANCE))
-                            continue;
-
-                          // Otherwise we'll have a constraint in
-                          // one direction or another
-                          if (!primary_elem)
-                            primary_elem = elem;
-
-                          const Elem * primary_neigh = primary_boundary_edge_neighbor
-                            (neigh, neigh_pt1, neigh_pt2,
-                             mesh.get_boundary_info(), edge_pairedids);
-
-                          libmesh_assert(primary_neigh);
-
-                          if (new_boundary_id == boundary_id)
-                            {
-                              main_neigh = primary_neigh;
-                              main_pt1 = neigh_pt1;
-                              main_pt2 = neigh_pt2;
-                            }
-
-                          // If we have a one-element thick mesh,
-                          // we'll need to sort our points to get a
-                          // consistent ordering rule
-                          //
-                          // Use >= in this test to make sure that,
-                          // for angular constraints, no node gets
-                          // constrained to itself.
-                          if (primary_neigh == primary_elem)
-                            {
-                              if (primary_pt1 > primary_pt2)
-                                std::swap(primary_pt1, primary_pt2);
-                              if (neigh_pt1 > neigh_pt2)
-                                std::swap(neigh_pt1, neigh_pt2);
-
-                              if (neigh_pt2 >= primary_pt2)
-                                continue;
-                            }
-
-                          // Otherwise:
-                          // Finer elements will get constrained in
-                          // terms of coarser ones, not the other way
-                          // around
-                          if ((primary_neigh->level() > primary_elem->level()) ||
-
-                              // For equal-level elements, the one with
-                              // higher id gets constrained in terms of
-                              // the one with lower id
-                              (primary_neigh->level() == primary_elem->level() &&
-                               primary_neigh->id() > primary_elem->id()))
-                            continue;
-
-                          primary_elem = primary_neigh;
-                          primary_pt1 = neigh_pt1;
-                          primary_pt2 = neigh_pt2;
-                        }
-
-                      if (!primary_elem ||
-                          primary_elem != main_neigh ||
-                          primary_pt1 != main_pt1 ||
-                          primary_pt2 != main_pt2)
-                        continue;
                     }
-                  else if (elem->is_face(n))
-                    {
-                      // If we have a one-element thick mesh,
-                      // use the ordering of the face node and its
-                      // periodic counterpart to determine what
-                      // gets constrained
-                      if (neigh == elem)
-                        {
-                          const Point neigh_pt =
-                            periodic->get_corresponding_pos(my_node);
-                          if (neigh_pt > my_node)
-                            continue;
-                        }
-
-                      // Otherwise:
-                      // Finer elements will get constrained in
-                      // terms of coarser ones, not the other way
-                      // around
-                      if ((neigh->level() > elem->level()) ||
-
-                          // For equal-level elements, the one with
-                          // higher id gets constrained in terms of
-                          // the one with lower id
-                          (neigh->level() == elem->level() &&
-                           neigh->id() > elem->id()))
-                        continue;
-                    }
-
-                  // If we made it here without hitting a continue
-                  // statement, then we're at a node whose dofs
-                  // should be constrained by this element's
-                  // calculations.
-                  const unsigned int n_comp =
-                    my_node.n_comp(sys_number, variable_number);
-
-                  for (unsigned int i=0; i != n_comp; ++i)
-                    my_constrained_dofs.insert
-                      (my_node.dof_number
-                       (sys_number, variable_number, i));
                 }
-
-              // FIXME: old code for disambiguating periodic BCs:
-              // this is not threadsafe nor safe to run on a
-              // non-serialized mesh.
-              /*
-                std::vector<bool> recursive_constraint(n_side_dofs, false);
-
-                for (unsigned int is = 0; is != n_side_dofs; ++is)
-                {
-                const unsigned int i = neigh_side_dofs[is];
-                const dof_id_type their_dof_g = neigh_dof_indices[i];
-                libmesh_assert_not_equal_to (their_dof_g, DofObject::invalid_id);
-
-                {
-                Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
-
-                if (!dof_map.is_constrained_dof(their_dof_g))
-                continue;
-                }
-
-                DofConstraintRow & their_constraint_row =
-                constraints[their_dof_g].first;
-
-                for (unsigned int js = 0; js != n_side_dofs; ++js)
-                {
-                const unsigned int j = my_side_dofs[js];
-                const dof_id_type my_dof_g = my_dof_indices[j];
-                libmesh_assert_not_equal_to (my_dof_g, DofObject::invalid_id);
-
-                if (their_constraint_row.count(my_dof_g))
-                recursive_constraint[js] = true;
-                }
-                }
-              */
 
               for (unsigned int js = 0; js != n_side_dofs; ++js)
                 {
-                  // FIXME: old code path
-                  // if (recursive_constraint[js])
-                  //  continue;
-
                   const unsigned int j = my_side_dofs[js];
                   const dof_id_type my_dof_g = my_dof_indices[j];
                   libmesh_assert_not_equal_to (my_dof_g, DofObject::invalid_id);
 
-                  // FIXME: new code path
-                  if (!my_constrained_dofs.count(my_dof_g))
+                  if (dofs_to_not_constrain.count(my_dof_g))
                     continue;
 
                   DofConstraintRow * constraint_row;
