@@ -469,7 +469,8 @@ void TaoOptimizationSolver<T>::init ()
       // access in set_preconditioner_type().
       LibmeshPetscCall(TaoSetFromOptions(_tao));
 
-      this->set_preconditioner_type(LinearSolver<T>::default_preconditioner_type());
+      this->set_preconditioner_type
+        (LinearSolver<T>::default_preconditioner_type(this->n_processors()));
     }
 }
 
